@@ -1,0 +1,67 @@
+/*
+ * Design tokens.
+ *
+ * Each colour is stored twice: as raw RGB channels (`--x-rgb`) and as a ready
+ * colour (`--x`). Tailwind consumes the channels through
+ * `rgb(var(--x-rgb) / <alpha-value>)`, which is what makes `bg-accent/10`
+ * work with themeable variables; hand-written CSS uses the plain `--x`.
+ *
+ * Dark is the default. The light theme only redefines the neutral ramp — the
+ * purple accent stays put so "accent = interactive" holds in both themes.
+ */
+
+:root,
+:root[data-theme='dark'] {
+  --bg-rgb: 10 10 11;
+  --surface-rgb: 19 19 21;
+  --surface-2-rgb: 28 28 32;
+  --border-rgb: 38 38 43;
+  --text-rgb: 244 244 245;
+  --text-dim-rgb: 138 138 147;
+  --accent-rgb: 139 92 246;
+  --accent-hover-rgb: 167 139 250;
+  --accent-dim-rgb: 109 40 217;
+  --danger-rgb: 239 68 68;
+
+  --overlay: rgb(10 10 11 / 0.72);
+  --shadow-panel: 0 8px 28px rgb(0 0 0 / 0.42);
+}
+
+:root[data-theme='light'] {
+  --bg-rgb: 255 255 255;
+  --surface-rgb: 250 250 250;
+  --surface-2-rgb: 241 241 243;
+  --border-rgb: 227 227 231;
+  --text-rgb: 24 24 27;
+  --text-dim-rgb: 113 113 122;
+  --accent-rgb: 124 58 237;
+  --accent-hover-rgb: 109 40 217;
+  --accent-dim-rgb: 167 139 250;
+  --danger-rgb: 220 38 38;
+
+  --overlay: rgb(24 24 27 / 0.32);
+  --shadow-panel: 0 8px 28px rgb(24 24 27 / 0.12);
+}
+
+:root {
+  --bg: rgb(var(--bg-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-2: rgb(var(--surface-2-rgb));
+  --border: rgb(var(--border-rgb));
+  --text: rgb(var(--text-rgb));
+  --text-dim: rgb(var(--text-dim-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-hover: rgb(var(--accent-hover-rgb));
+  --accent-dim: rgb(var(--accent-dim-rgb));
+  --danger: rgb(var(--danger-rgb));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

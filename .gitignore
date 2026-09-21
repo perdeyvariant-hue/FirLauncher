@@ -1,0 +1,29 @@
+# deps / build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# rust
+src-tauri/target/
+src-tauri/gen/
+# machine-specific target-dir override (see README: OneDrive workaround)
+.cargo/config.toml
+
+# editors / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# secrets and user data — never commit API keys or Mojang assets
+.env
+.env.*
+!.env.example
+/launcher-data/
+/smoke-data/
+*.log
+
+# local Claude Code settings
+.claude/settings.local.json
