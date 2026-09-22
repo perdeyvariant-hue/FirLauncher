@@ -50,6 +50,10 @@ pub fn safe_relative(raw: &str) -> Option<PathBuf> {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
+            // A drive letter or stream name ("C:", "a.txt:ads") is only
+            // special on Windows; refuse it everywhere so a pack behaves the
+            // same on every system.
+            Component::Normal(part) if part.to_string_lossy().contains(':') => return None,
             Component::Normal(part) => out.push(part),
             Component::CurDir => {}
             _ => return None,
