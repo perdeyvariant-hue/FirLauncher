@@ -26,7 +26,8 @@ pub fn build_info() -> BuildInfo {
 }
 
 #[tauri::command]
-pub async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<Settings> {
+pub async fn save_settings(state: State<'_, AppState>, mut settings: Settings) -> Result<Settings> {
+    settings.appearance = settings.appearance.sanitized();
     settings.save(&state.paths).await?;
     state.replace_settings(settings.clone())?;
     Ok(settings)

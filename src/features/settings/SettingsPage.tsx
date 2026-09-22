@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
-import { Coffee, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import type { ReactElement } from 'react';
+import { Coffee, ExternalLink, Eye, EyeOff, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import type { SelectOption } from '@/components/ui/Select';
+import { Section } from '@/components/ui/Section';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Slider } from '@/components/ui/Slider';
 import { Switch } from '@/components/ui/Switch';
@@ -14,45 +13,19 @@ import * as metaApi from '@/api/meta';
 import { openExternal } from '@/api/system';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { JavaRuntime } from '@/types/java';
-import type { ThemeMode } from '@/types/settings';
 import { useSettings } from '@/store/useSettings';
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}): ReactElement {
-  return (
-    <section className="panel flex flex-col gap-4 p-4">
-      <div>
-        <h2 className="text-xs font-semibold text-text">{title}</h2>
-        {description !== undefined && (
-          <p className="mt-1 text-2xs leading-relaxed text-text-dim">{description}</p>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
+import { useUI } from '@/store/useUI';
 
 /** Microsoft's own guide; the Minecraft approval form is linked from the README. */
 const AZURE_GUIDE_URL =
   'https://learn.microsoft.com/entra/identity-platform/quickstart-register-app';
 
-const THEME_OPTIONS: SelectOption<ThemeMode>[] = [
-  { value: 'dark', label: 'Тёмная' },
-  { value: 'light', label: 'Светлая' },
-  { value: 'system', label: 'Как в системе' },
-];
 
 export function SettingsPage(): ReactElement {
   const settings = useSettings((state) => state.settings);
   const patch = useSettings((state) => state.patch);
   const keyBuiltin = useSettings((state) => state.curseforgeKeyBuiltin);
+  const navigate = useUI((state) => state.navigate);
   const [showKey, setShowKey] = useState(false);
 
   const java = useAsyncData<JavaRuntime[]>(() => metaApi.listJavaRuntimes(), []);
@@ -65,15 +38,20 @@ export function SettingsPage(): ReactElement {
 
       <div className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="flex max-w-[720px] flex-col gap-3">
-          <Section title="Внешний вид">
-            <Select
-              label="Тема"
-              value={settings.theme}
-              options={THEME_OPTIONS}
-              onChange={(value) => {
-                void patch({ theme: value });
-              }}
-            />
+          <Section
+            title="Внешний вид"
+            description="Тема, цвет акцента, обои, талисман в углу и масштаб интерфейса."
+          >
+            <div>
+              <Button
+                icon={<Palette size={14} strokeWidth={1.5} />}
+                onClick={() => {
+                  navigate({ name: 'appearance' });
+                }}
+              >
+                Открыть «Оформление»
+              </Button>
+            </div>
           </Section>
 
           <Section

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { Settings, ThemeMode } from '@/types/settings';
+import type { Appearance, Settings } from '@/types/settings';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 import * as metaApi from '@/api/meta';
+import { applyLook } from '@/lib/appearance';
 import { useToasts } from './useToasts';
 
 interface SettingsState {
@@ -12,18 +13,15 @@ interface SettingsState {
   curseforgeKeyBuiltin: boolean;
   load: () => Promise<void>;
   patch: (patch: Partial<Settings>) => Promise<void>;
+  /** Shorthand for changing a few personalisation fields. */
+  patchAppearance: (patch: Partial<Appearance>) => void;
 }
 
 /** Quiet period before a settings change is written to disk. */
 const SAVE_DEBOUNCE_MS = 400;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-
-export function applyTheme(mode: ThemeMode): void {
-  const prefersLight =
-    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches;
-  const resolved = mode === 'system' ? (prefersLight ? 'light' : 'dark') : mode;
-  document.documentElement.dataset['theme'] = resolved;
-}
+/** Bumped on every edit, so a slow save cannot undo a newer one. */
+let revision = 0;
 
 export const useSettings = create<SettingsState>()((set, get) => ({
   settings: DEFAULT_SETTINGS,
@@ -35,7 +33,7 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     try {
       const [settings, info] = await Promise.all([metaApi.loadSettings(), metaApi.buildInfo()]);
       set({ settings, loaded: true, curseforgeKeyBuiltin: info.curseforgeKeyBuiltin });
-      applyTheme(settings.theme);
+      applyLook(settings);
     } catch (raw) {
       useToasts.getState().fail(raw);
       set({ loaded: true });
@@ -46,7 +44,8 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     const next: Settings = { ...get().settings, ...patch };
     // Optimistic: the theme must flip instantly, not after a round trip.
     set({ settings: next, saving: true });
-    if (patch.theme !== undefined) applyTheme(patch.theme);
+    if (patch.theme !== undefined || patch.appearance !== undefined) applyLook(next);
+    const mine = ++revision;
 
     // Sliders fire on every pixel; persist once the user stops moving.
     if (saveTimer !== null) clearTimeout(saveTimer);
@@ -55,7 +54,10 @@ export const useSettings = create<SettingsState>()((set, get) => ({
       void metaApi
         .saveSettings(next)
         .then((saved) => {
+          // The user kept editing while this was in flight; theirs wins.
+          if (mine !== revision) return;
           set({ settings: saved, saving: false });
+          applyLook(saved);
         })
         .catch((raw: unknown) => {
           useToasts.getState().fail(raw);
@@ -64,5 +66,9 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     }, SAVE_DEBOUNCE_MS);
 
     return Promise.resolve();
+  },
+
+  patchAppearance: (patch) => {
+    void get().patch({ appearance: { ...get().settings.appearance, ...patch } });
   },
 }));

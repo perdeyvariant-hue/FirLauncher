@@ -1,6 +1,7 @@
 //! Tauri commands — the entire surface the front end can call.
 
 pub mod accounts;
+pub mod appearance;
 pub mod instances;
 pub mod meta;
 pub mod mods;

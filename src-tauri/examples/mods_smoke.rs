@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
     };
 
     println!("2. План установки {}", first.name);
-    let plan = resolve::plan(provider.as_ref(), &target, &first.project_id, &HashSet::new()).await?;
+    let plan = resolve::plan(provider.as_ref(), &target, ProjectKind::Mod, &first.project_id, None, &HashSet::new()).await?;
     println!("   {} {}", plan.primary.name, plan.primary.version_number);
     for dep in &plan.dependencies {
         println!("   + зависимость {} {}", dep.name, dep.version_number);
@@ -142,7 +142,7 @@ async fn main() -> Result<()> {
 
     println!("5. Проверка обновлений");
     let providers = mods::providers(&settings, &client);
-    let updates = install::check_updates(&providers, &paths, "smoke", &target).await?;
+    let updates = install::check_updates(&providers, &paths, "smoke", ProjectKind::Mod, &target).await?;
     for update in &updates {
         println!(
             "   {}: {} -> {}",
@@ -154,9 +154,9 @@ async fn main() -> Result<()> {
 
     if !updates.is_empty() {
         println!("6. Обновление");
-        install::apply_updates(&client, &paths, "smoke", &updates, 8, Arc::clone(&progress)).await?;
+        install::apply_updates(&client, &paths, "smoke", ProjectKind::Mod, &updates, 8, Arc::clone(&progress)).await?;
         println!("   mods/: {:?}", list_mods(&mods_dir).await);
-        let again = install::check_updates(&providers, &paths, "smoke", &target).await?;
+        let again = install::check_updates(&providers, &paths, "smoke", ProjectKind::Mod, &target).await?;
         println!("   повторная проверка: обновлений {}", again.len());
     }
     Ok(())
@@ -194,7 +194,7 @@ async fn packs(
         println!("   - {} ({})", hit.name, hit.project_id);
     }
     let Some(first) = found.hits.first() else { return Ok(()) };
-    let plan = resolve::plan(provider, &target, &first.project_id, &HashSet::new()).await?;
+    let plan = resolve::plan(provider, &target, kind, &first.project_id, None, &HashSet::new()).await?;
     println!("План: {} {} ({} КБ)", plan.primary.name, plan.primary.file_name, plan.total_bytes / 1024);
     let mut versions = vec![plan.primary.clone()];
     versions.extend(plan.dependencies.clone());

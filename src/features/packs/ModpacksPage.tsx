@@ -15,6 +15,8 @@ import * as modsApi from '@/api/mods';
 import * as packsApi from '@/api/packs';
 import { openExternal } from '@/api/system';
 import { ModCard } from '@/features/mods/ModCard';
+import { ProjectDialog } from '@/features/mods/ProjectDialog';
+import type { ProjectTarget } from '@/features/mods/ProjectDialog';
 import { toLauncherError } from '@/lib/ipc';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import type { LauncherError } from '@/types/error';
@@ -43,6 +45,7 @@ export function ModpacksPage(): ReactElement {
   const fail = useToasts((state) => state.fail);
 
   const [providers, setProviders] = useState<ProviderId[]>(['modrinth']);
+  const [described, setDescribed] = useState<ProjectTarget | null>(null);
   const [provider, setProvider] = useState<ProviderId>('modrinth');
   const [text, setText] = useState('');
   const query = useDebouncedValue(text.trim(), 350);
@@ -180,7 +183,7 @@ export function ModpacksPage(): ReactElement {
                 }}
                 className={cn(
                   'h-7 rounded-md px-3 text-xs font-medium transition-colors duration-fast ease-out',
-                  id === provider ? 'bg-accent text-white' : 'text-text-dim hover:text-text',
+                  id === provider ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
                 )}
               >
                 {PROVIDER_LABELS[id]}
@@ -240,6 +243,14 @@ export function ModpacksPage(): ReactElement {
                   onInstall={() => {
                     if (installing === null) void install(project);
                   }}
+                  onOpen={() => {
+                    setDescribed({
+                      provider: project.provider,
+                      projectId: project.projectId,
+                      preview: project,
+                    });
+                  }}
+                  onVersions={null}
                   onOpenPage={
                     project.pageUrl === null
                       ? null
@@ -260,6 +271,30 @@ export function ModpacksPage(): ReactElement {
           </div>
         )}
       </div>
+
+      <ProjectDialog
+        target={described}
+        onClose={() => {
+          setDescribed(null);
+        }}
+        actions={() => {
+          const project = described?.preview;
+          if (project === null || project === undefined) return null;
+          return (
+            <Button
+              variant="primary"
+              loading={installing === project.projectId}
+              disabled={installing !== null && installing !== project.projectId}
+              onClick={() => {
+                setDescribed(null);
+                void install(project);
+              }}
+            >
+              Установить модпак
+            </Button>
+          );
+        }}
+      />
     </div>
   );
 }

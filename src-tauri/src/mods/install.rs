@@ -90,12 +90,22 @@ pub async fn install_versions(
 
     let mut mod_index = ModIndex::load(paths, instance_id, kind).await?;
     for version in versions {
-        // Installing another version of a project replaces the old file.
+        // Installing another version of a project replaces the old file; a
+        // mod that was switched off stays off.
+        let mut keep_disabled = false;
         if let Some(previous) = mod_index.file_of(version.provider, &version.project_id) {
+            keep_disabled = dir.join(format!("{previous}{DISABLED_SUFFIX}")).exists();
             if previous != version.file_name {
                 remove_variants(&dir, &previous).await;
                 mod_index.remove(&previous);
             }
+        }
+        if keep_disabled {
+            let fresh = dir.join(&version.file_name);
+            let disabled = dir.join(format!("{}{DISABLED_SUFFIX}", version.file_name));
+            // The same file may be both: a re-install of the version on disk.
+            let _ = tokio::fs::remove_file(&disabled).await;
+            tokio::fs::rename(&fresh, &disabled).await?;
         }
         mod_index.insert(&version.file_name, IndexEntry::from(version));
     }
@@ -112,17 +122,24 @@ pub struct ModUpdate {
     pub latest: ModVersion,
 }
 
-async fn installed_files(dir: &Path) -> Result<Vec<String>> {
+/// Files an update check looks at: jars (on or off) for mods, zips for
+/// packs. Unpacked pack folders cannot be identified by hash.
+async fn installed_files(dir: &Path, kind: ProjectKind) -> Result<Vec<String>> {
     let mut entries = match tokio::fs::read_dir(dir).await {
         Ok(entries) => entries,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
         Err(error) => return Err(error.into()),
     };
+    let extension = kind.extension();
+    let disabled = format!("{extension}{DISABLED_SUFFIX}");
     let mut files = Vec::new();
     while let Some(entry) = entries.next_entry().await? {
+        if !entry.file_type().await.is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
         let name = entry.file_name().to_string_lossy().into_owned();
         let lower = name.to_ascii_lowercase();
-        if lower.ends_with(".jar") || lower.ends_with(".jar.disabled") {
+        if lower.ends_with(extension) || lower.ends_with(&disabled) {
             files.push(name);
         }
     }
@@ -130,7 +147,25 @@ async fn installed_files(dir: &Path) -> Result<Vec<String>> {
     Ok(files)
 }
 
-/// Finds updates for everything in `mods/`.
+fn published(version: &ModVersion) -> Option<chrono::DateTime<chrono::FixedOffset>> {
+    chrono::DateTime::parse_from_rfc3339(&version.published_at).ok()
+}
+
+/// Whether `candidate` should replace `current`. A version the user picked by
+/// hand may be newer than anything that fits the instance (another Minecraft
+/// version, a beta); an "update" must never move it backwards.
+fn is_newer(candidate: &ModVersion, current: Option<&ModVersion>) -> bool {
+    let Some(current) = current else { return true };
+    if candidate.version_id == current.version_id {
+        return false;
+    }
+    match (published(candidate), published(current)) {
+        (Some(candidate), Some(current)) => candidate > current,
+        _ => true,
+    }
+}
+
+/// Finds updates for everything of `kind` in the instance.
 ///
 /// Modrinth identifies any file by SHA1 — including ones dropped in by hand,
 /// which get recorded in the index along the way. CurseForge files are
@@ -139,11 +174,12 @@ pub async fn check_updates(
     providers: &[Arc<dyn ModProvider>],
     paths: &Paths,
     instance_id: &str,
+    kind: ProjectKind,
     target: &Target,
 ) -> Result<Vec<ModUpdate>> {
-    let dir = content_dir(paths, instance_id, ProjectKind::Mod);
-    let files = installed_files(&dir).await?;
-    let mut mod_index = ModIndex::load(paths, instance_id, ProjectKind::Mod).await?;
+    let dir = content_dir(paths, instance_id, kind);
+    let files = installed_files(&dir, kind).await?;
+    let mut mod_index = ModIndex::load(paths, instance_id, kind).await?;
 
     let mut hashed: Vec<(String, String)> = Vec::with_capacity(files.len());
     for file in &files {
@@ -169,18 +205,21 @@ pub async fn check_updates(
         let latest = modrinth.latest_for(&hashes, target).await?;
 
         for (file, sha1) in candidates {
-            if let Some(version) = current.get(sha1) {
-                if mod_index.get(file).is_none() {
+            let installed = current.get(sha1);
+            if let Some(version) = installed {
+                // Hand-added files get a source; a stale entry is corrected.
+                let known = mod_index.get(file).map(|entry| entry.version_id.as_str());
+                if known != Some(version.version_id.as_str()) {
                     mod_index.insert(file, IndexEntry::from(version));
                 }
             }
             let Some(newest) = latest.get(sha1) else { continue };
-            if newest.sha1.as_deref() == Some(sha1.as_str()) {
+            if newest.sha1.as_deref() == Some(sha1.as_str()) || !is_newer(newest, installed) {
                 continue;
             }
             updates.push(ModUpdate {
                 file_name: file.clone(),
-                current_version: current.get(sha1).map(|v| v.version_number.clone()),
+                current_version: installed.map(|v| v.version_number.clone()),
                 latest: newest.clone(),
             });
         }
@@ -196,7 +235,11 @@ pub async fn check_updates(
             let Some(newest) = super::resolve::pick_best(&versions, target) else {
                 continue;
             };
-            if newest.version_id != entry.version_id && !newest.download_url.is_empty() {
+            let installed = versions.iter().find(|v| v.version_id == entry.version_id);
+            if newest.version_id != entry.version_id
+                && !newest.download_url.is_empty()
+                && is_newer(&newest, installed)
+            {
                 updates.push(ModUpdate {
                     file_name: file.clone(),
                     current_version: Some(entry.version_number.clone()),
@@ -206,7 +249,7 @@ pub async fn check_updates(
         }
     }
 
-    mod_index.save(paths, instance_id, ProjectKind::Mod).await?;
+    mod_index.save(paths, instance_id, kind).await?;
     Ok(updates)
 }
 
@@ -215,16 +258,26 @@ pub async fn apply_updates(
     client: &reqwest::Client,
     paths: &Paths,
     instance_id: &str,
+    kind: ProjectKind,
     updates: &[ModUpdate],
     concurrency: usize,
     progress: Arc<dyn Progress>,
 ) -> Result<()> {
-    let dir = content_dir(paths, instance_id, ProjectKind::Mod);
+    let dir = content_dir(paths, instance_id, kind);
     let mut items = Vec::with_capacity(updates.len());
     let mut renames: Vec<(PathBuf, PathBuf)> = Vec::new();
 
     for update in updates {
-        let file_name = safe_file_name(&update.latest.file_name, ProjectKind::Mod)?;
+        if update.latest.download_url.is_empty() {
+            return Err(LauncherError::new(
+                ErrorKind::Provider,
+                format!(
+                    "«{}» нельзя скачать через лаунчер — автор запретил сторонние загрузки",
+                    update.latest.name
+                ),
+            ));
+        }
+        let file_name = safe_file_name(&update.latest.file_name, kind)?;
         let disabled = update.file_name.ends_with(DISABLED_SUFFIX);
         let fresh = dir.join(file_name);
         items.push(
@@ -238,7 +291,7 @@ pub async fn apply_updates(
     }
 
     progress.begin_phase(
-        format!("Обновление модов ({})", items.len()),
+        format!("Обновление файлов ({})", items.len()),
         Some(total_bytes(&items)),
     );
     download_all(
@@ -251,7 +304,7 @@ pub async fn apply_updates(
     .await?;
 
     // Only after every download succeeded: remove the old files.
-    let mut mod_index = ModIndex::load(paths, instance_id, ProjectKind::Mod).await?;
+    let mut mod_index = ModIndex::load(paths, instance_id, kind).await?;
     for update in updates {
         let old_key = index::key(&update.file_name);
         if old_key != update.latest.file_name {
@@ -263,5 +316,40 @@ pub async fn apply_updates(
     for (from, to) in renames {
         tokio::fs::rename(&from, &to).await?;
     }
-    mod_index.save(paths, instance_id, ProjectKind::Mod).await
+    mod_index.save(paths, instance_id, kind).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mods::ReleaseType;
+
+    fn version(id: &str, published_at: &str) -> ModVersion {
+        ModVersion {
+            provider: ProviderId::Modrinth,
+            project_id: String::from("p"),
+            version_id: id.to_owned(),
+            name: String::from("P"),
+            version_number: id.to_owned(),
+            file_name: format!("p-{id}.jar"),
+            size_bytes: 1,
+            sha1: None,
+            download_url: String::from("https://cdn/p.jar"),
+            game_versions: Vec::new(),
+            loaders: Vec::new(),
+            release_type: ReleaseType::Release,
+            published_at: published_at.to_owned(),
+            dependencies: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn updates_never_go_backwards() {
+        let old = version("1", "2024-01-01T00:00:00Z");
+        let new = version("2", "2025-06-01T12:00:00.000+00:00");
+        assert!(is_newer(&new, Some(&old)));
+        assert!(!is_newer(&old, Some(&new)), "a hand-picked newer version stays");
+        assert!(!is_newer(&new, Some(&new)));
+        assert!(is_newer(&old, None), "an unknown current version can be updated");
+    }
 }

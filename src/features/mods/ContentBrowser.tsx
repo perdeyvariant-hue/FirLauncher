@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { ArrowLeft, PackageSearch, Search } from 'lucide-react';
+import { ArrowLeft, History, PackageSearch, Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -19,12 +19,14 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import type { LauncherError } from '@/types/error';
 import type { Instance } from '@/types/instance';
 import { LOADER_LABELS } from '@/types/instance';
-import type { Category, ModProject, ProviderId, ResolvedInstallPlan, SearchQuery } from '@/types/mod';
+import type { Category, ModProject, ProviderId, SearchQuery } from '@/types/mod';
 import { PROVIDER_LABELS } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
-import { DependencyDialog } from './DependencyDialog';
 import { ModCard } from './ModCard';
 import type { InstallState } from './ModCard';
+import { ProjectDialog } from './ProjectDialog';
+import type { ProjectTarget } from './ProjectDialog';
+import { useContentInstaller } from './useContentInstaller';
 
 const PAGE = 20;
 const ANY = '__any__';
@@ -74,7 +76,6 @@ export function ContentBrowser({
   onInstalled,
 }: ContentBrowserProps): ReactElement {
   const copy = COPY[kind];
-  const notify = useToasts((store) => store.notify);
   const fail = useToasts((store) => store.fail);
 
   const [providers, setProviders] = useState<ProviderId[]>(['modrinth']);
@@ -95,8 +96,16 @@ export function ContentBrowser({
 
   const [installed, setInstalled] = useState<Set<string>>(new Set());
   const [working, setWorking] = useState<Set<string>>(new Set());
-  const [plan, setPlan] = useState<ResolvedInstallPlan | null>(null);
-  const [planBusy, setPlanBusy] = useState(false);
+
+  const installer = useContentInstaller(instance, kind, (plan) => {
+    setInstalled((current) => {
+      const next = new Set(current);
+      next.add(plan.primary.projectId);
+      for (const dependency of plan.dependencies) next.add(dependency.projectId);
+      return next;
+    });
+    onInstalled();
+  });
 
   // Only the newest search may write results; slower old ones are dropped.
   const requestId = useRef(0);
@@ -189,62 +198,21 @@ export function ContentBrowser({
     });
   };
 
-  const runInstall = async (target: ResolvedInstallPlan): Promise<void> => {
-    await modsApi.installPlan(instance.id, kind, target);
-    setInstalled((current) => {
-      const next = new Set(current);
-      next.add(target.primary.projectId);
-      for (const dependency of target.dependencies) next.add(dependency.projectId);
-      return next;
+  const [described, setDescribed] = useState<ProjectTarget | null>(null);
+
+  const chooseVersion = (project: ModProject): void => {
+    installer.chooseVersion({
+      provider: project.provider,
+      projectId: project.projectId,
+      name: project.name,
+      currentVersionId: null,
     });
-    const extra = target.dependencies.length;
-    notify(
-      extra === 0
-        ? `Установлено: ${target.primary.name}`
-        : `Установлено: ${target.primary.name} и зависимости (${String(extra)})`,
-      'success',
-    );
-    onInstalled();
   };
 
   const install = async (project: ModProject): Promise<void> => {
     setWorkingFor(project.projectId, true);
-    try {
-      const resolved = await modsApi.resolveInstall(
-        instance.id,
-        project.provider,
-        project.projectId,
-        kind,
-      );
-      // Nothing else comes along: no reason to ask.
-      if (resolved.dependencies.length === 0 && resolved.unresolved.length === 0) {
-        await runInstall(resolved);
-      } else {
-        setPlan(resolved);
-        return;
-      }
-    } catch (raw) {
-      fail(raw, () => void install(project));
-    }
+    await installer.install(project.provider, project.projectId);
     setWorkingFor(project.projectId, false);
-  };
-
-  const confirmPlan = async (): Promise<void> => {
-    if (plan === null) return;
-    setPlanBusy(true);
-    try {
-      await runInstall(plan);
-    } catch (raw) {
-      fail(raw);
-    }
-    setPlanBusy(false);
-    setWorkingFor(plan.primary.projectId, false);
-    setPlan(null);
-  };
-
-  const cancelPlan = (): void => {
-    if (plan !== null) setWorkingFor(plan.primary.projectId, false);
-    setPlan(null);
   };
 
   const stateOf = (project: ModProject): InstallState => {
@@ -282,7 +250,7 @@ export function ContentBrowser({
                 }}
                 className={cn(
                   'h-7 rounded-md px-3 text-xs font-medium transition-colors duration-fast ease-out',
-                  id === provider ? 'bg-accent text-white' : 'text-text-dim hover:text-text',
+                  id === provider ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
                 )}
               >
                 {PROVIDER_LABELS[id]}
@@ -345,6 +313,16 @@ export function ContentBrowser({
                   onInstall={() => {
                     void install(project);
                   }}
+                  onOpen={() => {
+                    setDescribed({
+                      provider: project.provider,
+                      projectId: project.projectId,
+                      preview: project,
+                    });
+                  }}
+                  onVersions={() => {
+                    chooseVersion(project);
+                  }}
                   onOpenPage={
                     project.pageUrl === null
                       ? null
@@ -366,14 +344,43 @@ export function ContentBrowser({
         )}
       </div>
 
-      <DependencyDialog
-        plan={plan}
-        busy={planBusy}
-        onConfirm={() => {
-          void confirmPlan();
+      <ProjectDialog
+        target={described}
+        onClose={() => {
+          setDescribed(null);
         }}
-        onCancel={cancelPlan}
+        actions={() => {
+          const project = described?.preview;
+          if (project === null || project === undefined) return null;
+          const state = stateOf(project);
+          return (
+            <>
+              <Button
+                icon={<History size={14} strokeWidth={1.5} />}
+                disabled={state === 'working'}
+                onClick={() => {
+                  setDescribed(null);
+                  chooseVersion(project);
+                }}
+              >
+                Выбрать версию
+              </Button>
+              <Button
+                variant="primary"
+                loading={state === 'working'}
+                disabled={state === 'installed'}
+                onClick={() => {
+                  void install(project);
+                }}
+              >
+                {state === 'installed' ? 'Установлен' : 'Установить'}
+              </Button>
+            </>
+          );
+        }}
       />
+
+      {installer.dialogs}
     </div>
   );
 }

@@ -12,8 +12,9 @@ use crate::instances::ModLoader;
 
 use super::provider::{BoxFuture, Http, ModProvider, RateLimiter};
 use super::{
-    Category, DependencyKind, ModDependency, ModProject, ModVersion, ProjectKind, ProviderId,
-    ReleaseType, SearchQuery, SearchResult, SortOrder, Target,
+    BodyFormat, Category, DependencyKind, GalleryImage, LinkKind, ModDependency, ModProject,
+    ModVersion, ProjectDetails, ProjectKind, ProjectLink, ProviderId, ReleaseType, SearchQuery,
+    SearchResult, SortOrder, Target,
 };
 
 const API: &str = "https://api.curseforge.com/v1";
@@ -124,6 +125,30 @@ struct CategoryRef {
 #[serde(rename_all = "camelCase")]
 struct Links {
     website_url: Option<String>,
+    #[serde(default)]
+    wiki_url: Option<String>,
+    #[serde(default)]
+    issues_url: Option<String>,
+    #[serde(default)]
+    source_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Screenshot {
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    description: String,
+    thumbnail_url: Option<String>,
+    url: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FileIndex {
+    game_version: String,
+    mod_loader: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -146,6 +171,83 @@ struct Mod {
     date_modified: Option<String>,
     links: Option<Links>,
     class_id: Option<u32>,
+    #[serde(default)]
+    screenshots: Vec<Screenshot>,
+    #[serde(default)]
+    latest_files_indexes: Vec<FileIndex>,
+    date_released: Option<String>,
+}
+
+fn loader_label(loader: u32) -> Option<&'static str> {
+    match loader {
+        1 => Some("forge"),
+        4 => Some("fabric"),
+        5 => Some("quilt"),
+        6 => Some("neoforge"),
+        _ => None,
+    }
+}
+
+impl Mod {
+    fn into_details(mut self, body: String) -> ProjectDetails {
+        let links = self.links.take();
+        let screenshots = std::mem::take(&mut self.screenshots);
+        let indexes = std::mem::take(&mut self.latest_files_indexes);
+        let published_at = self.date_released.take();
+
+        // Newest first, as CurseForge lists them; each only once.
+        let mut game_versions: Vec<String> = Vec::new();
+        let mut loaders: Vec<String> = Vec::new();
+        for index in &indexes {
+            if !game_versions.contains(&index.game_version) {
+                game_versions.push(index.game_version.clone());
+            }
+            if let Some(label) = index.mod_loader.and_then(loader_label) {
+                if !loaders.iter().any(|known| known == label) {
+                    loaders.push(label.to_owned());
+                }
+            }
+        }
+
+        let mut out_links = Vec::new();
+        if let Some(links) = links {
+            for (kind, url) in [
+                (LinkKind::Page, links.website_url),
+                (LinkKind::Source, links.source_url),
+                (LinkKind::Issues, links.issues_url),
+                (LinkKind::Wiki, links.wiki_url),
+            ] {
+                if let Some(url) = url.filter(|url| !url.trim().is_empty()) {
+                    out_links.push(ProjectLink { kind, label: String::new(), url });
+                }
+            }
+        }
+
+        let mut project = ModProject::from(self);
+        project.page_url = out_links
+            .iter()
+            .find(|link| link.kind == LinkKind::Page)
+            .map(|link| link.url.clone());
+
+        ProjectDetails {
+            project,
+            body,
+            body_format: BodyFormat::Html,
+            gallery: screenshots
+                .into_iter()
+                .map(|shot| GalleryImage {
+                    url: shot.thumbnail_url.unwrap_or_else(|| shot.url.clone()),
+                    full_url: shot.url,
+                    title: Some(shot.title).filter(|title| !title.is_empty()),
+                    description: Some(shot.description).filter(|text| !text.is_empty()),
+                })
+                .collect(),
+            links: out_links,
+            game_versions,
+            loaders,
+            published_at,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -381,6 +483,18 @@ impl ModProvider for CurseForge {
         })
     }
 
+    fn details<'a>(&'a self, project_id: &'a str) -> BoxFuture<'a, Result<ProjectDetails>> {
+        Box::pin(async move {
+            let id = parse_id(project_id, "проекта")?;
+            let item: Envelope<Mod> = self.http.get(&format!("{API}/mods/{id}"), &[]).await?;
+            let body: Envelope<String> = self
+                .http
+                .get(&format!("{API}/mods/{id}/description"), &[])
+                .await?;
+            Ok(item.data.into_details(body.data))
+        })
+    }
+
     fn categories(&self, kind: ProjectKind) -> BoxFuture<'_, Result<Vec<Category>>> {
         Box::pin(async move {
             let response: Envelope<Vec<CategoryRef>> = self
@@ -493,6 +607,45 @@ impl ModProvider for CurseForge {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_mod_becomes_a_description_page() -> std::result::Result<(), serde_json::Error> {
+        let item: Mod = serde_json::from_str(
+            r#"{
+                "id": 238222, "name": "JEI", "slug": "jei", "summary": "Items",
+                "downloadCount": 5.0, "logo": {"thumbnailUrl": "https://img/logo.png"},
+                "authors": [{"name": "mezz"}], "categories": [], "classId": 6,
+                "links": {"websiteUrl": "https://www.curseforge.com/minecraft/mc-mods/jei",
+                          "wikiUrl": "", "issuesUrl": "https://github.com/mezz/JEI/issues",
+                          "sourceUrl": null},
+                "screenshots": [{"title": "Shot", "description": "", "thumbnailUrl": "https://img/t.png",
+                                 "url": "https://img/full.png"}],
+                "latestFilesIndexes": [
+                    {"gameVersion": "1.21.1", "modLoader": 6},
+                    {"gameVersion": "1.21.1", "modLoader": 1},
+                    {"gameVersion": "1.20.1", "modLoader": 1},
+                    {"gameVersion": "1.12.2", "modLoader": null}
+                ],
+                "dateReleased": "2015-01-01T00:00:00Z"
+            }"#,
+        )?;
+        let details = item.into_details(String::from("<p>Hi</p>"));
+
+        assert_eq!(details.project.author, "mezz");
+        assert_eq!(details.body_format, BodyFormat::Html);
+        assert_eq!(
+            details.project.page_url.as_deref(),
+            Some("https://www.curseforge.com/minecraft/mc-mods/jei")
+        );
+        let kinds: Vec<LinkKind> = details.links.iter().map(|link| link.kind).collect();
+        assert_eq!(kinds, vec![LinkKind::Page, LinkKind::Issues]);
+        assert_eq!(details.game_versions, vec!["1.21.1", "1.20.1", "1.12.2"]);
+        assert_eq!(details.loaders, vec!["neoforge", "forge"]);
+        assert_eq!(details.gallery[0].url, "https://img/t.png");
+        assert_eq!(details.gallery[0].full_url, "https://img/full.png");
+        assert_eq!(details.published_at.as_deref(), Some("2015-01-01T00:00:00Z"));
+        Ok(())
+    }
 
     const FILE: &str = r#"{
         "id": 5101366, "modId": 238222, "displayName": "jei-1.20.1-forge-15.3.0.4.jar",

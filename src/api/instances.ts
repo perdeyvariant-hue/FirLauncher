@@ -118,6 +118,12 @@ export function listShaderPacks(id: string): Promise<ResourcePackEntry[]> {
         description: null,
         sizeBytes: 552_960,
         packFormat: null,
+        source: {
+          provider: 'modrinth',
+          projectId: 'HVnmMxH1',
+          versionId: 'HVnmMxH1-v',
+          versionNumber: 'r5.9.3',
+        },
       },
     ]);
   }

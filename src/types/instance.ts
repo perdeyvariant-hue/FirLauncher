@@ -58,8 +58,16 @@ export interface InstalledMod {
   /** Hashing every jar on open is too slow for big packs; filled on demand. */
   readonly sha1: string | null;
   /** Set when the file was installed from a known provider. */
-  readonly source: { readonly provider: string; readonly projectId: string } | null;
+  readonly source: ContentSource | null;
   readonly updateAvailable: string | null;
+}
+
+/** Where an installed file came from, per the instance's index. */
+export interface ContentSource {
+  readonly provider: string;
+  readonly projectId: string;
+  readonly versionId: string;
+  readonly versionNumber: string;
 }
 
 export interface WorldEntry {
@@ -76,6 +84,7 @@ export interface ResourcePackEntry {
   readonly description: string | null;
   readonly sizeBytes: number;
   readonly packFormat: number | null;
+  readonly source: ContentSource | null;
 }
 
 export interface ScreenshotEntry {

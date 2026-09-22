@@ -11,8 +11,9 @@ use crate::instances::ModLoader;
 
 use super::provider::{BoxFuture, Http, ModProvider, RateLimiter};
 use super::{
-    Category, DependencyKind, ModDependency, ModProject, ModVersion, ProjectKind, ProviderId,
-    ReleaseType, SearchQuery, SearchResult, SortOrder, Target,
+    BodyFormat, Category, DependencyKind, GalleryImage, LinkKind, ModDependency, ModProject,
+    ModVersion, ProjectDetails, ProjectKind, ProjectLink, ProviderId, ReleaseType, SearchQuery,
+    SearchResult, SortOrder, Target,
 };
 
 const API: &str = "https://api.modrinth.com/v2";
@@ -120,6 +121,198 @@ pub(crate) struct Version {
 struct Project {
     id: String,
     title: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct License {
+    id: String,
+    #[serde(default)]
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct DonationUrl {
+    platform: String,
+    url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GalleryItem {
+    url: String,
+    raw_url: Option<String>,
+    title: Option<String>,
+    description: Option<String>,
+    #[serde(default)]
+    featured: bool,
+    #[serde(default)]
+    ordering: i64,
+}
+
+/// `GET /project/{id}` — the full page, unlike a search hit.
+#[derive(Debug, Deserialize)]
+struct FullProject {
+    id: String,
+    slug: String,
+    title: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    body: String,
+    #[serde(default)]
+    categories: Vec<String>,
+    #[serde(default)]
+    additional_categories: Vec<String>,
+    project_type: String,
+    #[serde(default)]
+    downloads: u64,
+    #[serde(default)]
+    followers: u64,
+    icon_url: Option<String>,
+    license: Option<License>,
+    source_url: Option<String>,
+    issues_url: Option<String>,
+    wiki_url: Option<String>,
+    discord_url: Option<String>,
+    #[serde(default)]
+    donation_urls: Vec<DonationUrl>,
+    #[serde(default)]
+    gallery: Vec<GalleryItem>,
+    #[serde(default)]
+    game_versions: Vec<String>,
+    #[serde(default)]
+    loaders: Vec<String>,
+    published: Option<String>,
+    updated: Option<String>,
+    organization: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MemberUser {
+    username: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Member {
+    #[serde(default)]
+    role: String,
+    #[serde(default)]
+    ordering: i64,
+    user: MemberUser,
+}
+
+#[derive(Debug, Deserialize)]
+struct Organization {
+    name: String,
+}
+
+/// "LicenseRef-Polyform-Shield-1.0.0" reads better without the SPDX prefix.
+fn license_label(license: &License) -> Option<String> {
+    let label = if license.name.trim().is_empty() {
+        license.id.trim_start_matches("LicenseRef-").replace('-', " ")
+    } else {
+        license.name.clone()
+    };
+    (!label.is_empty()).then_some(label)
+}
+
+fn non_empty(url: Option<String>) -> Option<String> {
+    url.filter(|url| !url.trim().is_empty())
+}
+
+impl FullProject {
+    fn into_details(self, author: String) -> ProjectDetails {
+        let kind = kind_of(&self.project_type);
+        let page_url = format!("https://modrinth.com/{}/{}", kind_facet(kind), self.slug);
+
+        let mut links = vec![ProjectLink {
+            kind: LinkKind::Page,
+            label: String::new(),
+            url: page_url.clone(),
+        }];
+        for (kind, url) in [
+            (LinkKind::Source, self.source_url),
+            (LinkKind::Issues, self.issues_url),
+            (LinkKind::Wiki, self.wiki_url),
+            (LinkKind::Discord, self.discord_url),
+        ] {
+            if let Some(url) = non_empty(url) {
+                links.push(ProjectLink { kind, label: String::new(), url });
+            }
+        }
+        links.extend(self.donation_urls.into_iter().map(|donation| ProjectLink {
+            kind: LinkKind::Donation,
+            label: donation.platform,
+            url: donation.url,
+        }));
+
+        let mut gallery = self.gallery;
+        // Featured images first, then the author's own order.
+        gallery.sort_by_key(|item| (!item.featured, item.ordering));
+
+        let mut categories = self.categories;
+        categories.extend(self.additional_categories);
+
+        ProjectDetails {
+            project: ModProject {
+                provider: ProviderId::Modrinth,
+                project_id: self.id,
+                slug: self.slug,
+                name: self.title,
+                summary: self.description,
+                author,
+                icon_url: non_empty(self.icon_url),
+                downloads: self.downloads,
+                followers: Some(self.followers),
+                categories: categories
+                    .into_iter()
+                    .filter(|tag| !NON_CATEGORY_TAGS.contains(&tag.as_str()))
+                    .collect(),
+                kind,
+                updated_at: self.updated,
+                license: self.license.as_ref().and_then(license_label),
+                page_url: Some(page_url),
+            },
+            body: self.body,
+            body_format: BodyFormat::Markdown,
+            gallery: gallery
+                .into_iter()
+                .map(|item| GalleryImage {
+                    full_url: item.raw_url.unwrap_or_else(|| item.url.clone()),
+                    url: item.url,
+                    title: item.title.filter(|title| !title.is_empty()),
+                    description: item.description.filter(|text| !text.is_empty()),
+                })
+                .collect(),
+            links,
+            game_versions: self.game_versions,
+            loaders: self.loaders,
+            published_at: self.published,
+        }
+    }
+}
+
+impl Modrinth {
+    /// The name to show as the author: the organization if the project has
+    /// one, otherwise the team owner (or whoever is listed first).
+    async fn author_of(&self, project: &FullProject) -> Result<String> {
+        if let Some(organization) = &project.organization {
+            // Organizations only exist in API v3.
+            let found: Organization = self
+                .http
+                .get(&format!("https://api.modrinth.com/v3/organization/{organization}"), &[])
+                .await?;
+            return Ok(found.name);
+        }
+        let members: Vec<Member> = self
+            .http
+            .get(&format!("{API}/project/{}/members", project.id), &[])
+            .await?;
+        let owner = members
+            .iter()
+            .find(|member| member.role.eq_ignore_ascii_case("owner"))
+            .or_else(|| members.iter().min_by_key(|member| member.ordering));
+        Ok(owner.map(|member| member.user.username.clone()).unwrap_or_default())
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -318,6 +511,16 @@ impl ModProvider for Modrinth {
         })
     }
 
+    fn details<'a>(&'a self, project_id: &'a str) -> BoxFuture<'a, Result<ProjectDetails>> {
+        Box::pin(async move {
+            let project: FullProject =
+                self.http.get(&format!("{API}/project/{project_id}"), &[]).await?;
+            // The author is a nicety; a failed lookup must not hide the page.
+            let author = self.author_of(&project).await.unwrap_or_default();
+            Ok(project.into_details(author))
+        })
+    }
+
     fn categories(&self, kind: ProjectKind) -> BoxFuture<'_, Result<Vec<Category>>> {
         Box::pin(async move {
             let tags: Vec<Tag> = self.http.get(&format!("{API}/tag/category"), &[]).await?;
@@ -416,18 +619,19 @@ impl ModProvider for Modrinth {
             if sha1s.is_empty() {
                 return Ok(HashMap::new());
             }
-            let loaders: Vec<&str> = target.loaders.iter().map(|l| loader_name(*l)).collect();
+            // As in `versions`: an empty constraint is left out, not sent as
+            // "match nothing" (resource packs and shaders have no mod loader).
+            let mut body = json!({ "hashes": sha1s, "algorithm": "sha1" });
+            if !target.loaders.is_empty() {
+                let loaders: Vec<&str> = target.loaders.iter().map(|l| loader_name(*l)).collect();
+                body["loaders"] = json!(loaders);
+            }
+            if !target.mc_version.is_empty() {
+                body["game_versions"] = json!([target.mc_version]);
+            }
             let found: HashMap<String, Version> = self
                 .http
-                .post(
-                    &format!("{API}/version_files/update"),
-                    &json!({
-                        "hashes": sha1s,
-                        "algorithm": "sha1",
-                        "loaders": loaders,
-                        "game_versions": [target.mc_version],
-                    }),
-                )
+                .post(&format!("{API}/version_files/update"), &body)
                 .await?;
             convert_map(found)
         })
@@ -454,6 +658,50 @@ fn humanize(slug: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_full_project_becomes_a_description_page() -> std::result::Result<(), serde_json::Error> {
+        let project: FullProject = serde_json::from_str(
+            r#"{
+                "id": "AANobbMI", "slug": "sodium", "title": "Sodium",
+                "description": "Rendering engine", "body": "**Fast**",
+                "categories": ["optimization", "fabric"], "additional_categories": ["utility"],
+                "project_type": "mod", "downloads": 10, "followers": 3,
+                "icon_url": "", "license": {"id": "LicenseRef-Polyform-Shield-1.0.0", "name": ""},
+                "source_url": "https://github.com/x", "issues_url": null, "wiki_url": "",
+                "discord_url": null,
+                "donation_urls": [{"id": "ko-fi", "platform": "Ko-fi", "url": "https://ko-fi.com/x"}],
+                "gallery": [
+                    {"url": "https://cdn/a_350.webp", "raw_url": "https://cdn/a.webp", "title": "A",
+                     "description": "", "featured": false, "ordering": 0},
+                    {"url": "https://cdn/b.webp", "raw_url": null, "title": "", "featured": true,
+                     "ordering": 5}
+                ],
+                "game_versions": ["1.20.1", "1.20.4"], "loaders": ["fabric", "quilt"],
+                "published": "2020-01-01T00:00:00Z", "updated": "2026-06-16T00:00:00Z",
+                "organization": null
+            }"#,
+        )?;
+        let details = project.into_details(String::from("jellysquid3"));
+
+        assert_eq!(details.project.author, "jellysquid3");
+        assert_eq!(details.project.icon_url, None, "an empty icon is no icon");
+        assert_eq!(details.project.categories, vec!["optimization", "utility"]);
+        assert_eq!(details.project.license.as_deref(), Some("Polyform Shield 1.0.0"));
+        assert_eq!(details.body_format, BodyFormat::Markdown);
+
+        let kinds: Vec<LinkKind> = details.links.iter().map(|link| link.kind).collect();
+        assert_eq!(kinds, vec![LinkKind::Page, LinkKind::Source, LinkKind::Donation]);
+        assert_eq!(details.links[0].url, "https://modrinth.com/mod/sodium");
+        assert_eq!(details.links[2].label, "Ko-fi");
+
+        // Featured first; the thumbnail stands in when there is no raw file.
+        assert_eq!(details.gallery[0].full_url, "https://cdn/b.webp");
+        assert_eq!(details.gallery[0].title, None);
+        assert_eq!(details.gallery[1].url, "https://cdn/a_350.webp");
+        assert_eq!(details.gallery[1].full_url, "https://cdn/a.webp");
+        Ok(())
+    }
 
     fn query() -> SearchQuery {
         SearchQuery {

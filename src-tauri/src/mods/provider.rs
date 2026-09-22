@@ -13,7 +13,10 @@ use serde::Serialize;
 use crate::error::{ErrorKind, LauncherError, Result};
 use crate::net::retry::network_error;
 
-use super::{Category, ModVersion, ProjectKind, ProviderId, SearchQuery, SearchResult, Target};
+use super::{
+    Category, ModVersion, ProjectDetails, ProjectKind, ProviderId, SearchQuery, SearchResult,
+    Target,
+};
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
@@ -25,6 +28,9 @@ pub trait ModProvider: Send + Sync {
     fn search<'a>(&'a self, query: &'a SearchQuery) -> BoxFuture<'a, Result<SearchResult>>;
 
     fn categories(&self, kind: ProjectKind) -> BoxFuture<'_, Result<Vec<Category>>>;
+
+    /// The full description page of a project: body, gallery, links.
+    fn details<'a>(&'a self, project_id: &'a str) -> BoxFuture<'a, Result<ProjectDetails>>;
 
     /// Versions of a project that fit the target, newest first.
     fn versions<'a>(

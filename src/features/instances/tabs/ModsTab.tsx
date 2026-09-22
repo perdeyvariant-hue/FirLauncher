@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, Package, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, History, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBlock } from '@/components/ui/ErrorBlock';
 import { IconButton } from '@/components/ui/IconButton';
@@ -10,33 +12,41 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Switch } from '@/components/ui/Switch';
 import * as instancesApi from '@/api/instances';
-import * as modsApi from '@/api/mods';
 import { ContentBrowser } from '@/features/mods/ContentBrowser';
+import { ProjectDialog } from '@/features/mods/ProjectDialog';
+import type { ProjectTarget } from '@/features/mods/ProjectDialog';
+import { useContentInstaller } from '@/features/mods/useContentInstaller';
+import { UpdatesBar } from '@/features/mods/UpdatesBar';
+import { useContentUpdates } from '@/features/mods/useContentUpdates';
 import { formatBytes } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { InstalledMod, Instance } from '@/types/instance';
-import type { ModUpdate, ProviderId } from '@/types/mod';
-import { PROVIDER_LABELS } from '@/types/mod';
+import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
-
-function providerLabel(provider: string): string {
-  return provider in PROVIDER_LABELS ? PROVIDER_LABELS[provider as ProviderId] : provider;
-}
 
 export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   const { data, loading, error, reload } = useAsyncData<InstalledMod[]>(
     () => instancesApi.listInstalledMods(instance.id),
     [instance.id],
   );
-  const notify = useToasts((state) => state.notify);
   const fail = useToasts((state) => state.fail);
 
   const [browsing, setBrowsing] = useState(false);
   const [search, setSearch] = useState('');
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
-  const [updates, setUpdates] = useState<Map<string, ModUpdate>>(new Map());
-  const [checking, setChecking] = useState(false);
-  const [updating, setUpdating] = useState<Set<string>>(new Set());
+  // The installed file whose description is open.
+  const [described, setDescribed] = useState<
+    (ProjectTarget & { readonly name: string; readonly versionId: string | null }) | null
+  >(null);
+
+  const updates = useContentUpdates(instance.id, 'mod', reload);
+  const installer = useContentInstaller(instance, 'mod', (plan) => {
+    // A new version replaces the file an update was found for.
+    for (const mod of data ?? []) {
+      if (mod.source?.projectId === plan.primary.projectId) updates.forget(mod.fileName);
+    }
+    reload();
+  });
 
   const mods = useMemo(() => data ?? [], [data]);
   // A fresh listing is the truth; optimistic toggles are no longer needed.
@@ -55,6 +65,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
   const vanilla = instance.loader === 'vanilla';
   const isEnabled = (mod: InstalledMod): boolean => overrides[mod.fileName] ?? mod.enabled;
+  const anyPending = updates.updates.size > 0;
 
   const toggle = (mod: InstalledMod, enabled: boolean): void => {
     setOverrides((current) => ({ ...current, [mod.fileName]: enabled }));
@@ -66,62 +77,13 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
         const renamed = enabled
           ? mod.fileName.replace(/\.disabled$/, '')
           : `${mod.fileName}.disabled`;
-        setUpdates((current) => {
-          const update = current.get(mod.fileName);
-          if (update === undefined) return current;
-          const next = new Map(current);
-          next.delete(mod.fileName);
-          next.set(renamed, { ...update, fileName: renamed });
-          return next;
-        });
+        updates.rename(mod.fileName, renamed);
         reload();
       })
       .catch((raw: unknown) => {
         setOverrides((current) => ({ ...current, [mod.fileName]: !enabled }));
         fail(raw);
       });
-  };
-
-  const checkUpdates = async (): Promise<void> => {
-    setChecking(true);
-    try {
-      const found = await modsApi.checkModUpdates(instance.id);
-      setUpdates(new Map(found.map((update) => [update.fileName, update])));
-      notify(
-        found.length === 0 ? 'Все моды актуальны' : `Есть обновления: ${String(found.length)}`,
-        found.length === 0 ? 'success' : 'info',
-      );
-      // The check may have identified hand-added files; show their source.
-      reload();
-    } catch (raw) {
-      fail(raw, () => void checkUpdates());
-    }
-    setChecking(false);
-  };
-
-  const applyUpdates = async (selected: ModUpdate[]): Promise<void> => {
-    const names = selected.map((update) => update.fileName);
-    setUpdating((current) => new Set([...current, ...names]));
-    try {
-      await modsApi.applyModUpdates(instance.id, selected);
-      setUpdates((current) => {
-        const next = new Map(current);
-        for (const name of names) next.delete(name);
-        return next;
-      });
-      notify(
-        selected.length === 1 ? 'Мод обновлён' : `Обновлено модов: ${String(selected.length)}`,
-        'success',
-      );
-      reload();
-    } catch (raw) {
-      fail(raw);
-    }
-    setUpdating((current) => {
-      const next = new Set(current);
-      for (const name of names) next.delete(name);
-      return next;
-    });
   };
 
   if (browsing) {
@@ -139,11 +101,9 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
   if (error !== null) return <ErrorBlock error={error} onRetry={reload} />;
 
-  const pending = [...updates.values()];
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="w-[240px]">
           <Input
             placeholder="Поиск по модам"
@@ -155,32 +115,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           />
         </div>
 
-        {!vanilla && mods.length > 0 && (
-          <Button
-            size="sm"
-            loading={checking}
-            icon={<RefreshCw size={13} strokeWidth={1.5} />}
-            onClick={() => {
-              void checkUpdates();
-            }}
-          >
-            Проверить обновления
-          </Button>
-        )}
-
-        {pending.length > 0 && (
-          <Button
-            size="sm"
-            variant="primary"
-            loading={updating.size > 0}
-            icon={<ArrowUpCircle size={14} strokeWidth={1.5} />}
-            onClick={() => {
-              void applyUpdates(pending);
-            }}
-          >
-            Обновить все ({pending.length})
-          </Button>
-        )}
+        <UpdatesBar state={updates} canCheck={!vanilla && mods.length > 0} />
 
         <div className="ml-auto flex items-center gap-2">
           {vanilla && (
@@ -236,13 +171,29 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
       ) : (
         <ul className="flex flex-col gap-2">
           {filtered.map((mod) => {
-            const update = updates.get(mod.fileName);
+            const update = updates.updates.get(mod.fileName);
             const newer = update?.latest.versionNumber ?? mod.updateAvailable;
+            const source = mod.source;
+            const provider = source !== null && isProviderId(source.provider) ? source.provider : null;
             return (
               <li
                 key={mod.fileName}
                 className="panel flex items-center gap-3 p-3 transition-[border-color] duration-fast ease-out hover:border-text-dim/35"
               >
+                {anyPending &&
+                  (update === undefined ? (
+                    <span className="w-4 shrink-0" />
+                  ) : (
+                    <Checkbox
+                      label={`Обновить ${mod.name}`}
+                      checked={updates.selected.has(mod.fileName)}
+                      disabled={updates.updating.has(mod.fileName)}
+                      onChange={(on) => {
+                        updates.setSelected(mod.fileName, on);
+                      }}
+                    />
+                  ))}
+
                 <Switch
                   checked={isEnabled(mod)}
                   onChange={(value) => {
@@ -250,28 +201,66 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   }}
                 />
 
-                <div className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  disabled={source === null || provider === null}
+                  title={provider === null ? undefined : 'Открыть описание'}
+                  onClick={() => {
+                    if (source === null || provider === null) return;
+                    setDescribed({
+                      provider,
+                      projectId: source.projectId,
+                      preview: null,
+                      name: mod.name,
+                      versionId: source.versionId,
+                    });
+                  }}
+                  className="group min-w-0 flex-1 rounded-md text-left disabled:cursor-default"
+                >
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm text-text">{mod.name}</p>
+                    <p
+                      className={cn(
+                        'truncate text-sm text-text transition-colors duration-fast ease-out',
+                        provider !== null && 'group-hover:text-accent',
+                      )}
+                    >
+                      {mod.name}
+                    </p>
                     {mod.version !== null && <Badge tone="outline">{mod.version}</Badge>}
                     {newer !== null && <Badge tone="accent">→ {newer}</Badge>}
-                    {mod.source !== null && (
-                      <Badge tone="neutral">{providerLabel(mod.source.provider)}</Badge>
+                    {source !== null && (
+                      <Badge tone="neutral">{providerLabel(source.provider)}</Badge>
                     )}
                   </div>
                   <p className="mt-0.5 truncate font-mono text-2xs text-text-dim">
                     {mod.fileName} · {formatBytes(mod.sizeBytes)}
                   </p>
-                </div>
+                </button>
 
                 {update !== undefined && (
                   <IconButton
                     label={`Обновить до ${update.latest.versionNumber}`}
                     size="sm"
-                    disabled={updating.has(mod.fileName)}
+                    disabled={updates.updating.has(mod.fileName)}
                     icon={<ArrowUpCircle size={14} strokeWidth={1.5} />}
                     onClick={() => {
-                      void applyUpdates([update]);
+                      void updates.apply([update]);
+                    }}
+                  />
+                )}
+
+                {source !== null && provider !== null && (
+                  <IconButton
+                    label="Сменить версию"
+                    size="sm"
+                    icon={<History size={14} strokeWidth={1.5} />}
+                    onClick={() => {
+                      installer.chooseVersion({
+                        provider,
+                        projectId: source.projectId,
+                        name: mod.name,
+                        currentVersionId: source.versionId,
+                      });
                     }}
                   />
                 )}
@@ -284,7 +273,10 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   onClick={() => {
                     void instancesApi
                       .removeMod(instance.id, mod.fileName)
-                      .then(reload)
+                      .then(() => {
+                        updates.forget(mod.fileName);
+                        reload();
+                      })
                       .catch((raw: unknown) => fail(raw));
                   }}
                 />
@@ -293,6 +285,36 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           })}
         </ul>
       )}
+
+      <ProjectDialog
+        target={described}
+        onClose={() => {
+          setDescribed(null);
+        }}
+        actions={() => {
+          const current = described;
+          if (current === null || current.versionId === null) return null;
+          return (
+            <Button
+              variant="primary"
+              icon={<History size={14} strokeWidth={1.5} />}
+              onClick={() => {
+                setDescribed(null);
+                installer.chooseVersion({
+                  provider: current.provider,
+                  projectId: current.projectId,
+                  name: current.name,
+                  currentVersionId: current.versionId,
+                });
+              }}
+            >
+              Сменить версию
+            </Button>
+          );
+        }}
+      />
+
+      {installer.dialogs}
     </div>
   );
 }

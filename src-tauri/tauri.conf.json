@@ -39,6 +39,29 @@
     ],
     "category": "Game",
     "shortDescription": "Minecraft instance launcher",
-    "longDescription": "FirLauncher manages isolated Minecraft instances, mod loaders and mods."
+    "longDescription": "FirLauncher manages isolated Minecraft instances, mod loaders and mods.",
+    "publisher": "FirLauncher contributors",
+    "copyright": "© 2026 FirLauncher contributors. MIT License.",
+    "homepage": "https://github.com/perdeyvariant-hue/FirLauncher",
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "Russian",
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico"
+      },
+      "wix": {
+        "language": "en-US"
+      }
+    }
   }
 }

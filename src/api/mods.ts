@@ -3,6 +3,7 @@ import type {
   ModProject,
   ModUpdate,
   ModVersion,
+  ProjectDetails,
   ProjectKind,
   ProviderId,
   ResolvedInstallPlan,
@@ -45,6 +46,45 @@ export function listCategories(provider: ProviderId, kind: ProjectKind): Promise
   return ipc<Category[]>('list_categories', { provider, kind });
 }
 
+/** The full description page of a project. */
+export function projectDetails(provider: ProviderId, projectId: string): Promise<ProjectDetails> {
+  if (shouldMock()) {
+    const project = MOCK_PROJECTS.find((item) => item.projectId === projectId) ?? MOCK_PROJECTS[0];
+    if (project === undefined) return Promise.reject(new Error('no fixtures'));
+    return mocked<ProjectDetails>(
+      {
+        project,
+        body: [
+          `## ${project.name}`,
+          '',
+          `${project.summary} Описание из фикстур: **жирный**, *курсив*, \`код\` и [ссылка](https://modrinth.com).`,
+          '',
+          '- Первый пункт',
+          '- Второй пункт',
+          '',
+          '> Цитата автора.',
+          '',
+          '<center><iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe></center>',
+          '',
+          '<script>alert(1)</script><img src="x" onerror="alert(2)">',
+        ].join('\n'),
+        bodyFormat: 'markdown',
+        gallery: [],
+        links: [
+          { kind: 'page', label: '', url: project.pageUrl ?? 'https://modrinth.com' },
+          { kind: 'source', label: '', url: 'https://github.com' },
+          { kind: 'donation', label: 'Ko-fi', url: 'https://ko-fi.com' },
+        ],
+        gameVersions: ['1.20.1', '1.20.4', '1.21.1'],
+        loaders: ['fabric', 'quilt'],
+        publishedAt: '2023-01-01T00:00:00Z',
+      },
+      300,
+    );
+  }
+  return ipc<ProjectDetails>('project_details', { provider, projectId });
+}
+
 /** Content kinds that install into an instance (modpacks create one instead). */
 export type ContentKind = Exclude<ProjectKind, 'modpack'>;
 
@@ -76,11 +116,52 @@ function mockVersion(project: ModProject): ModVersion {
   };
 }
 
+/**
+ * Versions for the picker, newest first. Only ones that fit the instance
+ * unless `anyGameVersion` lifts the Minecraft version filter.
+ */
+export function listVersions(
+  instanceId: string,
+  provider: ProviderId,
+  projectId: string,
+  kind: ContentKind,
+  anyGameVersion: boolean,
+): Promise<ModVersion[]> {
+  if (shouldMock()) {
+    const project = MOCK_PROJECTS.find((item) => item.projectId === projectId) ?? MOCK_PROJECTS[0];
+    if (project === undefined) return mocked<ModVersion[]>([]);
+    const base = mockVersion(project);
+    return mocked<ModVersion[]>(
+      [
+        { ...base, versionId: 'v3', versionNumber: '1.2.0-beta.1', releaseType: 'beta' },
+        { ...base, versionId: `${projectId}-v`, versionNumber: '1.1.0' },
+        {
+          ...base,
+          versionId: 'v1',
+          versionNumber: '1.0.0',
+          gameVersions: anyGameVersion ? ['1.19.4'] : base.gameVersions,
+          publishedAt: '2024-03-01T00:00:00Z',
+        },
+      ],
+      300,
+    );
+  }
+  return ipc<ModVersion[]>('list_versions', {
+    instanceId,
+    provider,
+    projectId,
+    kind,
+    anyGameVersion,
+  });
+}
+
+/** `versionId` installs that exact version instead of the best fit. */
 export function resolveInstall(
   instanceId: string,
   provider: ProviderId,
   projectId: string,
   kind: ContentKind,
+  versionId: string | null = null,
 ): Promise<ResolvedInstallPlan> {
   if (shouldMock()) {
     const project = MOCK_PROJECTS.find((item) => item.projectId === projectId) ?? MOCK_PROJECTS[0];
@@ -97,7 +178,13 @@ export function resolveInstall(
       500,
     );
   }
-  return ipc<ResolvedInstallPlan>('resolve_install', { instanceId, provider, projectId, kind });
+  return ipc<ResolvedInstallPlan>('resolve_install', {
+    instanceId,
+    provider,
+    projectId,
+    kind,
+    versionId,
+  });
 }
 
 export function installPlan(
@@ -119,8 +206,9 @@ export function removeContent(
   return ipcUnit('remove_content', { instanceId, kind, fileName });
 }
 
-export function checkModUpdates(instanceId: string): Promise<ModUpdate[]> {
+export function checkUpdates(instanceId: string, kind: ContentKind): Promise<ModUpdate[]> {
   if (shouldMock()) {
+    if (kind !== 'mod') return mocked<ModUpdate[]>([], 500);
     const sodium = MOCK_PROJECTS.find((item) => item.slug === 'sodium');
     if (sodium === undefined) return mocked<ModUpdate[]>([]);
     return mocked<ModUpdate[]>(
@@ -134,10 +222,14 @@ export function checkModUpdates(instanceId: string): Promise<ModUpdate[]> {
       700,
     );
   }
-  return ipc<ModUpdate[]>('check_mod_updates', { instanceId });
+  return ipc<ModUpdate[]>('check_updates', { instanceId, kind });
 }
 
-export function applyModUpdates(instanceId: string, updates: readonly ModUpdate[]): Promise<void> {
+export function applyUpdates(
+  instanceId: string,
+  kind: ContentKind,
+  updates: readonly ModUpdate[],
+): Promise<void> {
   if (shouldMock()) return mocked(undefined, 900);
-  return ipcUnit('apply_mod_updates', { instanceId, updates });
+  return ipcUnit('apply_updates', { instanceId, kind, updates });
 }

@@ -8,6 +8,15 @@ export const PROVIDER_LABELS: Readonly<Record<ProviderId, string>> = {
   curseforge: 'CurseForge',
 };
 
+export function isProviderId(provider: string): provider is ProviderId {
+  return provider in PROVIDER_LABELS;
+}
+
+/** Label for a provider id as stored in an index (unknown ids pass through). */
+export function providerLabel(provider: string): string {
+  return isProviderId(provider) ? PROVIDER_LABELS[provider] : provider;
+}
+
 export type ProjectKind = 'mod' | 'modpack' | 'resourcepack' | 'shader';
 
 export interface ModProject {
@@ -95,4 +104,36 @@ export interface ModUpdate {
   readonly fileName: string;
   readonly currentVersion: string | null;
   readonly latest: ModVersion;
+}
+
+/** Modrinth writes Markdown (with inline HTML), CurseForge writes HTML. */
+export type BodyFormat = 'markdown' | 'html';
+
+export type LinkKind = 'page' | 'source' | 'issues' | 'wiki' | 'discord' | 'donation';
+
+export interface ProjectLink {
+  readonly kind: LinkKind;
+  /** The donation platform; empty for the standard kinds. */
+  readonly label: string;
+  readonly url: string;
+}
+
+export interface GalleryImage {
+  /** A thumbnail when the provider has one. */
+  readonly url: string;
+  readonly fullUrl: string;
+  readonly title: string | null;
+  readonly description: string | null;
+}
+
+/** Everything the description view shows for one project. */
+export interface ProjectDetails {
+  readonly project: ModProject;
+  readonly body: string;
+  readonly bodyFormat: BodyFormat;
+  readonly gallery: readonly GalleryImage[];
+  readonly links: readonly ProjectLink[];
+  readonly gameVersions: readonly string[];
+  readonly loaders: readonly string[];
+  readonly publishedAt: string | null;
 }

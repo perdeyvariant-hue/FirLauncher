@@ -27,3 +27,11 @@ Thumbs.db
 
 # local Claude Code settings
 .claude/settings.local.json
+
+# built installers
+/installers/
+
+# pictures dropped into the project root (not ours to redistribute)
+/*.png
+/*.jpg
+/*.webp

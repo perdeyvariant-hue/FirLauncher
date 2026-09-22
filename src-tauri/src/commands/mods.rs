@@ -7,8 +7,8 @@ use crate::instances::{self, ModLoader};
 use crate::mods::index::ModIndex;
 use crate::mods::install::{self, ModUpdate};
 use crate::mods::{
-    self, resolve, Category, ProjectKind, ProviderId, ResolvedInstallPlan, SearchQuery,
-    SearchResult, Target,
+    self, resolve, Category, ModVersion, ProjectDetails, ProjectKind, ProviderId,
+    ResolvedInstallPlan, SearchQuery, SearchResult, Target,
 };
 use crate::state::AppState;
 use crate::tasks::{Progress, TaskKind};
@@ -56,6 +56,16 @@ pub async fn list_categories(
     provider.categories(kind).await
 }
 
+#[tauri::command]
+pub async fn project_details(
+    state: State<'_, AppState>,
+    provider: ProviderId,
+    project_id: String,
+) -> Result<ProjectDetails> {
+    let provider = mods::provider(&state.settings(), &state.client(), provider)?;
+    provider.details(&project_id).await
+}
+
 /// Project ids already in the instance, per provider — the browser shows
 /// them as installed.
 #[tauri::command]
@@ -69,6 +79,28 @@ pub async fn installed_projects(
     Ok(index.projects(provider).into_iter().collect())
 }
 
+/// Versions of a project for the version picker, newest first. By default
+/// only ones that fit the instance; `any_game_version` drops the Minecraft
+/// version filter (the loader filter for mods stays — those would not load).
+#[tauri::command]
+pub async fn list_versions(
+    state: State<'_, AppState>,
+    instance_id: String,
+    provider: ProviderId,
+    project_id: String,
+    kind: ProjectKind,
+    any_game_version: bool,
+) -> Result<Vec<ModVersion>> {
+    let mut target = target_of(&state, &instance_id, kind).await?;
+    if any_game_version {
+        target.mc_version.clear();
+    }
+    let provider_impl = mods::provider(&state.settings(), &state.client(), provider)?;
+    let versions = provider_impl.versions(&project_id, &target).await?;
+    Ok(versions.into_iter().filter(|v| target.accepts(v)).collect())
+}
+
+/// `version_id` installs that exact version instead of the best fit.
 #[tauri::command]
 pub async fn resolve_install(
     state: State<'_, AppState>,
@@ -76,13 +108,22 @@ pub async fn resolve_install(
     provider: ProviderId,
     project_id: String,
     kind: ProjectKind,
+    version_id: Option<String>,
 ) -> Result<ResolvedInstallPlan> {
     let target = target_of(&state, &instance_id, kind).await?;
     let provider_impl = mods::provider(&state.settings(), &state.client(), provider)?;
     let installed = ModIndex::load(&state.paths, &instance_id, kind)
         .await?
         .projects(provider);
-    resolve::plan(provider_impl.as_ref(), &target, &project_id, &installed).await
+    resolve::plan(
+        provider_impl.as_ref(),
+        &target,
+        kind,
+        &project_id,
+        version_id.as_deref(),
+        &installed,
+    )
+    .await
 }
 
 /// Downloads a confirmed plan. Runs as a task so it shows in the bottom bar,
@@ -123,27 +164,30 @@ pub async fn install_plan(
 }
 
 #[tauri::command]
-pub async fn check_mod_updates(
+pub async fn check_updates(
     state: State<'_, AppState>,
     instance_id: String,
+    kind: ProjectKind,
 ) -> Result<Vec<ModUpdate>> {
-    let target = target_of(&state, &instance_id, ProjectKind::Mod).await?;
+    let target = target_of(&state, &instance_id, kind).await?;
     let providers = mods::providers(&state.settings(), &state.client());
-    install::check_updates(&providers, &state.paths, &instance_id, &target).await
+    install::check_updates(&providers, &state.paths, &instance_id, kind, &target).await
 }
 
 #[tauri::command]
-pub async fn apply_mod_updates(
+pub async fn apply_updates(
     state: State<'_, AppState>,
     instance_id: String,
+    kind: ProjectKind,
     updates: Vec<ModUpdate>,
 ) -> Result<()> {
+    target_of(&state, &instance_id, kind).await?;
     if updates.is_empty() {
         return Ok(());
     }
     let title = match updates.as_slice() {
         [single] => single.latest.name.clone(),
-        _ => format!("Обновление модов: {}", updates.len()),
+        _ => format!("Обновление: {} файлов", updates.len()),
     };
     let task = state.tasks.start(TaskKind::InstallMod, title, Some(instance_id.clone()));
 
@@ -151,6 +195,7 @@ pub async fn apply_mod_updates(
         &state.client(),
         &state.paths,
         &instance_id,
+        kind,
         &updates,
         state.settings().download_concurrency(),
         Arc::clone(&task) as Arc<dyn Progress>,

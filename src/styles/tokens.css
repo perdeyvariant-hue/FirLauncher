@@ -8,6 +8,9 @@
  *
  * Dark is the default. The light theme only redefines the neutral ramp — the
  * purple accent stays put so "accent = interactive" holds in both themes.
+ *
+ * The accent trio, `--on-accent-rgb` and `--radius` are overridden inline on
+ * <html> when the user personalises the launcher (see lib/appearance.ts).
  */
 
 :root,
@@ -22,6 +25,7 @@
   --accent-hover-rgb: 167 139 250;
   --accent-dim-rgb: 109 40 217;
   --danger-rgb: 239 68 68;
+  --on-accent-rgb: 255 255 255;
 
   --overlay: rgb(10 10 11 / 0.72);
   --shadow-panel: 0 8px 28px rgb(0 0 0 / 0.42);
@@ -38,6 +42,7 @@
   --accent-hover-rgb: 109 40 217;
   --accent-dim-rgb: 167 139 250;
   --danger-rgb: 220 38 38;
+  --on-accent-rgb: 255 255 255;
 
   --overlay: rgb(24 24 27 / 0.32);
   --shadow-panel: 0 8px 28px rgb(24 24 27 / 0.12);
@@ -54,6 +59,11 @@
   --accent-hover: rgb(var(--accent-hover-rgb));
   --accent-dim: rgb(var(--accent-dim-rgb));
   --danger: rgb(var(--danger-rgb));
+
+  /* Corner radius of panels and buttons; smaller shapes scale from it. */
+  --radius: 10px;
+  /* Panel opacity; below 1 only with glass panels over a wallpaper. */
+  --panel-alpha: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

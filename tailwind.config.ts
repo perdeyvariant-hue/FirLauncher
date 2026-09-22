@@ -28,13 +28,16 @@ const config: Config = {
         'accent-hover': withAlpha('--accent-hover-rgb'),
         'accent-dim': withAlpha('--accent-dim-rgb'),
         danger: withAlpha('--danger-rgb'),
+        /** Text on an accent fill: dark on light accents, white otherwise. */
+        'on-accent': withAlpha('--on-accent-rgb'),
       },
+      // Driven by --radius so the roundness setting reshapes everything.
       borderRadius: {
-        DEFAULT: '10px',
-        sm: '6px',
-        md: '8px',
-        lg: '10px',
-        xl: '14px',
+        DEFAULT: 'var(--radius)',
+        sm: 'calc(var(--radius) * 0.6)',
+        md: 'calc(var(--radius) * 0.8)',
+        lg: 'var(--radius)',
+        xl: 'calc(var(--radius) * 1.4)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

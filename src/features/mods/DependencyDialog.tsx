@@ -3,10 +3,12 @@ import { AlertTriangle, Link2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { formatBytes } from '@/lib/format';
+import type { ContentKind } from '@/api/mods';
 import type { ModVersion, ResolvedInstallPlan } from '@/types/mod';
 
 export interface DependencyDialogProps {
   plan: ResolvedInstallPlan | null;
+  kind: ContentKind;
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -32,17 +34,24 @@ function Row({ version, primary }: { version: ModVersion; primary: boolean }): R
 /** Shown before installing a mod that brings other files with it. */
 export function DependencyDialog({
   plan,
+  kind,
   busy,
   onConfirm,
   onCancel,
 }: DependencyDialogProps): ReactElement {
   const files = plan === null ? 0 : 1 + plan.dependencies.length;
+  // Packs never pull files in; what they need are mods for the Mods tab.
+  const isMod = kind === 'mod';
   return (
     <Dialog
       open={plan !== null}
       onClose={onCancel}
       title={plan === null ? '' : `Установить ${plan.primary.name}?`}
-      description="Этому моду нужны другие — они установятся вместе с ним."
+      description={
+        isMod
+          ? 'Этому моду нужны другие — они установятся вместе с ним.'
+          : 'Для работы нужны моды — сами они не поставятся.'
+      }
       busy={busy}
       footer={
         <>
@@ -69,7 +78,9 @@ export function DependencyDialog({
               <AlertTriangle size={14} strokeWidth={1.5} className="mt-px shrink-0 text-danger" />
               <div className="min-w-0">
                 <p className="text-xs text-text">
-                  Не нашлись совместимые версии — без них мод может не запуститься:
+                  {isMod
+                    ? 'Не нашлись совместимые версии — без них мод может не запуститься:'
+                    : 'Поставьте эти моды во вкладке «Моды», иначе пак будет работать не полностью:'}
                 </p>
                 <p className="mt-1 text-2xs leading-relaxed text-text-dim">
                   {plan.unresolved.map((dep) => dep.name ?? dep.projectId).join(', ')}

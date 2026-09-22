@@ -7,7 +7,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Readonly<Record<ButtonVariant, string>> = {
-  primary: 'bg-accent text-white hover:bg-accent-hover active:bg-accent-dim',
+  primary: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-dim',
   secondary:
     'bg-surface-2 text-text border border-border hover:border-text-dim/40 hover:bg-surface-2/70',
   ghost: 'text-text-dim hover:text-text hover:bg-surface-2',

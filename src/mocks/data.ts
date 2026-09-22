@@ -169,7 +169,12 @@ export const MOCK_MODS: InstalledMod[] = [
     enabled: true,
     sizeBytes: 1_048_576,
     sha1: 'a1b2c3',
-    source: { provider: 'modrinth', projectId: 'AANobbMI' },
+    source: {
+      provider: 'modrinth',
+      projectId: 'AANobbMI',
+      versionId: 'AANobbMI-v',
+      versionNumber: '0.6.5',
+    },
     updateAvailable: '0.6.7',
   },
   {
@@ -180,7 +185,12 @@ export const MOCK_MODS: InstalledMod[] = [
     enabled: true,
     sizeBytes: 524_288,
     sha1: 'd4e5f6',
-    source: { provider: 'modrinth', projectId: 'gvQqBUqZ' },
+    source: {
+      provider: 'modrinth',
+      projectId: 'gvQqBUqZ',
+      versionId: 'gvQqBUqZ-v',
+      versionNumber: '0.14.3',
+    },
     updateAvailable: null,
   },
   {
@@ -191,7 +201,12 @@ export const MOCK_MODS: InstalledMod[] = [
     enabled: false,
     sizeBytes: 3_145_728,
     sha1: '778899',
-    source: { provider: 'modrinth', projectId: 'YL57xq9U' },
+    source: {
+      provider: 'modrinth',
+      projectId: 'YL57xq9U',
+      versionId: 'YL57xq9U-v',
+      versionNumber: '1.8.1',
+    },
     updateAvailable: null,
   },
   {
@@ -202,7 +217,12 @@ export const MOCK_MODS: InstalledMod[] = [
     enabled: true,
     sizeBytes: 712_704,
     sha1: 'aabbcc',
-    source: { provider: 'modrinth', projectId: 'mOgUt4GM' },
+    source: {
+      provider: 'modrinth',
+      projectId: 'mOgUt4GM',
+      versionId: 'mOgUt4GM-v',
+      versionNumber: '11.0.3',
+    },
     updateAvailable: '11.0.4',
   },
 ];
@@ -231,6 +251,7 @@ export const MOCK_RESOURCEPACKS: ResourcePackEntry[] = [
     description: 'Ванильный стиль в удвоенном разрешении',
     sizeBytes: 26_214_400,
     packFormat: 34,
+    source: null,
   },
 ];
 

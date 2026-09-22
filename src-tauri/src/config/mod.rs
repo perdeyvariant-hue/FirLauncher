@@ -1,6 +1,7 @@
 //! On-disk configuration: the global settings file and small JSON helpers
 //! shared with the instance metadata.
 
+pub mod appearance;
 pub mod settings;
 
 use std::path::Path;

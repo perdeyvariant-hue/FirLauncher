@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::error::{LauncherError, Result};
+use crate::mods::index::{IndexEntry, ModIndex};
+use crate::mods::ProjectKind;
 use crate::paths::Paths;
 
 const DISABLED_SUFFIX: &str = ".disabled";
@@ -15,6 +17,23 @@ const DISABLED_SUFFIX: &str = ".disabled";
 pub struct ModSource {
     pub provider: String,
     pub project_id: String,
+    /// What is installed now, so the version picker can mark it.
+    pub version_id: String,
+    pub version_number: String,
+}
+
+impl ModSource {
+    fn of(entry: &IndexEntry) -> Self {
+        Self {
+            provider: serde_json::to_value(entry.provider)
+                .ok()
+                .and_then(|value| value.as_str().map(str::to_owned))
+                .unwrap_or_default(),
+            project_id: entry.project_id.clone(),
+            version_id: entry.version_id.clone(),
+            version_number: entry.version_number.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -51,6 +70,8 @@ pub struct ResourcePackEntry {
     pub description: Option<String>,
     pub size_bytes: u64,
     pub pack_format: Option<i64>,
+    /// Set when the pack came from a known provider.
+    pub source: Option<ModSource>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -155,7 +176,7 @@ pub async fn list_mods(paths: &Paths, id: &str) -> Result<Vec<InstalledMod>> {
         files.push((file_name, entry.path(), size));
     }
 
-    let index = crate::mods::index::ModIndex::load(paths, id, crate::mods::ProjectKind::Mod)
+    let index = ModIndex::load(paths, id, ProjectKind::Mod)
         .await
         .unwrap_or_default();
 
@@ -173,13 +194,7 @@ pub async fn list_mods(paths: &Paths, id: &str) -> Result<Vec<InstalledMod>> {
                 let (name, version, author) = read_jar_metadata(&path)
                     .unwrap_or((fallback_name, fallback_version, None));
 
-                let source = index.get(&file_name).map(|entry| ModSource {
-                    provider: serde_json::to_value(entry.provider)
-                        .ok()
-                        .and_then(|value| value.as_str().map(str::to_owned))
-                        .unwrap_or_default(),
-                    project_id: entry.project_id.clone(),
-                });
+                let source = index.get(&file_name).map(ModSource::of);
                 InstalledMod {
                     file_name,
                     name,
@@ -247,10 +262,10 @@ pub async fn remove_mod(paths: &Paths, id: &str, file_name: &str) -> Result<()> 
 
     // Otherwise the browser would keep showing the project as installed.
     let mut index =
-        crate::mods::index::ModIndex::load(paths, id, crate::mods::ProjectKind::Mod).await?;
+        ModIndex::load(paths, id, ProjectKind::Mod).await?;
     if index.get(file_name).is_some() {
         index.remove(file_name);
-        index.save(paths, id, crate::mods::ProjectKind::Mod).await?;
+        index.save(paths, id, ProjectKind::Mod).await?;
     }
     Ok(())
 }
@@ -337,16 +352,17 @@ fn read_pack_mcmeta(path: &Path) -> (Option<String>, Option<i64>) {
 }
 
 pub async fn list_resource_packs(paths: &Paths, id: &str) -> Result<Vec<ResourcePackEntry>> {
-    list_packs(paths, id, "resourcepacks").await
+    list_packs(paths, id, ProjectKind::ResourcePack).await
 }
 
 /// Shader packs share the resource-pack shape: zips or unpacked folders.
 pub async fn list_shader_packs(paths: &Paths, id: &str) -> Result<Vec<ResourcePackEntry>> {
-    list_packs(paths, id, "shaderpacks").await
+    list_packs(paths, id, ProjectKind::Shader).await
 }
 
-async fn list_packs(paths: &Paths, id: &str, folder: &str) -> Result<Vec<ResourcePackEntry>> {
-    let dir = paths.instance_game_dir(id).join(folder);
+async fn list_packs(paths: &Paths, id: &str, kind: ProjectKind) -> Result<Vec<ResourcePackEntry>> {
+    let dir = paths.instance_game_dir(id).join(kind.folder());
+    let index = ModIndex::load(paths, id, kind).await.unwrap_or_default();
     let packs = tokio::task::spawn_blocking(move || {
         let Ok(entries) = std::fs::read_dir(&dir) else {
             return Vec::new();
@@ -365,18 +381,21 @@ async fn list_packs(paths: &Paths, id: &str, folder: &str) -> Result<Vec<Resourc
                         description: None,
                         size_bytes: dir_size(&path),
                         pack_format: None,
+                        source: None,
                     });
                 }
                 if !file_name.to_ascii_lowercase().ends_with(".zip") {
                     return None;
                 }
                 let (description, pack_format) = read_pack_mcmeta(&path);
+                let source = index.get(&file_name).map(ModSource::of);
                 Some(ResourcePackEntry {
                     name: file_name.trim_end_matches(".zip").to_owned(),
                     file_name,
                     description,
                     size_bytes,
                     pack_format,
+                    source,
                 })
             })
             .collect();
@@ -476,7 +495,7 @@ pub async fn read_recent_log(paths: &Paths, id: &str, max_lines: usize) -> Resul
 pub async fn remove_pack(
     paths: &Paths,
     id: &str,
-    kind: crate::mods::ProjectKind,
+    kind: ProjectKind,
     file_name: &str,
 ) -> Result<()> {
     let plain = std::path::Path::new(file_name).components().count() == 1
@@ -494,7 +513,7 @@ pub async fn remove_pack(
         LauncherError::io(format!("Не удалось удалить {file_name}")).with_detail(error.to_string())
     })?;
 
-    let mut index = crate::mods::index::ModIndex::load(paths, id, kind).await?;
+    let mut index = ModIndex::load(paths, id, kind).await?;
     if index.get(file_name).is_some() {
         index.remove(file_name);
         index.save(paths, id, kind).await?;

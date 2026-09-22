@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Boxes, Settings as SettingsIcon, Users } from 'lucide-react';
+import { Boxes, Palette, Settings as SettingsIcon, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Logo } from '@/components/ui/Logo';
 import { useUI } from '@/store/useUI';
@@ -7,15 +7,20 @@ import type { Route } from '@/types/route';
 import { AccountCard } from './AccountCard';
 
 interface NavItem {
-  readonly name: Route['name'];
+  readonly route: Route;
   readonly label: string;
   readonly icon: ReactElement;
 }
 
 const NAV: readonly NavItem[] = [
-  { name: 'instances', label: 'Сборки', icon: <Boxes size={19} strokeWidth={1.5} /> },
-  { name: 'accounts', label: 'Аккаунты', icon: <Users size={19} strokeWidth={1.5} /> },
-  { name: 'settings', label: 'Настройки', icon: <SettingsIcon size={19} strokeWidth={1.5} /> },
+  { route: { name: 'instances' }, label: 'Сборки', icon: <Boxes size={19} strokeWidth={1.5} /> },
+  { route: { name: 'accounts' }, label: 'Аккаунты', icon: <Users size={19} strokeWidth={1.5} /> },
+  { route: { name: 'appearance' }, label: 'Стиль', icon: <Palette size={19} strokeWidth={1.5} /> },
+  {
+    route: { name: 'settings' },
+    label: 'Настройки',
+    icon: <SettingsIcon size={19} strokeWidth={1.5} />,
+  },
 ];
 
 export function Sidebar(): ReactElement {
@@ -34,20 +39,14 @@ export function Sidebar(): ReactElement {
 
       <ul className="flex flex-1 flex-col gap-1 px-2">
         {NAV.map((item) => {
-          const active = item.name === activeSection;
+          const active = item.route.name === activeSection;
           return (
-            <li key={item.name}>
+            <li key={item.route.name}>
               <button
                 type="button"
                 aria-current={active ? 'page' : undefined}
                 onClick={() => {
-                  navigate(
-                    item.name === 'instances'
-                      ? { name: 'instances' }
-                      : item.name === 'accounts'
-                        ? { name: 'accounts' }
-                        : { name: 'settings' },
-                  );
+                  navigate(item.route);
                 }}
                 className={cn(
                   'group relative flex w-full flex-col items-center gap-1 rounded-lg py-2.5',

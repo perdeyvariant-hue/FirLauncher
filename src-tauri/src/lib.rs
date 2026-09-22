@@ -9,6 +9,7 @@
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod accounts;
+pub mod appearance;
 pub mod auth;
 pub mod commands;
 pub mod config;
@@ -103,6 +104,13 @@ pub fn run() {
             commands::settings::load_settings,
             commands::settings::save_settings,
             commands::settings::build_info,
+            commands::appearance::set_appearance_image,
+            commands::appearance::appearance_image,
+            commands::appearance::clear_appearance_image,
+            commands::appearance::list_custom_mascots,
+            commands::appearance::add_custom_mascot,
+            commands::appearance::remove_custom_mascot,
+            commands::appearance::account_figure,
             commands::tasks::list_tasks,
             commands::tasks::cancel_task,
             commands::tasks::retry_task,
@@ -138,8 +146,10 @@ pub fn run() {
             commands::mods::installed_projects,
             commands::mods::resolve_install,
             commands::mods::install_plan,
-            commands::mods::check_mod_updates,
-            commands::mods::apply_mod_updates,
+            commands::mods::list_versions,
+            commands::mods::project_details,
+            commands::mods::check_updates,
+            commands::mods::apply_updates,
             commands::mods::remove_content,
             commands::packs::import_pack,
             commands::packs::install_modpack,

@@ -26,5 +26,6 @@ export type Route =
   | { readonly name: 'instances' }
   | { readonly name: 'accounts' }
   | { readonly name: 'settings' }
+  | { readonly name: 'appearance' }
   | { readonly name: 'modpacks' }
   | { readonly name: 'instance'; readonly id: string; readonly tab: InstanceTab };

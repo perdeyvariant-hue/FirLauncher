@@ -13,7 +13,7 @@ export interface DialogProps {
   children: ReactNode;
   /** Rendered right-aligned in the footer. */
   footer?: ReactNode;
-  width?: 'sm' | 'md' | 'lg';
+  width?: 'sm' | 'md' | 'lg' | 'xl';
   /** Blocks closing while a long operation is in flight. */
   busy?: boolean;
 }
@@ -22,6 +22,7 @@ const WIDTHS: Readonly<Record<NonNullable<DialogProps['width']>, string>> = {
   sm: 'max-w-[380px]',
   md: 'max-w-[520px]',
   lg: 'max-w-[760px]',
+  xl: 'max-w-[980px]',
 };
 
 export function Dialog({

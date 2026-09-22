@@ -128,7 +128,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
               'disabled:pointer-events-none disabled:opacity-40',
               running
                 ? 'bg-danger/15 text-danger hover:bg-danger/25'
-                : 'bg-accent text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-accent-hover',
+                : 'bg-accent text-on-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-accent-hover',
             )}
           >
             {running ? (

@@ -5,8 +5,8 @@ use std::collections::{HashSet, VecDeque};
 use crate::error::{ErrorKind, LauncherError, Result};
 
 use super::{
-    DependencyKind, ModDependency, ModProvider, ModVersion, ReleaseType, ResolvedInstallPlan,
-    Target,
+    DependencyKind, ModDependency, ModProvider, ModVersion, ProjectKind, ReleaseType,
+    ResolvedInstallPlan, Target,
 };
 
 /// A mod with more transitive dependencies than this is almost certainly a
@@ -36,29 +36,38 @@ pub async fn best_version(
 /// Resolves a project and everything it requires. Projects already in the
 /// instance are skipped; dependencies that cannot be satisfied end up in
 /// `unresolved` so the dialog can say so instead of installing a broken set.
+///
+/// `pinned` is a version the user picked by hand. It is taken as is, even if
+/// it was made for another Minecraft version: the picker already warned.
+///
+/// Only mods pull their dependencies in. A resource pack or shader that
+/// needs a mod (Fresh Animations → Entity Texture Features) gets it listed in
+/// `unresolved`: the jar belongs in `mods/`, for the instance's loader.
 pub async fn plan(
     provider: &dyn ModProvider,
     target: &Target,
+    kind: ProjectKind,
     project_id: &str,
+    pinned: Option<&str>,
     installed: &HashSet<String>,
 ) -> Result<ResolvedInstallPlan> {
-    let primary = best_version(provider, project_id, target)
-        .await?
-        .ok_or_else(|| {
-            LauncherError::new(
-                ErrorKind::Provider,
-                format!(
-                    "У этого мода нет версии для Minecraft {} с {}",
-                    target.mc_version,
-                    target
-                        .loaders
-                        .iter()
-                        .map(|loader| loader.label())
-                        .collect::<Vec<_>>()
-                        .join(" / ")
-                ),
+    let primary = match pinned {
+        Some(version_id) => Some(provider.version(project_id, version_id).await?),
+        None => best_version(provider, project_id, target).await?,
+    };
+    let primary = primary.ok_or_else(|| {
+        let loaders: Vec<&str> = target.loaders.iter().map(|loader| loader.label()).collect();
+        let message = if loaders.is_empty() {
+            format!("Нет версии для Minecraft {}", target.mc_version)
+        } else {
+            format!(
+                "У этого мода нет версии для Minecraft {} с {}",
+                target.mc_version,
+                loaders.join(" / ")
             )
-        })?;
+        };
+        LauncherError::new(ErrorKind::Provider, message)
+    })?;
 
     if primary.download_url.is_empty() {
         return Err(LauncherError::new(
@@ -77,6 +86,10 @@ pub async fn plan(
 
     while let Some(dependency) = queue.pop_front() {
         if dependency.kind != DependencyKind::Required || !seen.insert(dependency.project_id.clone()) {
+            continue;
+        }
+        if kind != ProjectKind::Mod {
+            unresolved.push(dependency);
             continue;
         }
         if dependencies.len() >= MAX_DEPENDENCIES {
@@ -129,9 +142,7 @@ mod tests {
     use super::*;
     use crate::instances::ModLoader;
     use crate::mods::provider::BoxFuture;
-    use crate::mods::{
-        Category, ProjectKind, ProviderId, SearchQuery, SearchResult,
-    };
+    use crate::mods::{Category, ProviderId, SearchQuery, SearchResult};
 
     /// Projects keyed by id, each with its versions newest first.
     struct Fake {
@@ -176,6 +187,9 @@ mod tests {
         fn categories(&self, _: ProjectKind) -> BoxFuture<'_, Result<Vec<Category>>> {
             Box::pin(async { Ok(Vec::new()) })
         }
+        fn details<'a>(&'a self, _: &'a str) -> BoxFuture<'a, Result<crate::mods::ProjectDetails>> {
+            Box::pin(async { Err(LauncherError::internal("unused")) })
+        }
         fn versions<'a>(&'a self, project: &'a str, _: &'a Target) -> BoxFuture<'a, Result<Vec<ModVersion>>> {
             let found = self.projects.get(project).cloned().unwrap_or_default();
             Box::pin(async move { Ok(found) })
@@ -213,7 +227,7 @@ mod tests {
                 ("fabric-api", vec![version("fabric-api", "f1", &[], ReleaseType::Release)]),
             ]),
         };
-        let plan = plan(&fake, &target(), "iris", &HashSet::new()).await?;
+        let plan = plan(&fake, &target(), ProjectKind::Mod, "iris", None, &HashSet::new()).await?;
         let ids: Vec<&str> = plan.dependencies.iter().map(|v| v.project_id.as_str()).collect();
         assert_eq!(ids, vec!["sodium", "fabric-api"]);
         assert!(plan.unresolved.is_empty());
@@ -231,7 +245,7 @@ mod tests {
             ]),
         };
         let installed = HashSet::from([String::from("c")]);
-        let plan = plan(&fake, &target(), "a", &installed).await?;
+        let plan = plan(&fake, &target(), ProjectKind::Mod, "a", None, &installed).await?;
         let ids: Vec<&str> = plan.dependencies.iter().map(|v| v.project_id.as_str()).collect();
         assert_eq!(ids, vec!["b"]);
         Ok(())
@@ -245,7 +259,7 @@ mod tests {
                 vec![version("addon", "x1", &["gone"], ReleaseType::Release)],
             )]),
         };
-        let plan = plan(&fake, &target(), "addon", &HashSet::new()).await?;
+        let plan = plan(&fake, &target(), ProjectKind::Mod, "addon", None, &HashSet::new()).await?;
         assert_eq!(plan.unresolved.len(), 1);
         assert_eq!(plan.unresolved[0].name.as_deref(), Some("Name of gone"));
         Ok(())
@@ -262,8 +276,39 @@ mod tests {
                 ],
             )]),
         };
-        let plan = plan(&fake, &target(), "m", &HashSet::new()).await?;
+        let plan = plan(&fake, &target(), ProjectKind::Mod, "m", None, &HashSet::new()).await?;
         assert_eq!(plan.primary.version_id, "stable");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn a_pinned_version_is_used_even_when_older() -> Result<()> {
+        let fake = Fake {
+            projects: HashMap::from([(
+                "m",
+                vec![
+                    version("m", "new", &[], ReleaseType::Release),
+                    version("m", "old", &[], ReleaseType::Release),
+                ],
+            )]),
+        };
+        let plan = plan(&fake, &target(), ProjectKind::Mod, "m", Some("old"), &HashSet::new()).await?;
+        assert_eq!(plan.primary.version_id, "old");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn packs_list_their_mod_dependencies_instead_of_installing_them() -> Result<()> {
+        let fake = Fake {
+            projects: HashMap::from([
+                ("fresh", vec![version("fresh", "f1", &["etf"], ReleaseType::Release)]),
+                ("etf", vec![version("etf", "e1", &[], ReleaseType::Release)]),
+            ]),
+        };
+        let plan = plan(&fake, &target(), ProjectKind::ResourcePack, "fresh", None, &HashSet::new()).await?;
+        assert!(plan.dependencies.is_empty());
+        assert_eq!(plan.unresolved.len(), 1);
+        assert_eq!(plan.unresolved[0].name.as_deref(), Some("Name of etf"));
         Ok(())
     }
 
@@ -274,7 +319,7 @@ mod tests {
         let fake = Fake {
             projects: HashMap::from([("cf", vec![blocked])]),
         };
-        let error = plan(&fake, &target(), "cf", &HashSet::new()).await.err();
+        let error = plan(&fake, &target(), ProjectKind::Mod, "cf", None, &HashSet::new()).await.err();
         assert!(error.is_some_and(|e| e.message.contains("вручную")));
     }
 }

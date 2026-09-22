@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::config::appearance::Appearance;
 use crate::config::{read_json_opt, write_json_atomic};
 use crate::error::Result;
 use crate::paths::Paths;
@@ -31,6 +32,8 @@ pub struct Settings {
     /// Azure application id for Microsoft sign-in. Empty falls back to the id
     /// baked in at build time via FIRLAUNCHER_MSA_CLIENT_ID.
     pub msa_client_id: String,
+    /// Colours, wallpaper, mascot and interface tweaks.
+    pub appearance: Appearance,
 }
 
 impl Default for Settings {
@@ -48,6 +51,7 @@ impl Default for Settings {
             show_snapshots: false,
             data_dir_override: String::new(),
             msa_client_id: String::new(),
+            appearance: Appearance::default(),
         }
     }
 }
@@ -55,7 +59,9 @@ impl Default for Settings {
 impl Settings {
     pub async fn load(paths: &Paths) -> Result<Self> {
         let loaded: Option<Self> = read_json_opt(&paths.settings_file()).await?;
-        Ok(loaded.unwrap_or_default())
+        let mut settings = loaded.unwrap_or_default();
+        settings.appearance = settings.appearance.sanitized();
+        Ok(settings)
     }
 
     pub async fn save(&self, paths: &Paths) -> Result<()> {

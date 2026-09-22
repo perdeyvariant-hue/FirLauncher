@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
+import { AppearancePage } from '@/features/appearance/AppearancePage';
 import { InstancePage } from '@/features/instances/InstancePage';
 import { InstancesPage } from '@/features/instances/InstancesPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
@@ -22,6 +23,8 @@ function CurrentPage(): ReactElement {
       return <AccountsPage />;
     case 'settings':
       return <SettingsPage />;
+    case 'appearance':
+      return <AppearancePage />;
     case 'modpacks':
       return <ModpacksPage />;
     case 'instance':

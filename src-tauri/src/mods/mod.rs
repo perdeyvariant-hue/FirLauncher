@@ -155,6 +155,61 @@ pub struct Category {
     pub name: String,
 }
 
+/// How a project's long description is written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BodyFormat {
+    /// Modrinth: Markdown with inline HTML.
+    Markdown,
+    /// CurseForge: HTML.
+    Html,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LinkKind {
+    Page,
+    Source,
+    Issues,
+    Wiki,
+    Discord,
+    Donation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectLink {
+    pub kind: LinkKind,
+    /// Shown on the button: the donation platform, or empty for the
+    /// standard kinds (the UI names those itself).
+    pub label: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GalleryImage {
+    /// A thumbnail when the provider has one.
+    pub url: String,
+    pub full_url: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+}
+
+/// Everything the description view shows for one project.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectDetails {
+    pub project: ModProject,
+    pub body: String,
+    pub body_format: BodyFormat,
+    pub gallery: Vec<GalleryImage>,
+    pub links: Vec<ProjectLink>,
+    pub game_versions: Vec<String>,
+    pub loaders: Vec<String>,
+    pub published_at: Option<String>,
+}
+
 /// What the confirmation dialog shows before a multi-file install.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
