@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import type { BodyFormat } from '@/types/mod';
+import { t } from '@/lib/i18n';
 
 /**
  * Project descriptions are written by third parties, so they are treated as
@@ -56,7 +57,7 @@ function replaceEmbeds(doc: Document): void {
     }
     const link = doc.createElement('a');
     link.href = watch;
-    link.textContent = '▶ Видео на YouTube';
+    link.textContent = t`▶ Видео на YouTube`;
     frame.replaceWith(link);
   }
 }

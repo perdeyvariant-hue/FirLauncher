@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { t } from '@/lib/i18n';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -18,8 +19,8 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Подтвердить',
-  cancelLabel = 'Отмена',
+  confirmLabel = t`Подтвердить`,
+  cancelLabel = t`Отмена`,
   destructive = false,
   busy = false,
   onConfirm,

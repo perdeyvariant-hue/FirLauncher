@@ -28,6 +28,7 @@ import { formatCompactNumber, formatRelativeDate } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { LinkKind, ModProject, ProjectDetails, ProjectLink, ProviderId } from '@/types/mod';
 import { PROVIDER_LABELS } from '@/types/mod';
+import { t } from '@/lib/i18n';
 
 /** Which project to describe; `preview` fills the header while loading. */
 export interface ProjectTarget {
@@ -44,12 +45,12 @@ export interface ProjectDialogProps {
 }
 
 const LINK_META: Readonly<Record<LinkKind, { label: string; icon: ReactElement }>> = {
-  page: { label: 'Страница', icon: <Globe size={13} strokeWidth={1.5} /> },
-  source: { label: 'Исходный код', icon: <Code2 size={13} strokeWidth={1.5} /> },
-  issues: { label: 'Сообщить об ошибке', icon: <Bug size={13} strokeWidth={1.5} /> },
-  wiki: { label: 'Вики', icon: <BookOpen size={13} strokeWidth={1.5} /> },
+  page: { label: t`Страница`, icon: <Globe size={13} strokeWidth={1.5} /> },
+  source: { label: t`Исходный код`, icon: <Code2 size={13} strokeWidth={1.5} /> },
+  issues: { label: t`Сообщить об ошибке`, icon: <Bug size={13} strokeWidth={1.5} /> },
+  wiki: { label: t`Вики`, icon: <BookOpen size={13} strokeWidth={1.5} /> },
   discord: { label: 'Discord', icon: <MessageCircle size={13} strokeWidth={1.5} /> },
-  donation: { label: 'Поддержать', icon: <Heart size={13} strokeWidth={1.5} /> },
+  donation: { label: t`Поддержать`, icon: <Heart size={13} strokeWidth={1.5} /> },
 };
 
 const LOADER_NAMES: Readonly<Record<string, string>> = {
@@ -76,7 +77,7 @@ function versionRange(versions: readonly string[]): string | null {
 
 function linkLabel(link: ProjectLink, provider: ProviderId): string {
   if (link.kind === 'page') return PROVIDER_LABELS[provider];
-  if (link.kind === 'donation' && link.label !== '') return `Поддержать · ${link.label}`;
+  if (link.kind === 'donation' && link.label !== '') return t`Поддержать · ${link.label}`;
   return LINK_META[link.kind].label;
 }
 
@@ -138,7 +139,7 @@ function Gallery({ details }: { details: ProjectDetails }): ReactElement | null 
           />
           <div className="absolute right-2 top-2">
             <IconButton
-              label="Закрыть изображение"
+              label={t`Закрыть изображение`}
               size="sm"
               icon={<X size={14} strokeWidth={1.5} />}
               onClick={() => {
@@ -162,7 +163,7 @@ function Gallery({ details }: { details: ProjectDetails }): ReactElement | null 
           <button
             key={image.fullUrl}
             type="button"
-            aria-label={image.title ?? `Изображение ${String(index + 1)}`}
+            aria-label={image.title ?? t`Изображение ${String(index + 1)}`}
             onClick={() => {
               setOpen(index === open ? null : index);
             }}
@@ -219,12 +220,11 @@ export function ProjectDialog({ target, onClose, actions }: ProjectDialogProps):
       open={target !== null}
       onClose={onClose}
       width="xl"
-      title={project?.name ?? 'Загрузка…'}
+      title={project?.name ?? t`Загрузка…`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Закрыть
-          </Button>
+            {t`Закрыть`}</Button>
           {actions?.(details)}
         </>
       }
@@ -238,7 +238,7 @@ export function ProjectDialog({ target, onClose, actions }: ProjectDialogProps):
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {project.author !== '' && (
                   <span className="text-2xs text-text">
-                    <span className="text-text-dim">автор</span> {project.author}
+                    <span className="text-text-dim">{t`автор`}</span> {project.author}
                   </span>
                 )}
                 <Stat icon={<Download size={11} strokeWidth={1.5} />}>
@@ -251,7 +251,7 @@ export function ProjectDialog({ target, onClose, actions }: ProjectDialogProps):
                 )}
                 {project.updatedAt !== null && (
                   <Stat icon={<CalendarClock size={11} strokeWidth={1.5} />}>
-                    обновлён {formatRelativeDate(project.updatedAt)}
+                    {t`обновлён `}{formatRelativeDate(project.updatedAt)}
                   </Stat>
                 )}
                 {project.license !== null && (
@@ -306,7 +306,7 @@ export function ProjectDialog({ target, onClose, actions }: ProjectDialogProps):
           <>
             <Gallery details={details} />
             {html.trim() === '' ? (
-              <p className="text-xs text-text-dim">Автор не добавил описания.</p>
+              <p className="text-xs text-text-dim">{t`Автор не добавил описания.`}</p>
             ) : (
               <article
                 className="description selectable"

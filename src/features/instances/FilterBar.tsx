@@ -10,6 +10,7 @@ import type { ModLoader } from '@/types/instance';
 import { LOADER_LABELS, MOD_LOADERS } from '@/types/instance';
 import type { SortKey } from '@/store/useInstances';
 import { useInstances } from '@/store/useInstances';
+import { t } from '@/lib/i18n';
 
 const ANY = '__any__';
 
@@ -29,21 +30,21 @@ export function FilterBar({ onCreate, onImport, onModpacks }: FilterBarProps): R
       b.localeCompare(a, undefined, { numeric: true }),
     );
     return [
-      { value: ANY, label: 'Все версии' },
+      { value: ANY, label: t`Все версии` },
       ...versions.map((version) => ({ value: version, label: version })),
     ];
   }, [instances]);
 
   const loaderOptions: SelectOption<string>[] = [
-    { value: ANY, label: 'Все лоадеры' },
+    { value: ANY, label: t`Все лоадеры` },
     ...MOD_LOADERS.map((loader) => ({ value: loader, label: LOADER_LABELS[loader] })),
   ];
 
   const sortOptions: SelectOption<SortKey>[] = [
-    { value: 'lastPlayed', label: 'По последнему запуску' },
-    { value: 'name', label: 'По имени' },
-    { value: 'playtime', label: 'По времени игры' },
-    { value: 'created', label: 'По дате создания' },
+    { value: 'lastPlayed', label: t`По последнему запуску` },
+    { value: 'name', label: t`По имени` },
+    { value: 'playtime', label: t`По времени игры` },
+    { value: 'created', label: t`По дате создания` },
   ];
 
   const hasFilters =
@@ -53,7 +54,7 @@ export function FilterBar({ onCreate, onImport, onModpacks }: FilterBarProps): R
     <div className="flex items-center gap-2 px-6 py-3">
       <div className="w-[260px]">
         <Input
-          placeholder="Поиск сборок"
+          placeholder={t`Поиск сборок`}
           value={filters.search}
           onChange={(event) => {
             setFilters({ search: event.target.value });
@@ -62,7 +63,7 @@ export function FilterBar({ onCreate, onImport, onModpacks }: FilterBarProps): R
           trailing={
             filters.search === '' ? undefined : (
               <IconButton
-                label="Очистить"
+                label={t`Очистить`}
                 size="sm"
                 icon={<X size={13} strokeWidth={1.5} />}
                 onClick={() => {
@@ -112,20 +113,16 @@ export function FilterBar({ onCreate, onImport, onModpacks }: FilterBarProps): R
             setFilters({ search: '', version: null, loader: null });
           }}
         >
-          Сбросить
-        </Button>
+          {t`Сбросить`}</Button>
       )}
 
       <div className="ml-auto flex items-center gap-2">
         <Button icon={<Download size={15} strokeWidth={1.5} />} onClick={onImport}>
-          Импорт
-        </Button>
+          {t`Импорт`}</Button>
         <Button icon={<PackageSearch size={15} strokeWidth={1.5} />} onClick={onModpacks}>
-          Модпаки
-        </Button>
+          {t`Модпаки`}</Button>
         <Button variant="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={onCreate}>
-          Создать сборку
-        </Button>
+          {t`Создать сборку`}</Button>
       </div>
     </div>
   );

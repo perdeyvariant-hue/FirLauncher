@@ -13,6 +13,7 @@ import { formatRelativeDate } from '@/lib/format';
 import { useAccounts } from '@/store/useAccounts';
 import { AddAccountDialog } from './AddAccountDialog';
 import { DeviceCodeDialog } from './DeviceCodeDialog';
+import { t } from '@/lib/i18n';
 
 export function AccountsPage(): ReactElement {
   const accounts = useAccounts((state) => state.accounts);
@@ -32,7 +33,7 @@ export function AccountsPage(): ReactElement {
   return (
     <div className="flex h-full flex-col">
       <header className="hairline-b flex h-14 shrink-0 items-center px-6">
-        <h1 className="text-sm font-semibold text-text">Аккаунты</h1>
+        <h1 className="text-sm font-semibold text-text">{t`Аккаунты`}</h1>
         <div className="ml-auto">
           <Button
             variant="primary"
@@ -42,8 +43,7 @@ export function AccountsPage(): ReactElement {
               setAddOpen(true);
             }}
           >
-            Добавить
-          </Button>
+            {t`Добавить`}</Button>
         </div>
       </header>
 
@@ -57,8 +57,8 @@ export function AccountsPage(): ReactElement {
         ) : accounts.length === 0 ? (
           <EmptyState
             icon={<Users size={20} strokeWidth={1.5} />}
-            title="Аккаунтов нет"
-            description="Войдите через Microsoft, чтобы играть на серверах, или создайте оффлайн-аккаунт для одиночной игры."
+            title={t`Аккаунтов нет`}
+            description={t`Войдите через Microsoft, чтобы играть на серверах, или создайте оффлайн-аккаунт для одиночной игры.`}
             action={
               <Button
                 variant="primary"
@@ -67,8 +67,7 @@ export function AccountsPage(): ReactElement {
                   setAddOpen(true);
                 }}
               >
-                Добавить аккаунт
-              </Button>
+                {t`Добавить аккаунт`}</Button>
             }
           />
         ) : (
@@ -93,11 +92,11 @@ export function AccountsPage(): ReactElement {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm text-text">{account.username}</p>
-                      {active && <Badge tone="accent">Активный</Badge>}
-                      {account.expired && <Badge tone="danger">Сессия истекла</Badge>}
+                      {active && <Badge tone="accent">{t`Активный`}</Badge>}
+                      {account.expired && <Badge tone="danger">{t`Сессия истекла`}</Badge>}
                     </div>
                     <p className="mt-0.5 truncate text-2xs text-text-dim">
-                      {account.kind === 'microsoft' ? 'Microsoft' : 'Оффлайн'} · добавлен{' '}
+                      {account.kind === 'microsoft' ? 'Microsoft' : t`Оффлайн`} {t` · добавлен`}{' '}
                       {formatRelativeDate(account.addedAt)}
                     </p>
                   </div>
@@ -110,8 +109,7 @@ export function AccountsPage(): ReactElement {
                         setActive(account.id);
                       }}
                     >
-                      Сделать активным
-                    </Button>
+                      {t`Сделать активным`}</Button>
                   )}
 
                   {account.kind === 'microsoft' && account.expired && (
@@ -122,13 +120,12 @@ export function AccountsPage(): ReactElement {
                         setMsaOpen(true);
                       }}
                     >
-                      Войти заново
-                    </Button>
+                      {t`Войти заново`}</Button>
                   )}
 
                   {account.kind === 'microsoft' && !account.expired && (
                     <IconButton
-                      label="Обновить вход и скин"
+                      label={t`Обновить вход и скин`}
                       size="sm"
                       disabled={refreshing === account.id}
                       icon={
@@ -148,7 +145,7 @@ export function AccountsPage(): ReactElement {
                   )}
 
                   <IconButton
-                    label="Удалить аккаунт"
+                    label={t`Удалить аккаунт`}
                     tone="danger"
                     size="sm"
                     icon={<Trash2 size={14} strokeWidth={1.5} />}
@@ -184,9 +181,9 @@ export function AccountsPage(): ReactElement {
       <ConfirmDialog
         open={removeTarget !== null}
         destructive
-        title={`Удалить аккаунт «${removeTarget?.username ?? ''}»?`}
-        description="Сохранённый токен будет удалён из системного хранилища. Сами миры и сборки не пострадают."
-        confirmLabel="Удалить"
+        title={t`Удалить аккаунт «${removeTarget?.username ?? ''}»?`}
+        description={t`Сохранённый токен будет удалён из системного хранилища. Сами миры и сборки не пострадают.`}
+        confirmLabel={t`Удалить`}
         onCancel={() => {
           setPendingRemove(null);
         }}

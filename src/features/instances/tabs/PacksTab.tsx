@@ -22,6 +22,8 @@ import { useAsyncData } from '@/lib/useAsyncData';
 import type { Instance, ResourcePackEntry } from '@/types/instance';
 import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
+import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 export type PackKind = 'resourcepack' | 'shader';
 
@@ -29,27 +31,28 @@ const COPY: Readonly<
   Record<PackKind, { add: string; empty: string; hint: string; folder: string }>
 > = {
   resourcepack: {
-    add: 'Добавить ресурспаки',
-    empty: 'Ресурспаков нет',
-    hint: 'Найдите ресурспак на Modrinth или CurseForge — или положите .zip в папку resourcepacks.',
+    add: t`Добавить ресурспаки`,
+    empty: t`Ресурспаков нет`,
+    hint: t`Найдите ресурспак на Modrinth или CurseForge — или положите .zip в папку resourcepacks.`,
     folder: 'resourcepacks',
   },
   shader: {
-    add: 'Добавить шейдеры',
-    empty: 'Шейдеров нет',
-    hint: 'Для шейдеров нужен Iris (Fabric, Quilt) или Oculus (Forge, NeoForge) — поставьте его во вкладке «Моды».',
+    add: t`Добавить шейдеры`,
+    empty: t`Шейдеров нет`,
+    hint: t`Для шейдеров нужен Iris (Fabric, Quilt) или Oculus (Forge, NeoForge) — поставьте его во вкладке «Моды».`,
     folder: 'shaderpacks',
   },
 };
 
 export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKind }): ReactElement {
+  const revision = useUI((state) => state.contentRevision);
   const copy = COPY[kind];
   const { data, loading, error, reload } = useAsyncData<ResourcePackEntry[]>(
     () =>
       kind === 'shader'
         ? instancesApi.listShaderPacks(instance.id)
         : instancesApi.listResourcePacks(instance.id),
-    [instance.id, kind],
+    [instance.id, kind, revision],
   );
   const fail = useToasts((state) => state.fail);
   const [browsing, setBrowsing] = useState(false);
@@ -104,7 +107,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
         <div className="ml-auto">{addButton}</div>
       </div>
       <p className="text-2xs text-text-dim">
-        {kind === 'shader' ? copy.hint : `Файлы лежат в папке ${copy.folder} этой сборки.`}
+        {kind === 'shader' ? copy.hint : t`Файлы лежат в папке ${copy.folder} этой сборки.`}
       </p>
 
       {loading ? (
@@ -135,7 +138,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                     <span className="w-4 shrink-0" />
                   ) : (
                     <Checkbox
-                      label={`Обновить ${pack.name}`}
+                      label={t`Обновить ${pack.name}`}
                       checked={updates.selected.has(pack.fileName)}
                       disabled={updates.updating.has(pack.fileName)}
                       onChange={(on) => {
@@ -150,7 +153,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                 <button
                   type="button"
                   disabled={source === null || provider === null}
-                  title={provider === null ? undefined : 'Открыть описание'}
+                  title={provider === null ? undefined : t`Открыть описание`}
                   onClick={() => {
                     if (source === null || provider === null) return;
                     setDescribed({
@@ -193,7 +196,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
 
                 {update !== undefined && (
                   <IconButton
-                    label={`Обновить до ${update.latest.versionNumber}`}
+                    label={t`Обновить до ${update.latest.versionNumber}`}
                     size="sm"
                     disabled={updates.updating.has(pack.fileName)}
                     icon={<ArrowUpCircle size={14} strokeWidth={1.5} />}
@@ -205,7 +208,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
 
                 {source !== null && provider !== null && (
                   <IconButton
-                    label="Сменить версию"
+                    label={t`Сменить версию`}
                     size="sm"
                     icon={<History size={14} strokeWidth={1.5} />}
                     onClick={() => {
@@ -220,7 +223,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                 )}
 
                 <IconButton
-                  label="Удалить"
+                  label={t`Удалить`}
                   tone="danger"
                   size="sm"
                   icon={<Trash2 size={14} strokeWidth={1.5} />}
@@ -262,8 +265,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                 });
               }}
             >
-              Сменить версию
-            </Button>
+              {t`Сменить версию`}</Button>
           );
         }}
       />

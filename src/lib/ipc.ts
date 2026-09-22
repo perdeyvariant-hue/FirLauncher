@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { ErrorKind, LauncherError } from '@/types/error';
 import { isLauncherError } from '@/types/error';
+import { t, translate } from '@/lib/i18n';
 
 /**
  * True when running inside the Tauri webview. In a plain `vite dev` browser
@@ -46,12 +47,13 @@ function safeStringify(value: unknown): string | undefined {
  * "Error: undefined".
  */
 export function toLauncherError(raw: unknown): LauncherError {
-  if (isLauncherError(raw)) return raw;
+  // Backend messages are Russian; show them in the interface language.
+  if (isLauncherError(raw)) return { ...raw, message: translate(raw.message) };
 
   if (raw instanceof Error) {
     return {
       kind: 'internal',
-      message: raw.message === '' ? 'Неизвестная ошибка' : raw.message,
+      message: raw.message === '' ? t`Неизвестная ошибка` : raw.message,
       detail: raw.stack,
       retryable: false,
     };
@@ -63,7 +65,7 @@ export function toLauncherError(raw: unknown): LauncherError {
 
   return {
     kind: 'internal',
-    message: 'Неизвестная ошибка',
+    message: t`Неизвестная ошибка`,
     detail: safeStringify(raw),
     retryable: false,
   };

@@ -6,6 +6,9 @@ interface UIState {
   /** Simple back stack — the app has no URL bar, so this is enough. */
   history: Route[];
   taskbarExpanded: boolean;
+  /** Bumped when files are added from outside a tab (drag and drop), so lists reload. */
+  contentRevision: number;
+  bumpContent: () => void;
   navigate: (route: Route) => void;
   openInstance: (id: string, tab?: InstanceTab) => void;
   setInstanceTab: (tab: InstanceTab) => void;
@@ -18,6 +21,11 @@ export const useUI = create<UIState>()((set, get) => ({
   route: { name: 'instances' },
   history: [],
   taskbarExpanded: false,
+  contentRevision: 0,
+
+  bumpContent: () => {
+    set((state) => ({ contentRevision: state.contentRevision + 1 }));
+  },
 
   navigate: (route) => {
     set((state) => ({ route, history: [...state.history, state.route].slice(-20) }));

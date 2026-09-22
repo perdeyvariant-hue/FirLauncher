@@ -150,6 +150,71 @@ fn read_jar_metadata(path: &Path) -> Option<(String, Option<String>, Option<Stri
     None
 }
 
+/// Mod ids a jar declares: `fabric.mod.json` / `quilt.mod.json` ids and
+/// `modId` entries of Forge's and NeoForge's `mods.toml`.
+fn read_mod_ids(path: &Path) -> Vec<String> {
+    let Ok(file) = std::fs::File::open(path) else { return Vec::new() };
+    let Ok(mut archive) = zip::ZipArchive::new(file) else { return Vec::new() };
+    let mut ids = Vec::new();
+
+    for entry_name in ["fabric.mod.json", "quilt.mod.json"] {
+        let Ok(entry) = archive.by_name(entry_name) else { continue };
+        let Ok(parsed) = serde_json::from_reader::<_, serde_json::Value>(entry) else { continue };
+        let id = parsed
+            .get("quilt_loader")
+            .and_then(|loader| loader.get("id"))
+            .or_else(|| parsed.get("id"))
+            .and_then(serde_json::Value::as_str);
+        if let Some(id) = id {
+            ids.push(id.to_owned());
+        }
+    }
+    for entry_name in ["META-INF/mods.toml", "META-INF/neoforge.mods.toml"] {
+        let Ok(mut entry) = archive.by_name(entry_name) else { continue };
+        let mut text = String::new();
+        if std::io::Read::read_to_string(&mut entry, &mut text).is_err() {
+            continue;
+        }
+        // Only `modId = "x"` lines matter; a full TOML parser is not needed.
+        for line in text.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("modId") {
+                let value = rest.trim_start().trim_start_matches('=').trim();
+                let value = value.trim_matches(|c| c == '"' || c == '\'');
+                if !value.is_empty() && !ids.iter().any(|known| known == value) {
+                    ids.push(value.to_owned());
+                }
+            }
+        }
+    }
+    ids
+}
+
+/// Which file in `mods/` provides each mod id (enabled or not).
+pub async fn mod_files_by_id(
+    paths: &Paths,
+    id: &str,
+) -> Result<std::collections::HashMap<String, String>> {
+    let dir = paths.instance_game_dir(id).join("mods");
+    tokio::task::spawn_blocking(move || {
+        let mut map = std::collections::HashMap::new();
+        let Ok(entries) = std::fs::read_dir(&dir) else { return map };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let lower = name.to_ascii_lowercase();
+            if !lower.ends_with(".jar") && !lower.ends_with(".jar.disabled") {
+                continue;
+            }
+            for mod_id in read_mod_ids(&entry.path()) {
+                map.insert(mod_id, name.clone());
+            }
+        }
+        map
+    })
+    .await
+    .map_err(|error| LauncherError::internal("Сбой чтения модов").with_detail(error.to_string()))
+}
+
 pub async fn list_mods(paths: &Paths, id: &str) -> Result<Vec<InstalledMod>> {
     let dir = paths.instance_game_dir(id).join("mods");
     let mut entries = match tokio::fs::read_dir(&dir).await {

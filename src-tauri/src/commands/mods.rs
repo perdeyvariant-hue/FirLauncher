@@ -190,6 +190,10 @@ pub async fn apply_updates(
         _ => format!("Обновление: {} файлов", updates.len()),
     };
     let task = state.tasks.start(TaskKind::InstallMod, title, Some(instance_id.clone()));
+    if state.settings().backup_worlds_before_updates {
+        task.set_stage(String::from("Резервная копия миров"));
+        crate::instances::worlds::backup_all(&state.paths, &instance_id).await?;
+    }
 
     let outcome = install::apply_updates(
         &state.client(),
@@ -221,4 +225,95 @@ pub async fn remove_content(
         return crate::instances::contents::remove_mod(&state.paths, &instance_id, &file_name).await;
     }
     crate::instances::contents::remove_pack(&state.paths, &instance_id, kind, &file_name).await
+}
+
+/// Performance mods for this instance, and memory/JVM suggestions.
+#[tauri::command]
+pub async fn optimize_plan(
+    state: State<'_, AppState>,
+    instance_id: String,
+) -> Result<mods::optimize::OptimizePlan> {
+    let meta = instances::read_meta(&state.paths, &instance_id).await?;
+    if meta.loader == ModLoader::Vanilla {
+        return Err(LauncherError::new(
+            ErrorKind::Instance,
+            "В ванильную сборку моды не ставятся — создайте сборку с лоадером",
+        ));
+    }
+    let modrinth = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let installed = ModIndex::load(&state.paths, &instance_id, ProjectKind::Mod)
+        .await?
+        .projects(ProviderId::Modrinth);
+    let mod_count = crate::instances::contents::list_mods(&state.paths, &instance_id).await?.len();
+    let settings = state.settings();
+    let system = crate::java::system_memory();
+    Ok(mods::optimize::OptimizePlan {
+        mods: mods::optimize::plan_mods(modrinth.as_ref(), &meta.mc_version, meta.loader, &installed).await,
+        current_memory_mb: meta.java.memory_mb.unwrap_or(settings.default_memory_mb),
+        recommended_memory_mb: mods::optimize::recommended_memory(mod_count, system.total_mb),
+        current_jvm_args: meta.java.extra_jvm_args.clone().unwrap_or(settings.default_jvm_args),
+        recommended_jvm_args: String::from(mods::optimize::RECOMMENDED_JVM_ARGS),
+    })
+}
+
+/// Installs the chosen performance mods and applies the memory/JVM choice.
+#[tauri::command]
+pub async fn apply_optimize(
+    state: State<'_, AppState>,
+    instance_id: String,
+    project_ids: Vec<String>,
+    memory_mb: Option<u32>,
+    jvm_args: Option<String>,
+) -> Result<()> {
+    let mut meta = instances::read_meta(&state.paths, &instance_id).await?;
+    if memory_mb.is_some() || jvm_args.is_some() {
+        if let Some(memory_mb) = memory_mb {
+            meta.java.memory_mb = Some(memory_mb.clamp(1024, 65_536));
+        }
+        if let Some(jvm_args) = jvm_args {
+            meta.java.extra_jvm_args = Some(jvm_args);
+        }
+        instances::write_meta(&state.paths, &meta).await?;
+    }
+    if project_ids.is_empty() {
+        return Ok(());
+    }
+
+    let target = target_of(&state, &instance_id, ProjectKind::Mod).await?;
+    let modrinth = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let task = state.tasks.start(TaskKind::InstallMod, format!("Оптимизация: {}", meta.name), Some(instance_id.clone()));
+    let outcome = async {
+        let mut installed = ModIndex::load(&state.paths, &instance_id, ProjectKind::Mod)
+            .await?
+            .projects(ProviderId::Modrinth);
+        let mut versions = Vec::new();
+        for project_id in &project_ids {
+            if installed.contains(project_id) {
+                continue;
+            }
+            let plan = resolve::plan(modrinth.as_ref(), &target, ProjectKind::Mod, project_id, None, &installed).await?;
+            installed.insert(plan.primary.project_id.clone());
+            for dependency in &plan.dependencies {
+                installed.insert(dependency.project_id.clone());
+            }
+            versions.push(plan.primary);
+            versions.extend(plan.dependencies);
+        }
+        install::install_versions(
+            &state.client(),
+            &state.paths,
+            &instance_id,
+            ProjectKind::Mod,
+            &versions,
+            state.settings().download_concurrency(),
+            Arc::clone(&task) as Arc<dyn Progress>,
+        )
+        .await
+    }
+    .await;
+    match &outcome {
+        Ok(()) => task.finish_ok(),
+        Err(error) => task.finish_err(error),
+    }
+    outcome
 }

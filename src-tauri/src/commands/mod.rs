@@ -2,7 +2,9 @@
 
 pub mod accounts;
 pub mod appearance;
+pub mod crash;
 pub mod instances;
+pub mod logs;
 pub mod meta;
 pub mod mods;
 pub mod packs;

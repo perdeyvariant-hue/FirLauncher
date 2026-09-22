@@ -10,6 +10,7 @@ import { isTauri } from '@/lib/ipc';
 import type { ExportFormat } from '@/types/pack';
 import { usePacks } from '@/store/usePacks';
 import { useToasts } from '@/store/useToasts';
+import { t } from '@/lib/i18n';
 
 const FORMATS: readonly {
   readonly value: ExportFormat;
@@ -19,14 +20,14 @@ const FORMATS: readonly {
 }[] = [
   {
     value: 'mrpack',
-    title: 'Модпак Modrinth (.mrpack)',
-    text: 'Лёгкий файл: моды с Modrinth идут ссылками, остальное и настройки — внутри. Миры не входят.',
+    title: t`Модпак Modrinth (.mrpack)`,
+    text: t`Лёгкий файл: моды с Modrinth идут ссылками, остальное и настройки — внутри. Миры не входят.`,
     icon: <Package size={16} strokeWidth={1.5} />,
   },
   {
     value: 'zip',
-    title: 'Полная копия (.zip)',
-    text: 'Всё содержимое сборки, включая миры и скриншоты. Открывается импортом в FirLauncher.',
+    title: t`Полная копия (.zip)`,
+    text: t`Всё содержимое сборки, включая миры и скриншоты. Открывается импортом в FirLauncher.`,
     icon: <Archive size={16} strokeWidth={1.5} />,
   },
 ];
@@ -53,7 +54,7 @@ export function ExportDialog(): ReactElement {
   const run = async (): Promise<void> => {
     if (target === null) return;
     if (!isTauri()) {
-      notify('Экспорт доступен только в приложении');
+      notify(t`Экспорт доступен только в приложении`);
       return;
     }
     const extension = format === 'mrpack' ? '.mrpack' : '.zip';
@@ -65,8 +66,8 @@ export function ExportDialog(): ReactElement {
       const summary = await packsApi.exportInstance(target.id, format, destination);
       notify(
         format === 'mrpack'
-          ? `Готово: ${String(summary.linked)} файлов ссылками, ${String(summary.embedded)} внутри, ${formatBytes(summary.bytes)}`
-          : `Готово: ${formatBytes(summary.bytes)}`,
+          ? t`Готово: ${String(summary.linked)} файлов ссылками, ${String(summary.embedded)} внутри, ${formatBytes(summary.bytes)}`
+          : t`Готово: ${formatBytes(summary.bytes)}`,
         'success',
       );
       close();
@@ -80,13 +81,12 @@ export function ExportDialog(): ReactElement {
     <Dialog
       open={target !== null}
       onClose={close}
-      title={target === null ? '' : `Экспорт «${target.name}»`}
+      title={target === null ? '' : t`Экспорт «${target.name}»`}
       busy={busy}
       footer={
         <>
           <Button variant="ghost" onClick={close} disabled={busy}>
-            Отмена
-          </Button>
+            {t`Отмена`}</Button>
           <Button
             variant="primary"
             loading={busy}
@@ -94,8 +94,7 @@ export function ExportDialog(): ReactElement {
               void run();
             }}
           >
-            Выбрать место и сохранить
-          </Button>
+            {t`Выбрать место и сохранить`}</Button>
         </>
       }
     >

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { formatCompactNumber, formatRelativeDate } from '@/lib/format';
 import type { ModProject } from '@/types/mod';
+import { t } from '@/lib/i18n';
 
 export type InstallState = 'idle' | 'working' | 'installed';
 
@@ -58,7 +59,7 @@ export function ModCard({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`Описание: ${project.name}`}
+        aria-label={t`Описание: ${project.name}`}
         className="group flex min-w-0 flex-1 gap-3 rounded-md text-left"
       >
         <ProjectIcon project={project} />
@@ -95,17 +96,15 @@ export function ModCard({
       <div className="flex shrink-0 flex-col items-end justify-between gap-2">
         {state === 'installed' ? (
           <Button size="sm" disabled icon={<Check size={13} strokeWidth={1.5} />}>
-            Установлен
-          </Button>
+            {t`Установлен`}</Button>
         ) : (
           <Button size="sm" variant="primary" loading={state === 'working'} onClick={onInstall}>
-            Установить
-          </Button>
+            {t`Установить`}</Button>
         )}
         <div className="flex items-center gap-1">
           {onVersions !== null && (
             <IconButton
-              label="Выбрать версию"
+              label={t`Выбрать версию`}
               size="sm"
               disabled={state === 'working'}
               icon={<History size={13} strokeWidth={1.5} />}
@@ -114,7 +113,7 @@ export function ModCard({
           )}
           {onOpenPage !== null && (
             <IconButton
-              label="Открыть страницу проекта"
+              label={t`Открыть страницу проекта`}
               size="sm"
               icon={<ExternalLink size={13} strokeWidth={1.5} />}
               onClick={onOpenPage}

@@ -44,10 +44,12 @@ export function loadSettings(): Promise<Settings> {
 export interface BuildInfo {
   /** The CurseForge key is baked into this build and cannot be changed. */
   readonly curseforgeKeyBuiltin: boolean;
+  /** A Discord application id is baked into this build. */
+  readonly discordAppIdBuiltin: boolean;
 }
 
 export function buildInfo(): Promise<BuildInfo> {
-  if (shouldMock()) return mocked<BuildInfo>({ curseforgeKeyBuiltin: false });
+  if (shouldMock()) return mocked<BuildInfo>({ curseforgeKeyBuiltin: false, discordAppIdBuiltin: false });
   return ipc<BuildInfo>('build_info');
 }
 

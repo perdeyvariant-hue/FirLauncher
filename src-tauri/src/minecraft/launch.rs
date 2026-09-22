@@ -1,6 +1,6 @@
 //! Spawning the game, streaming its output and noticing when it dies badly.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::sync::Arc;
@@ -41,10 +41,22 @@ struct Running {
     kill: Option<oneshot::Sender<()>>,
 }
 
+/// The end of a game session's output, kept after the process exits so a
+/// crash can be diagnosed from it.
+pub struct SessionTail {
+    pub started: std::time::SystemTime,
+    pub lines: VecDeque<String>,
+    pub exit_code: Option<i32>,
+}
+
+/// Enough to hold a loader's dependency report and a stack trace.
+const TAIL_LINES: usize = 4000;
+
 /// Which instances currently have a game process.
 #[derive(Default)]
 pub struct GameRegistry {
     running: Mutex<HashMap<String, Running>>,
+    tails: Mutex<HashMap<String, Arc<Mutex<SessionTail>>>>,
 }
 
 impl GameRegistry {
@@ -62,6 +74,25 @@ impl GameRegistry {
 
     fn take(&self, instance_id: &str) -> Option<Running> {
         self.running.lock().remove(instance_id)
+    }
+
+    /// Starts a fresh output record for a new session.
+    fn begin_tail(&self, instance_id: &str) -> Arc<Mutex<SessionTail>> {
+        let tail = Arc::new(Mutex::new(SessionTail {
+            started: std::time::SystemTime::now(),
+            lines: VecDeque::new(),
+            exit_code: None,
+        }));
+        self.tails.lock().insert(instance_id.to_owned(), Arc::clone(&tail));
+        tail
+    }
+
+    /// The last session's output, start time and exit code.
+    pub fn last_session(&self, instance_id: &str) -> Option<(std::time::SystemTime, String, Option<i32>)> {
+        let tail = self.tails.lock().get(instance_id).cloned()?;
+        let tail = tail.lock();
+        let text = tail.lines.iter().map(String::as_str).collect::<Vec<_>>().join("\n");
+        Some((tail.started, text, tail.exit_code))
     }
 
     /// Asks the process to stop. The waiter task does the actual killing so
@@ -110,9 +141,15 @@ fn emit_log(app: &AppHandle, instance_id: &str, stream: &str, line: String) {
     );
 }
 
-/// Forwards one pipe to the front end, line by line, until it closes.
-fn pump<R>(app: AppHandle, instance_id: String, stream: &'static str, reader: R)
-where
+/// Forwards one pipe to the front end, line by line, until it closes, and
+/// keeps the most recent lines for crash diagnosis.
+fn pump<R>(
+    app: AppHandle,
+    instance_id: String,
+    stream: &'static str,
+    reader: R,
+    tail: Arc<Mutex<SessionTail>>,
+) where
     R: tokio::io::AsyncRead + Unpin + Send + 'static,
 {
     tokio::spawn(async move {
@@ -120,6 +157,13 @@ where
         // `next_line` fails on invalid UTF-8; game logs on Windows locales are
         // not always clean, so stop pumping rather than spin on the error.
         while let Ok(Some(line)) = lines.next_line().await {
+            {
+                let mut tail = tail.lock();
+                if tail.lines.len() == TAIL_LINES {
+                    tail.lines.pop_front();
+                }
+                tail.lines.push_back(line.clone());
+            }
             emit_log(&app, &instance_id, stream, line);
         }
     });
@@ -177,11 +221,12 @@ pub async fn spawn_game(
         },
     );
 
+    let tail = registry.begin_tail(&spec.instance_id);
     if let Some(stdout) = child.stdout.take() {
-        pump(app.clone(), spec.instance_id.clone(), "stdout", stdout);
+        pump(app.clone(), spec.instance_id.clone(), "stdout", stdout, Arc::clone(&tail));
     }
     if let Some(stderr) = child.stderr.take() {
-        pump(app.clone(), spec.instance_id.clone(), "stderr", stderr);
+        pump(app.clone(), spec.instance_id.clone(), "stderr", stderr, Arc::clone(&tail));
     }
 
     let instance_id = spec.instance_id.clone();
@@ -216,6 +261,7 @@ pub async fn spawn_game(
         // Minecraft exits with 0 on a clean quit; anything else — including
         // the JVM's own 1 on a crash — means something went wrong.
         let crashed = exit_code != 0;
+        tail.lock().exit_code = Some(exit_code);
         on_exit(played_seconds, exit_code, crashed);
 
         let _ = app.emit(

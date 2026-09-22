@@ -24,7 +24,9 @@ import { ModsTab } from './tabs/ModsTab';
 import { OverviewTab } from './tabs/OverviewTab';
 import { PacksTab } from './tabs/PacksTab';
 import { ScreenshotsTab } from './tabs/ScreenshotsTab';
+import { ServersTab } from './tabs/ServersTab';
 import { WorldsTab } from './tabs/WorldsTab';
+import { t } from '@/lib/i18n';
 
 export interface InstancePageProps {
   instanceId: string;
@@ -56,16 +58,15 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
     return (
       <EmptyState
         icon={<Boxes size={20} strokeWidth={1.5} />}
-        title="Сборка не найдена"
-        description="Возможно, она была удалена."
+        title={t`Сборка не найдена`}
+        description={t`Возможно, она была удалена.`}
         action={
           <Button
             onClick={() => {
               navigate({ name: 'instances' });
             }}
           >
-            К списку сборок
-          </Button>
+            {t`К списку сборок`}</Button>
         }
       />
     );
@@ -75,7 +76,7 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
 
   const play = (): void => {
     if (account === null) {
-      notify('Сначала добавьте аккаунт', 'error');
+      notify(t`Сначала добавьте аккаунт`, 'error');
       return;
     }
     void launch(instance.id, account.id);
@@ -86,7 +87,7 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
       <header className="flex shrink-0 flex-col px-6 pt-4">
         <div className="flex items-start gap-3">
           <IconButton
-            label="Назад"
+            label={t`Назад`}
             icon={<ArrowLeft size={16} strokeWidth={1.5} />}
             onClick={back}
           />
@@ -114,13 +115,13 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
                   {instance.loaderVersion !== null && ` ${instance.loaderVersion}`}
                 </Badge>
               )}
-              {running && <Badge tone="accent">Запущена</Badge>}
+              {running && <Badge tone="accent">{t`Запущена`}</Badge>}
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
             <IconButton
-              label="Открыть папку"
+              label={t`Открыть папку`}
               icon={<FolderOpen size={16} strokeWidth={1.5} />}
               onClick={() => {
                 void instancesApi
@@ -129,14 +130,14 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
               }}
             />
             <IconButton
-              label="Экспорт"
+              label={t`Экспорт`}
               icon={<Share2 size={16} strokeWidth={1.5} />}
               onClick={() => {
                 openExport(instance);
               }}
             />
             <IconButton
-              label="Удалить сборку"
+              label={t`Удалить сборку`}
               tone="danger"
               icon={<Trash2 size={16} strokeWidth={1.5} />}
               onClick={() => {
@@ -151,16 +152,14 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
                   void instancesApi.killInstance(instance.id).catch((raw: unknown) => fail(raw));
                 }}
               >
-                Остановить
-              </Button>
+                {t`Остановить`}</Button>
             ) : (
               <Button
                 variant="primary"
                 icon={<Play size={15} strokeWidth={1.5} fill="currentColor" />}
                 onClick={play}
               >
-                Играть
-              </Button>
+                {t`Играть`}</Button>
             )}
           </div>
         </div>
@@ -175,6 +174,7 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
           {tab === 'overview' && <OverviewTab instance={instance} />}
           {tab === 'mods' && <ModsTab instance={instance} />}
           {tab === 'worlds' && <WorldsTab instance={instance} />}
+          {tab === 'servers' && <ServersTab instance={instance} />}
           {tab === 'resourcepacks' && <PacksTab instance={instance} kind="resourcepack" />}
           {tab === 'shaders' && <PacksTab instance={instance} kind="shader" />}
           {tab === 'screenshots' && <ScreenshotsTab instance={instance} />}
@@ -186,9 +186,9 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
       <ConfirmDialog
         open={confirmDelete}
         destructive
-        title={`Удалить «${instance.name}»?`}
-        description="Папка сборки вместе с мирами, модами и настройками будет удалена безвозвратно."
-        confirmLabel="Удалить"
+        title={t`Удалить «${instance.name}»?`}
+        description={t`Папка сборки вместе с мирами, модами и настройками будет удалена безвозвратно.`}
+        confirmLabel={t`Удалить`}
         onCancel={() => {
           setConfirmDelete(false);
         }}

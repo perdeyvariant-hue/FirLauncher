@@ -1,7 +1,9 @@
+import { t } from '@/lib/i18n';
 export const INSTANCE_TABS = [
   'overview',
   'mods',
   'worlds',
+  'servers',
   'resourcepacks',
   'shaders',
   'screenshots',
@@ -12,14 +14,15 @@ export const INSTANCE_TABS = [
 export type InstanceTab = (typeof INSTANCE_TABS)[number];
 
 export const INSTANCE_TAB_LABELS: Readonly<Record<InstanceTab, string>> = {
-  overview: 'Обзор',
-  mods: 'Моды',
-  worlds: 'Миры',
-  resourcepacks: 'Ресурспаки',
-  shaders: 'Шейдеры',
-  screenshots: 'Скриншоты',
-  logs: 'Логи',
-  settings: 'Настройки',
+  overview: t`Обзор`,
+  mods: t`Моды`,
+  worlds: t`Миры`,
+  servers: t`Серверы`,
+  resourcepacks: t`Ресурспаки`,
+  shaders: t`Шейдеры`,
+  screenshots: t`Скриншоты`,
+  logs: t`Логи`,
+  settings: t`Настройки`,
 };
 
 export type Route =

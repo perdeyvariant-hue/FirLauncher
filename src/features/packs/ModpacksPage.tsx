@@ -25,17 +25,18 @@ import { PROVIDER_LABELS } from '@/types/mod';
 import { usePacks } from '@/store/usePacks';
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 const PAGE = 20;
 const ANY = '__any__';
 type Sort = SearchQuery['sort'];
 
 const SORT_OPTIONS: SelectOption<Sort>[] = [
-  { value: 'relevance', label: 'По релевантности' },
-  { value: 'downloads', label: 'По загрузкам' },
-  { value: 'follows', label: 'По популярности' },
-  { value: 'updated', label: 'Недавно обновлённые' },
-  { value: 'newest', label: 'Новые' },
+  { value: 'relevance', label: t`По релевантности` },
+  { value: 'downloads', label: t`По загрузкам` },
+  { value: 'follows', label: t`По популярности` },
+  { value: 'updated', label: t`Недавно обновлённые` },
+  { value: 'newest', label: t`Новые` },
 ];
 
 /** Search and one-click install of modpacks, each becoming a new instance. */
@@ -150,14 +151,14 @@ export function ModpacksPage(): ReactElement {
 
   const categoryOptions = useMemo<SelectOption<string>[]>(
     () => [
-      { value: ANY, label: 'Все категории' },
+      { value: ANY, label: t`Все категории` },
       ...categories.map((item) => ({ value: item.id, label: item.name })),
     ],
     [categories],
   );
   const versionOptions = useMemo<SelectOption<string>[]>(
     () => [
-      { value: ANY, label: 'Любая версия' },
+      { value: ANY, label: t`Любая версия` },
       ...versions.map((item) => ({ value: item, label: item })),
     ],
     [versions],
@@ -166,9 +167,9 @@ export function ModpacksPage(): ReactElement {
   return (
     <div className="flex h-full flex-col">
       <header className="hairline-b flex h-14 shrink-0 items-center gap-2 px-6">
-        <IconButton label="Назад" icon={<ArrowLeft size={16} strokeWidth={1.5} />} onClick={back} />
-        <h1 className="text-sm font-semibold text-text">Модпаки</h1>
-        <span className="text-xs text-text-dim">каждый ставится отдельной сборкой</span>
+        <IconButton label={t`Назад`} icon={<ArrowLeft size={16} strokeWidth={1.5} />} onClick={back} />
+        <h1 className="text-sm font-semibold text-text">{t`Модпаки`}</h1>
+        <span className="text-xs text-text-dim">{t`каждый ставится отдельной сборкой`}</span>
 
         {providers.length > 1 && (
           <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-surface-2 p-0.5">
@@ -196,7 +197,7 @@ export function ModpacksPage(): ReactElement {
       <div className="flex items-center gap-2 px-6 py-3">
         <div className="min-w-0 flex-1">
           <Input
-            placeholder={`Поиск модпаков на ${PROVIDER_LABELS[provider]}`}
+            placeholder={t`Поиск модпаков на ${PROVIDER_LABELS[provider]}`}
             value={text}
             autoFocus
             onChange={(event) => {
@@ -228,12 +229,12 @@ export function ModpacksPage(): ReactElement {
           <EmptyState
             compact
             icon={<PackageSearch size={20} strokeWidth={1.5} />}
-            title="Ничего не найдено"
-            description="Попробуйте другой запрос, версию или категорию."
+            title={t`Ничего не найдено`}
+            description={t`Попробуйте другой запрос, версию или категорию.`}
           />
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-2xs text-text-dim">Найдено: {total}</p>
+            <p className="text-2xs text-text-dim">{t`Найдено: `}{total}</p>
             <div className="grid animate-fade-in grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-2">
               {hits.map((project) => (
                 <ModCard
@@ -264,8 +265,7 @@ export function ModpacksPage(): ReactElement {
             {hits.length < total && (
               <div className="flex justify-center">
                 <Button size="sm" loading={loadingMore} onClick={loadMore}>
-                  Показать ещё
-                </Button>
+                  {t`Показать ещё`}</Button>
               </div>
             )}
           </div>
@@ -290,8 +290,7 @@ export function ModpacksPage(): ReactElement {
                 void install(project);
               }}
             >
-              Установить модпак
-            </Button>
+              {t`Установить модпак`}</Button>
           );
         }}
       />

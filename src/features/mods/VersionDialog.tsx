@@ -15,6 +15,7 @@ import { formatBytes, formatRelativeDate } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { Instance } from '@/types/instance';
 import type { ModVersion, ProviderId } from '@/types/mod';
+import { t } from '@/lib/i18n';
 
 /** Which project the picker is open for. */
 export interface VersionTarget {
@@ -36,8 +37,8 @@ export interface VersionDialogProps {
 
 const RELEASE_BADGE: Readonly<Record<ModVersion['releaseType'], string | null>> = {
   release: null,
-  beta: 'бета',
-  alpha: 'альфа',
+  beta: t`бета`,
+  alpha: t`альфа`,
 };
 
 /** "1.20.1, 1.20.2 … 1.20.6" — full lists run to dozens of entries. */
@@ -81,11 +82,11 @@ export function VersionDialog({
       open={target !== null}
       onClose={onClose}
       width="lg"
-      title={target === null ? '' : `Версии: ${target.name}`}
+      title={target === null ? '' : t`Версии: ${target.name}`}
       description={
         kind === 'mod'
-          ? 'Показаны версии для вашего лоадера. Зависимости выбранной версии поставятся вместе с ней.'
-          : 'Выберите версию — установленная будет заменена.'
+          ? t`Показаны версии для вашего лоадера. Зависимости выбранной версии поставятся вместе с ней.`
+          : t`Выберите версию — установленная будет заменена.`
       }
       busy={busy}
       footer={
@@ -94,12 +95,11 @@ export function VersionDialog({
             <Switch
               checked={anyGameVersion}
               onChange={setAnyGameVersion}
-              label={`Не только Minecraft ${instance.mcVersion}`}
+              label={t`Не только Minecraft ${instance.mcVersion}`}
             />
           </div>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Отмена
-          </Button>
+            {t`Отмена`}</Button>
           <Button
             variant="primary"
             loading={busy}
@@ -108,7 +108,7 @@ export function VersionDialog({
               if (chosen !== null) onPick(chosen);
             }}
           >
-            {current === null ? 'Установить' : 'Поставить эту версию'}
+            {current === null ? t`Установить` : t`Поставить эту версию`}
           </Button>
         </>
       }
@@ -118,9 +118,8 @@ export function VersionDialog({
           <div className="flex gap-2.5 rounded-md border border-danger/35 bg-danger/5 p-3">
             <AlertTriangle size={14} strokeWidth={1.5} className="mt-px shrink-0 text-danger" />
             <p className="text-xs text-text">
-              Эта версия сделана для Minecraft {gameVersionsSummary(chosen.gameVersions)}, а сборка — на{' '}
-              {instance.mcVersion}. Она может не запуститься.
-            </p>
+              {t`Эта версия сделана для Minecraft `}{gameVersionsSummary(chosen.gameVersions)}{t`, а сборка — на`}{' '}
+              {instance.mcVersion}{t`. Она может не запуститься.`}</p>
           </div>
         )}
 
@@ -136,15 +135,15 @@ export function VersionDialog({
           <EmptyState
             compact
             icon={<History size={20} strokeWidth={1.5} />}
-            title="Подходящих версий нет"
+            title={t`Подходящих версий нет`}
             description={
               anyGameVersion
                 ? undefined
-                : `Для Minecraft ${instance.mcVersion} версий нет — включите «Не только Minecraft ${instance.mcVersion}».`
+                : t`Для Minecraft ${instance.mcVersion} версий нет — включите «Не только Minecraft ${instance.mcVersion}».`
             }
           />
         ) : (
-          <ul role="listbox" aria-label="Версии" className="flex flex-col gap-1.5">
+          <ul role="listbox" aria-label={t`Версии`} className="flex flex-col gap-1.5">
             {versions.map((version) => {
               const isCurrent = version.versionId === current;
               const isSelected = version.versionId === selected;
@@ -178,8 +177,8 @@ export function VersionDialog({
                             {release}
                           </Badge>
                         )}
-                        {isCurrent && <Badge tone="accent">установлена</Badge>}
-                        {blocked && <Badge tone="danger">только вручную</Badge>}
+                        {isCurrent && <Badge tone="accent">{t`установлена`}</Badge>}
+                        {blocked && <Badge tone="danger">{t`только вручную`}</Badge>}
                       </div>
                       <p className="mt-0.5 truncate text-2xs text-text-dim">
                         {version.name !== version.versionNumber && `${version.name} · `}

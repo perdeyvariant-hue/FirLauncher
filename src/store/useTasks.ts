@@ -3,6 +3,17 @@ import type { Task } from '@/types/task';
 import * as tasksApi from '@/api/tasks';
 import { onEvent } from '@/lib/events';
 import { useToasts } from './useToasts';
+import { t, translate } from '@/lib/i18n';
+
+/** Task titles, stages and errors are written by the backend in Russian. */
+function localized(task: Task): Task {
+  return {
+    ...task,
+    title: translate(task.title),
+    stage: translate(task.stage),
+    error: task.error === null ? null : translate(task.error),
+  };
+}
 
 interface TasksState {
   tasks: Task[];
@@ -21,22 +32,23 @@ export const useTasks = create<TasksState>()((set, get) => ({
 
   load: async () => {
     try {
-      set({ tasks: await tasksApi.listTasks() });
+      set({ tasks: (await tasksApi.listTasks()).map(localized) });
     } catch (raw) {
       useToasts.getState().fail(raw);
     }
   },
 
   subscribe: async () => {
-    const unlistenUpdate = await onEvent('task://update', (task) => {
-      get().upsert(task);
+    const unlistenUpdate = await onEvent('task://update', (raw) => {
+      get().upsert(localized(raw));
     });
-    const unlistenFinished = await onEvent('task://finished', (task) => {
+    const unlistenFinished = await onEvent('task://finished', (raw) => {
+      const task = localized(raw);
       get().upsert(task);
       if (task.state === 'failed' && task.error !== null) {
         useToasts.getState().push({
           tone: 'error',
-          title: `${task.title}: не удалось`,
+          title: t`${task.title}: не удалось`,
           detail: task.error,
           onRetry: () => void tasksApi.retryTask(task.id),
         });

@@ -25,6 +25,8 @@ export interface WindowSize {
 export interface InstanceJavaSettings {
   /** Absolute path to a java executable, or null for auto-selection. */
   readonly javaPath: string | null;
+  /** Run on this Java major (downloaded if missing); null = what the version asks for. */
+  readonly javaMajor: number | null;
   readonly memoryMb: number | null;
   readonly extraJvmArgs: string | null;
   readonly window: WindowSize | null;
@@ -44,6 +46,8 @@ export interface Instance {
   /** Total playtime in seconds. */
   readonly totalPlaySeconds: number;
   readonly group: string | null;
+  /** Pinned to the top of the list. */
+  readonly favorite: boolean;
   readonly java: InstanceJavaSettings;
   readonly status: InstanceStatus;
 }
@@ -99,4 +103,13 @@ export interface LogLine {
   readonly seq: number;
   readonly stream: LogStream;
   readonly text: string;
+}
+
+export interface WorldBackup {
+  readonly fileName: string;
+  readonly world: string;
+  readonly createdAt: string;
+  readonly sizeBytes: number;
+  /** Made by the launcher before an update or a restore. */
+  readonly automatic: boolean;
 }

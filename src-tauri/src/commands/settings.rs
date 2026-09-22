@@ -16,12 +16,14 @@ pub async fn load_settings(state: State<'_, AppState>) -> Result<Settings> {
 #[serde(rename_all = "camelCase")]
 pub struct BuildInfo {
     pub curseforge_key_builtin: bool,
+    pub discord_app_id_builtin: bool,
 }
 
 #[tauri::command]
 pub fn build_info() -> BuildInfo {
     BuildInfo {
         curseforge_key_builtin: crate::mods::builtin_curseforge_key().is_some(),
+        discord_app_id_builtin: crate::presence::builtin_app_id().is_some(),
     }
 }
 

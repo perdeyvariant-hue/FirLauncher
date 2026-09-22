@@ -8,6 +8,7 @@ import { formatBytes, formatSpeed } from '@/lib/format';
 import type { Task } from '@/types/task';
 import { activeTasks, overallProgress, useTasks } from '@/store/useTasks';
 import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 function TaskRow({ task }: { task: Task }): ReactElement {
   const cancel = useTasks((state) => state.cancel);
@@ -35,7 +36,7 @@ function TaskRow({ task }: { task: Task }): ReactElement {
       </div>
 
       <IconButton
-        label="Отменить"
+        label={t`Отменить`}
         size="sm"
         disabled={!task.cancellable}
         icon={<X size={14} strokeWidth={1.5} />}
@@ -58,7 +59,7 @@ export function TaskBar(): ReactElement | null {
   if (active.length === 0) return null;
 
   const headline =
-    active.length === 1 ? (active[0]?.title ?? '') : `Активных задач: ${String(active.length)}`;
+    active.length === 1 ? (active[0]?.title ?? '') : t`Активных задач: ${String(active.length)}`;
 
   return (
     <div className="shrink-0 border-t border-border bg-surface">

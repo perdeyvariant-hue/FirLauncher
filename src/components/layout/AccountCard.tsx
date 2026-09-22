@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { activeAccountOf, useAccounts } from '@/store/useAccounts';
 import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 /** Bottom of the sidebar: whoever the next launch will use. */
 export function AccountCard(): ReactElement {
@@ -17,14 +18,14 @@ export function AccountCard(): ReactElement {
   if (account === null) {
     return (
       <div className="p-2">
-        <Tooltip content="Добавить аккаунт" side="right" className="w-full">
+        <Tooltip content={t`Добавить аккаунт`} side="right" className="w-full">
           <button
             type="button"
             onClick={openAccounts}
             className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-border py-2.5 text-text-dim transition-colors duration-fast ease-out hover:border-accent hover:text-accent"
           >
             <UserPlus size={18} strokeWidth={1.5} />
-            <span className="text-2xs leading-none">Войти</span>
+            <span className="text-2xs leading-none">{t`Войти`}</span>
           </button>
         </Tooltip>
       </div>
@@ -36,8 +37,8 @@ export function AccountCard(): ReactElement {
       <Tooltip
         content={
           account.expired
-            ? `${account.username} — сессия истекла`
-            : `${account.username} · ${account.kind === 'offline' ? 'оффлайн' : 'Microsoft'}`
+            ? t`${account.username} — сессия истекла`
+            : t`${account.username} · ${account.kind === 'offline' ? t`оффлайн` : 'Microsoft'}`
         }
         side="right"
         className="w-full"

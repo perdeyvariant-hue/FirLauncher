@@ -22,6 +22,8 @@ pub struct AppState {
     http: RwLock<reqwest::Client>,
     pub tasks: Arc<TaskManager>,
     pub games: Arc<GameRegistry>,
+    /// Discord Rich Presence while a game runs.
+    pub presence: Arc<crate::presence::Presence>,
     /// OS keyring holding refresh and Minecraft tokens.
     pub secrets: SecretStore,
     /// The device-code sign-in in progress, if any; only one at a time.
@@ -37,6 +39,7 @@ impl AppState {
             http: RwLock::new(http),
             tasks: Arc::new(TaskManager::new(app)),
             games: Arc::new(GameRegistry::default()),
+            presence: Arc::new(crate::presence::Presence::default()),
             secrets: SecretStore::keyring(),
             login: Mutex::new(None),
         })

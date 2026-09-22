@@ -1,7 +1,7 @@
 {
   "name": "firlauncher",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "FirLauncher — minimal, modern Minecraft instance launcher",
   "scripts": {
@@ -20,6 +20,8 @@
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-opener": "^2.2.5",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.12.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.15",
     "lucide-react": "^0.468.0",

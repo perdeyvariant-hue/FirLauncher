@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, History, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, Gauge, History, Package, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Switch } from '@/components/ui/Switch';
 import * as instancesApi from '@/api/instances';
 import { ContentBrowser } from '@/features/mods/ContentBrowser';
+import { OptimizeDialog } from '@/features/mods/OptimizeDialog';
 import { ProjectDialog } from '@/features/mods/ProjectDialog';
 import type { ProjectTarget } from '@/features/mods/ProjectDialog';
 import { useContentInstaller } from '@/features/mods/useContentInstaller';
@@ -23,15 +24,19 @@ import { useAsyncData } from '@/lib/useAsyncData';
 import type { InstalledMod, Instance } from '@/types/instance';
 import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
+import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 export function ModsTab({ instance }: { instance: Instance }): ReactElement {
+  const revision = useUI((state) => state.contentRevision);
   const { data, loading, error, reload } = useAsyncData<InstalledMod[]>(
     () => instancesApi.listInstalledMods(instance.id),
-    [instance.id],
+    [instance.id, revision],
   );
   const fail = useToasts((state) => state.fail);
 
   const [browsing, setBrowsing] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
   const [search, setSearch] = useState('');
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   // The installed file whose description is open.
@@ -106,7 +111,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-[240px]">
           <Input
-            placeholder="Поиск по модам"
+            placeholder={t`Поиск по модам`}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -119,8 +124,17 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
         <div className="ml-auto flex items-center gap-2">
           {vanilla && (
-            <span className="text-2xs text-text-dim">Моды работают только со сборками с лоадером</span>
+            <span className="text-2xs text-text-dim">{t`Моды работают только со сборками с лоадером`}</span>
           )}
+          <Button
+            size="sm"
+            disabled={vanilla}
+            icon={<Gauge size={14} strokeWidth={1.5} />}
+            onClick={() => {
+              setOptimizing(true);
+            }}
+          >
+            {t`Оптимизировать`}</Button>
           <Button
             variant="primary"
             size="sm"
@@ -130,10 +144,18 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
               setBrowsing(true);
             }}
           >
-            Добавить моды
-          </Button>
+            {t`Добавить моды`}</Button>
         </div>
       </div>
+
+      <OptimizeDialog
+        instance={instance}
+        open={optimizing}
+        onClose={() => {
+          setOptimizing(false);
+        }}
+        onDone={reload}
+      />
 
       {loading ? (
         <div className="flex flex-col gap-2">
@@ -145,12 +167,12 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
         <EmptyState
           compact
           icon={<Package size={20} strokeWidth={1.5} />}
-          title={mods.length === 0 ? 'Моды не установлены' : 'Ничего не найдено'}
+          title={mods.length === 0 ? t`Моды не установлены` : t`Ничего не найдено`}
           description={
             mods.length === 0
               ? vanilla
-                ? 'В ванильную сборку моды не ставятся — создайте сборку с Fabric, Quilt, Forge или NeoForge.'
-                : 'Найдите моды на Modrinth или CurseForge и поставьте их в эту сборку в один клик.'
+                ? t`В ванильную сборку моды не ставятся — создайте сборку с Fabric, Quilt, Forge или NeoForge.`
+                : t`Найдите моды на Modrinth или CurseForge и поставьте их в эту сборку в один клик.`
               : undefined
           }
           action={
@@ -163,8 +185,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   setBrowsing(true);
                 }}
               >
-                Добавить моды
-              </Button>
+                {t`Добавить моды`}</Button>
             ) : undefined
           }
         />
@@ -185,7 +206,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                     <span className="w-4 shrink-0" />
                   ) : (
                     <Checkbox
-                      label={`Обновить ${mod.name}`}
+                      label={t`Обновить ${mod.name}`}
                       checked={updates.selected.has(mod.fileName)}
                       disabled={updates.updating.has(mod.fileName)}
                       onChange={(on) => {
@@ -204,7 +225,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                 <button
                   type="button"
                   disabled={source === null || provider === null}
-                  title={provider === null ? undefined : 'Открыть описание'}
+                  title={provider === null ? undefined : t`Открыть описание`}
                   onClick={() => {
                     if (source === null || provider === null) return;
                     setDescribed({
@@ -239,7 +260,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
                 {update !== undefined && (
                   <IconButton
-                    label={`Обновить до ${update.latest.versionNumber}`}
+                    label={t`Обновить до ${update.latest.versionNumber}`}
                     size="sm"
                     disabled={updates.updating.has(mod.fileName)}
                     icon={<ArrowUpCircle size={14} strokeWidth={1.5} />}
@@ -251,7 +272,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
                 {source !== null && provider !== null && (
                   <IconButton
-                    label="Сменить версию"
+                    label={t`Сменить версию`}
                     size="sm"
                     icon={<History size={14} strokeWidth={1.5} />}
                     onClick={() => {
@@ -266,7 +287,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                 )}
 
                 <IconButton
-                  label="Удалить мод"
+                  label={t`Удалить мод`}
                   tone="danger"
                   size="sm"
                   icon={<Trash2 size={14} strokeWidth={1.5} />}
@@ -308,8 +329,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                 });
               }}
             >
-              Сменить версию
-            </Button>
+              {t`Сменить версию`}</Button>
           );
         }}
       />

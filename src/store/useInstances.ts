@@ -3,6 +3,7 @@ import type { Instance, ModLoader } from '@/types/instance';
 import type { CreateInstanceInput } from '@/api/instances';
 import * as instancesApi from '@/api/instances';
 import { useToasts } from './useToasts';
+import { locale, t } from '@/lib/i18n';
 
 export type SortKey = 'lastPlayed' | 'name' | 'playtime' | 'created';
 
@@ -24,7 +25,7 @@ interface InstancesState {
   duplicate: (id: string) => Promise<void>;
   rename: (id: string, name: string) => Promise<void>;
   save: (instance: Instance) => Promise<void>;
-  launch: (id: string, accountId: string) => Promise<void>;
+  launch: (id: string, accountId: string, server?: string | null) => Promise<void>;
   /** Adds an instance created elsewhere (import, modpack install). */
   adopt: (instance: Instance) => void;
 }
@@ -75,7 +76,7 @@ export const useInstances = create<InstancesState>()((set, get) => ({
     set({ instances: previous.filter((instance) => instance.id !== id) });
     try {
       await instancesApi.deleteInstance(id);
-      useToasts.getState().notify('Сборка удалена', 'success');
+      useToasts.getState().notify(t`Сборка удалена`, 'success');
     } catch (raw) {
       set({ instances: previous });
       useToasts.getState().fail(raw);
@@ -86,7 +87,7 @@ export const useInstances = create<InstancesState>()((set, get) => ({
     const source = get().instances.find((instance) => instance.id === id);
     if (source === undefined) return;
     try {
-      const copy = await instancesApi.duplicateInstance(id, `${source.name} (копия)`);
+      const copy = await instancesApi.duplicateInstance(id, t`${source.name} (копия)`);
       set((state) => ({ instances: [copy, ...state.instances] }));
     } catch (raw) {
       useToasts.getState().fail(raw);
@@ -137,11 +138,11 @@ export const useInstances = create<InstancesState>()((set, get) => ({
     }));
   },
 
-  launch: async (id, accountId) => {
+  launch: async (id, accountId, server = null) => {
     try {
-      await instancesApi.launchInstance(id, accountId);
+      await instancesApi.launchInstance(id, accountId, server);
     } catch (raw) {
-      useToasts.getState().fail(raw, () => void get().launch(id, accountId));
+      useToasts.getState().fail(raw, () => void get().launch(id, accountId, server));
     }
   },
 }));
@@ -168,7 +169,7 @@ export function filterInstances(
   return filtered.sort((a, b) => {
     switch (sort) {
       case 'name':
-        return a.name.localeCompare(b.name, 'ru');
+        return a.name.localeCompare(b.name, locale);
       case 'playtime':
         return b.totalPlaySeconds - a.totalPlaySeconds;
       case 'created':

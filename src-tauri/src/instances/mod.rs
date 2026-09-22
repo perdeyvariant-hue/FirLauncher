@@ -1,6 +1,7 @@
 //! Instance metadata and the operations behind the instance grid.
 
 pub mod contents;
+pub mod worlds;
 
 use std::collections::BTreeMap;
 
@@ -46,6 +47,9 @@ pub struct WindowSize {
 #[serde(rename_all = "camelCase", default)]
 pub struct InstanceJava {
     pub java_path: Option<String>,
+    /// Run on this Java major instead of the one the version asks for (a
+    /// mod may need a newer Java than Minecraft itself). Downloaded if absent.
+    pub java_major: Option<u32>,
     pub memory_mb: Option<u32>,
     pub extra_jvm_args: Option<String>,
     pub window: Option<WindowSize>,
@@ -77,6 +81,9 @@ pub struct InstanceMeta {
     #[serde(default)]
     pub total_play_seconds: u64,
     pub group: Option<String>,
+    /// Pinned to the top of the instance list.
+    #[serde(default)]
+    pub favorite: bool,
     #[serde(default)]
     pub java: InstanceJava,
 }
@@ -251,6 +258,7 @@ pub async fn create(paths: &Paths, input: CreateInstanceInput) -> Result<Instanc
         last_played_at: None,
         total_play_seconds: 0,
         group: None,
+        favorite: false,
         java: InstanceJava::default(),
     };
 

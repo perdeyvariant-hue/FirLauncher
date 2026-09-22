@@ -68,6 +68,14 @@ export interface Settings {
    */
   readonly msaClientId: string;
   readonly appearance: Appearance;
+  /** Look for a new launcher release on start. */
+  readonly checkForUpdates: boolean;
+  /** Zip every world of an instance before mod or modpack updates. */
+  readonly backupWorldsBeforeUpdates: boolean;
+  /** Show the running instance in the Discord status. */
+  readonly discordPresence: boolean;
+  /** Discord application id; empty uses the one the launcher was built with. */
+  readonly discordAppId: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -82,4 +90,8 @@ export const DEFAULT_SETTINGS: Settings = {
   dataDirOverride: '',
   msaClientId: '',
   appearance: DEFAULT_APPEARANCE,
+  checkForUpdates: true,
+  backupWorldsBeforeUpdates: true,
+  discordPresence: true,
+  discordAppId: '',
 };

@@ -11,6 +11,7 @@ interface SettingsState {
   saving: boolean;
   /** Release builds ship their own CurseForge key; the field is hidden then. */
   curseforgeKeyBuiltin: boolean;
+  discordAppIdBuiltin: boolean;
   load: () => Promise<void>;
   patch: (patch: Partial<Settings>) => Promise<void>;
   /** Shorthand for changing a few personalisation fields. */
@@ -28,11 +29,17 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   loaded: false,
   saving: false,
   curseforgeKeyBuiltin: false,
+  discordAppIdBuiltin: false,
 
   load: async () => {
     try {
       const [settings, info] = await Promise.all([metaApi.loadSettings(), metaApi.buildInfo()]);
-      set({ settings, loaded: true, curseforgeKeyBuiltin: info.curseforgeKeyBuiltin });
+      set({
+        settings,
+        loaded: true,
+        curseforgeKeyBuiltin: info.curseforgeKeyBuiltin,
+        discordAppIdBuiltin: info.discordAppIdBuiltin,
+      });
       applyLook(settings);
     } catch (raw) {
       useToasts.getState().fail(raw);

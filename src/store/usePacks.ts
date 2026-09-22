@@ -4,6 +4,7 @@ import type { ImportResult, SkippedFile } from '@/types/pack';
 import { useInstances } from './useInstances';
 import { useToasts } from './useToasts';
 import { useUI } from './useUI';
+import { t } from '@/lib/i18n';
 
 interface PacksState {
   /** Instance the export dialog is open for. */
@@ -34,7 +35,7 @@ export const usePacks = create<PacksState>()((set) => ({
   finishImport: (result) => {
     useInstances.getState().adopt(result.instance);
     useUI.getState().openInstance(result.instance.id);
-    useToasts.getState().notify(`Сборка «${result.instance.name}» готова`, 'success');
+    useToasts.getState().notify(t`Сборка «${result.instance.name}» готова`, 'success');
     if (result.skipped.length > 0) set({ skipped: result.skipped });
   },
 }));

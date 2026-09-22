@@ -3,15 +3,16 @@ import * as modsApi from '@/api/mods';
 import type { ContentKind } from '@/api/mods';
 import type { ModUpdate } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
+import { t } from '@/lib/i18n';
 
 const DONE: Readonly<Record<ContentKind, { none: string; one: string; many: string }>> = {
-  mod: { none: 'Все моды актуальны', one: 'Мод обновлён', many: 'Обновлено модов' },
+  mod: { none: t`Все моды актуальны`, one: t`Мод обновлён`, many: t`Обновлено модов` },
   resourcepack: {
-    none: 'Все ресурспаки актуальны',
-    one: 'Ресурспак обновлён',
-    many: 'Обновлено ресурспаков',
+    none: t`Все ресурспаки актуальны`,
+    one: t`Ресурспак обновлён`,
+    many: t`Обновлено ресурспаков`,
   },
-  shader: { none: 'Все шейдеры актуальны', one: 'Шейдер обновлён', many: 'Обновлено шейдеров' },
+  shader: { none: t`Все шейдеры актуальны`, one: t`Шейдер обновлён`, many: t`Обновлено шейдеров` },
 };
 
 export interface ContentUpdates {
@@ -65,7 +66,7 @@ export function useContentUpdates(
       // Everything starts selected; "update selected" is opt-out.
       setSelectedSet(new Set(found.map((update) => update.fileName)));
       notify(
-        found.length === 0 ? DONE[kind].none : `Есть обновления: ${String(found.length)}`,
+        found.length === 0 ? DONE[kind].none : t`Есть обновления: ${String(found.length)}`,
         found.length === 0 ? 'success' : 'info',
       );
       // The check may have identified hand-added files; show their source.

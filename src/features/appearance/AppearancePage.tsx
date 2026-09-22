@@ -31,18 +31,19 @@ import {
   MistWallpaper,
 } from './art';
 import { GALLERY, LICENSE_URLS, galleryImageUrl, galleryMascot } from './gallery';
+import { languageSetting, setLanguage, t } from '@/lib/i18n';
 
 const ACCENTS: readonly { readonly hex: string; readonly name: string }[] = [
-  { hex: '#8B5CF6', name: 'Фиолетовый' },
-  { hex: '#3B82F6', name: 'Синий' },
-  { hex: '#0EA5E9', name: 'Голубой' },
-  { hex: '#14B8A6', name: 'Бирюзовый' },
-  { hex: '#22C55E', name: 'Зелёный' },
-  { hex: '#EAB308', name: 'Жёлтый' },
-  { hex: '#F97316', name: 'Оранжевый' },
-  { hex: '#EF4444', name: 'Красный' },
-  { hex: '#EC4899', name: 'Розовый' },
-  { hex: '#A1A1AA', name: 'Графит' },
+  { hex: '#8B5CF6', name: t`Фиолетовый` },
+  { hex: '#3B82F6', name: t`Синий` },
+  { hex: '#0EA5E9', name: t`Голубой` },
+  { hex: '#14B8A6', name: t`Бирюзовый` },
+  { hex: '#22C55E', name: t`Зелёный` },
+  { hex: '#EAB308', name: t`Жёлтый` },
+  { hex: '#F97316', name: t`Оранжевый` },
+  { hex: '#EF4444', name: t`Красный` },
+  { hex: '#EC4899', name: t`Розовый` },
+  { hex: '#A1A1AA', name: t`Графит` },
 ];
 
 interface Preset {
@@ -55,50 +56,50 @@ interface Preset {
 
 /** One-click looks; they touch colour, wallpaper and mascot only. */
 const PRESETS: readonly Preset[] = [
-  { name: 'Фиолетовая ночь', accent: '#8B5CF6', wallpaper: 'mist', mascot: 'none' },
+  { name: t`Фиолетовая ночь`, accent: '#8B5CF6', wallpaper: 'mist', mascot: 'none' },
   {
-    name: 'Хвойный лес',
+    name: t`Хвойный лес`,
     accent: '#22C55E',
     wallpaper: 'forest',
     mascot: 'gallery',
     galleryId: 'wikipe-tan-casual',
   },
-  { name: 'Океан', accent: '#0EA5E9', wallpaper: 'mist', mascot: 'none' },
+  { name: t`Океан`, accent: '#0EA5E9', wallpaper: 'mist', mascot: 'none' },
   {
-    name: 'Хеллоуин',
+    name: t`Хеллоуин`,
     accent: '#F97316',
     wallpaper: 'forest',
     mascot: 'gallery',
     galleryId: 'wikipe-tan-halloween',
   },
   {
-    name: 'Сакура',
+    name: t`Сакура`,
     accent: '#EC4899',
     wallpaper: 'dots',
     mascot: 'gallery',
     galleryId: 'wikipe-tan-dress',
   },
   {
-    name: 'Википе-тан',
+    name: t`Википе-тан`,
     accent: '#60A5FA',
     wallpaper: 'mist',
     mascot: 'gallery',
     galleryId: 'wikipe-tan-classic',
   },
   {
-    name: 'Космос',
+    name: t`Космос`,
     accent: '#6366F1',
     wallpaper: 'dots',
     mascot: 'gallery',
     galleryId: 'wikipe-tan-astronaut',
   },
-  { name: 'Монохром', accent: '#A1A1AA', wallpaper: 'none', mascot: 'none' },
+  { name: t`Монохром`, accent: '#A1A1AA', wallpaper: 'none', mascot: 'none' },
 ];
 
 const THEMES: readonly { readonly value: ThemeMode; readonly label: string }[] = [
-  { value: 'dark', label: 'Тёмная' },
-  { value: 'light', label: 'Светлая' },
-  { value: 'system', label: 'Как в системе' },
+  { value: 'dark', label: t`Тёмная` },
+  { value: 'light', label: t`Светлая` },
+  { value: 'system', label: t`Как в системе` },
 ];
 
 /**
@@ -274,16 +275,16 @@ function WallpaperPreview({ kind, custom }: { kind: WallpaperKind; custom: strin
 }
 
 const WALLPAPERS: readonly { readonly kind: WallpaperKind; readonly label: string }[] = [
-  { kind: 'none', label: 'Без обоев' },
-  { kind: 'mist', label: 'Туман' },
-  { kind: 'dots', label: 'Точки' },
-  { kind: 'forest', label: 'Хвойный лес' },
-  { kind: 'custom', label: 'Своё изображение' },
+  { kind: 'none', label: t`Без обоев` },
+  { kind: 'mist', label: t`Туман` },
+  { kind: 'dots', label: t`Точки` },
+  { kind: 'forest', label: t`Хвойный лес` },
+  { kind: 'custom', label: t`Своё изображение` },
 ];
 
 const MASCOTS: readonly { readonly kind: MascotKind; readonly label: string }[] = [
-  { kind: 'none', label: 'Без талисмана' },
-  { kind: 'skin', label: 'Мой скин' },
+  { kind: 'none', label: t`Без талисмана` },
+  { kind: 'skin', label: t`Мой скин` },
 ];
 
 /** A picture button in the mascot grids, optionally removable. */
@@ -319,8 +320,8 @@ function PictureChoice({
       {onRemove !== undefined && (
         <button
           type="button"
-          aria-label={`Удалить: ${label}`}
-          title="Удалить"
+          aria-label={t`Удалить: ${label}`}
+          title={t`Удалить`}
           onClick={onRemove}
           className={cn(
             'absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md',
@@ -381,7 +382,7 @@ export function AppearancePage(): ReactElement {
   return (
     <div className="flex h-full flex-col">
       <header className="hairline-b flex h-14 shrink-0 items-center gap-3 px-6">
-        <h1 className="text-sm font-semibold text-text">Оформление</h1>
+        <h1 className="text-sm font-semibold text-text">{t`Оформление`}</h1>
         <div className="ml-auto">
           <Button
             size="sm"
@@ -391,14 +392,13 @@ export function AppearancePage(): ReactElement {
               void patch({ appearance: DEFAULT_APPEARANCE });
             }}
           >
-            Сбросить всё
-          </Button>
+            {t`Сбросить всё`}</Button>
         </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="flex max-w-[820px] flex-col gap-3">
-          <Section title="Готовые темы" description="Цвет, обои и талисман одним нажатием.">
+          <Section title={t`Готовые темы`} description={t`Цвет, обои и талисман одним нажатием.`}>
             <div role="radiogroup" className="grid grid-cols-4 gap-2">
               {PRESETS.map((preset) => {
                 const selected =
@@ -448,7 +448,7 @@ export function AppearancePage(): ReactElement {
             </div>
           </Section>
 
-          <Section title="Тема и цвет">
+          <Section title={t`Тема и цвет`}>
             <Segmented
               value={themeMode}
               options={THEMES}
@@ -457,7 +457,7 @@ export function AppearancePage(): ReactElement {
               }}
             />
 
-            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Цвет акцента">
+            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={t`Цвет акцента`}>
               {ACCENTS.map((swatch) => (
                 <button
                   key={swatch.hex}
@@ -482,7 +482,7 @@ export function AppearancePage(): ReactElement {
               ))}
 
               <label
-                title="Свой цвет"
+                title={t`Свой цвет`}
                 className={cn(
                   'relative flex h-8 cursor-pointer items-center gap-2 rounded-full border border-border px-2.5',
                   'text-2xs text-text-dim transition-colors duration-fast ease-out hover:border-text-dim',
@@ -499,7 +499,7 @@ export function AppearancePage(): ReactElement {
                     set({ accent: event.target.value.toUpperCase() });
                   }}
                   className="absolute inset-0 cursor-pointer opacity-0"
-                  aria-label="Свой цвет акцента"
+                  aria-label={t`Свой цвет акцента`}
                 />
               </label>
             </div>
@@ -507,15 +507,13 @@ export function AppearancePage(): ReactElement {
             {lowContrast && (
               <p className="flex items-center gap-2 text-2xs text-danger">
                 <AlertTriangle size={13} strokeWidth={1.5} />
-                Этот цвет плохо виден на {theme === 'dark' ? 'тёмном' : 'светлом'} фоне.
-              </p>
+                {t`Этот цвет плохо виден на `}{theme === 'dark' ? t`тёмном` : t`светлом`} {t` фоне.`}</p>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="primary">
-                Так выглядит кнопка
-              </Button>
-              <span className="text-xs text-accent">и ссылка</span>
+                {t`Так выглядит кнопка`}</Button>
+              <span className="text-xs text-accent">{t`и ссылка`}</span>
               <span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2">
                 <span className="block h-full w-2/3 rounded-full bg-accent" />
               </span>
@@ -523,8 +521,8 @@ export function AppearancePage(): ReactElement {
           </Section>
 
           <Section
-            title="Обои"
-            description="Рисуются за содержимым страниц. Свои картинки хранятся в папке данных лаунчера."
+            title={t`Обои`}
+            description={t`Рисуются за содержимым страниц. Свои картинки хранятся в папке данных лаунчера.`}
           >
             <div role="radiogroup" className="grid grid-cols-5 gap-2">
               {WALLPAPERS.map((option) => (
@@ -552,8 +550,7 @@ export function AppearancePage(): ReactElement {
                       void pickWallpaper();
                     }}
                   >
-                    Заменить
-                  </Button>
+                    {t`Заменить`}</Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -563,12 +560,11 @@ export function AppearancePage(): ReactElement {
                       void clearWallpaper();
                     }}
                   >
-                    Убрать
-                  </Button>
+                    {t`Убрать`}</Button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Slider
-                    label="Затемнение"
+                    label={t`Затемнение`}
                     value={appearance.wallpaperDim}
                     min={0}
                     max={90}
@@ -579,7 +575,7 @@ export function AppearancePage(): ReactElement {
                     }}
                   />
                   <Slider
-                    label="Размытие"
+                    label={t`Размытие`}
                     value={appearance.wallpaperBlur}
                     min={0}
                     max={24}
@@ -599,15 +595,15 @@ export function AppearancePage(): ReactElement {
                 onChange={(value) => {
                   set({ glassPanels: value });
                 }}
-                label="Стеклянные панели"
-                description="Карточки становятся полупрозрачными и размывают обои под собой."
+                label={t`Стеклянные панели`}
+                description={t`Карточки становятся полупрозрачными и размывают обои под собой.`}
               />
             )}
           </Section>
 
           <Section
-            title="Талисман в углу"
-            description="Сидит в углу за содержимым и не мешает нажимать на кнопки."
+            title={t`Талисман в углу`}
+            description={t`Сидит в углу за содержимым и не мешает нажимать на кнопки.`}
           >
             <div role="radiogroup" className="grid grid-cols-6 gap-2">
               {MASCOTS.map((option) => (
@@ -626,8 +622,7 @@ export function AppearancePage(): ReactElement {
 
             <div className="flex flex-col gap-2">
               <p className="text-2xs font-medium text-text-dim">
-                Аниме · картинки со свободной лицензией CC BY-SA с Wikimedia Commons
-              </p>
+                {t`Аниме · картинки со свободной лицензией CC BY-SA с Wikimedia Commons`}</p>
               <div role="radiogroup" className="grid grid-cols-9 gap-2">
                 {GALLERY.map((entry) => (
                   <PictureChoice
@@ -644,7 +639,7 @@ export function AppearancePage(): ReactElement {
               {selectedGallery !== undefined && (
                 <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs text-text-dim">
                   <span className="text-text">{selectedGallery.name}</span>
-                  <span>· автор: {selectedGallery.author} ·</span>
+                  <span>{t`· автор: `}{selectedGallery.author} ·</span>
                   <button
                     type="button"
                     className="text-accent underline-offset-2 hover:underline"
@@ -662,8 +657,7 @@ export function AppearancePage(): ReactElement {
                       void openExternal(selectedGallery.source);
                     }}
                   >
-                    оригинал на Wikimedia Commons
-                    <ExternalLink size={11} strokeWidth={1.5} />
+                    {t`оригинал на Wikimedia Commons`}<ExternalLink size={11} strokeWidth={1.5} />
                   </button>
                 </p>
               )}
@@ -671,14 +665,13 @@ export function AppearancePage(): ReactElement {
 
             <div className="flex flex-col gap-2">
               <p className="text-2xs font-medium text-text-dim">
-                Мои картинки · хранятся только на этом компьютере
-              </p>
+                {t`Мои картинки · хранятся только на этом компьютере`}</p>
               <div role="radiogroup" className="grid grid-cols-9 gap-2">
                 {mascots.map((mascot, index) => (
                   <PictureChoice
                     key={mascot.id}
                     src={mascot.url}
-                    label={`Картинка ${String(index + 1)}`}
+                    label={t`Картинка ${String(index + 1)}`}
                     selected={appearance.mascot === 'custom' && appearance.mascotCustomId === mascot.id}
                     onSelect={() => {
                       set({ mascot: 'custom', mascotCustomId: mascot.id });
@@ -700,16 +693,15 @@ export function AppearancePage(): ReactElement {
                   )}
                 >
                   <ImagePlus size={18} strokeWidth={1.5} />
-                  Добавить
-                </button>
+                  {t`Добавить`}</button>
               </div>
             </div>
 
             {appearance.mascot === 'skin' && (account === null || account.skinUrl === null) && (
               <p className="text-2xs text-text-dim">
                 {account === null
-                  ? 'Добавьте аккаунт Microsoft — у оффлайн-аккаунтов скина нет.'
-                  : 'У этого аккаунта нет скина (оффлайн-аккаунты его не имеют) — угол останется пустым.'}
+                  ? t`Добавьте аккаунт Microsoft — у оффлайн-аккаунтов скина нет.`
+                  : t`У этого аккаунта нет скина (оффлайн-аккаунты его не имеют) — угол останется пустым.`}
               </p>
             )}
 
@@ -717,7 +709,7 @@ export function AppearancePage(): ReactElement {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <Slider
-                    label="Размер"
+                    label={t`Размер`}
                     value={appearance.mascotSize}
                     min={64}
                     max={320}
@@ -728,7 +720,7 @@ export function AppearancePage(): ReactElement {
                     }}
                   />
                   <Slider
-                    label="Непрозрачность"
+                    label={t`Непрозрачность`}
                     value={appearance.mascotOpacity}
                     min={10}
                     max={100}
@@ -742,8 +734,8 @@ export function AppearancePage(): ReactElement {
                 <Segmented
                   value={appearance.mascotSide}
                   options={[
-                    { value: 'left', label: 'Слева' },
-                    { value: 'right', label: 'Справа' },
+                    { value: 'left', label: t`Слева` },
+                    { value: 'right', label: t`Справа` },
                   ]}
                   onChange={(value) => {
                     set({ mascotSide: value });
@@ -753,10 +745,24 @@ export function AppearancePage(): ReactElement {
             )}
           </Section>
 
-          <Section title="Интерфейс">
+          <Section title={t`Интерфейс`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-text-dim">{t`Язык`}</span>
+              <Segmented
+                value={languageSetting()}
+                options={[
+                  { value: 'ru', label: 'Русский' },
+                  { value: 'en', label: 'English' },
+                  { value: 'system', label: t`Как в системе` },
+                ]}
+                onChange={(value) => {
+                  setLanguage(value);
+                }}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Slider
-                label="Масштаб"
+                label={t`Масштаб`}
                 value={appearance.uiScale}
                 min={80}
                 max={130}
@@ -767,12 +773,12 @@ export function AppearancePage(): ReactElement {
                 }}
               />
               <Slider
-                label="Скругление углов"
+                label={t`Скругление углов`}
                 value={appearance.radius}
                 min={0}
                 max={16}
                 step={1}
-                valueLabel={appearance.radius === 0 ? 'острые' : `${String(appearance.radius)} px`}
+                valueLabel={appearance.radius === 0 ? t`острые` : `${String(appearance.radius)} px`}
                 onChange={(value) => {
                   set({ radius: value });
                 }}
@@ -783,8 +789,8 @@ export function AppearancePage(): ReactElement {
               onChange={(value) => {
                 set({ reduceMotion: value });
               }}
-              label="Меньше анимаций"
-              description="Отключает плавные переходы и появление элементов."
+              label={t`Меньше анимаций`}
+              description={t`Отключает плавные переходы и появление элементов.`}
             />
           </Section>
         </div>

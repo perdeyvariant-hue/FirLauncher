@@ -10,6 +10,8 @@ export interface LauncherEvents {
   'task://update': Task;
   'task://finished': Task;
   'game://log': { instanceId: string; stream: LogStream; line: string };
+  /** A desktop shortcut was used while the launcher was open. */
+  'launch://request': string;
   'game://exit': {
     instanceId: string;
     exitCode: number;

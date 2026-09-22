@@ -3,6 +3,7 @@ import type { Account } from '@/types/account';
 import * as accountsApi from '@/api/accounts';
 import { onEvent } from '@/lib/events';
 import { useToasts } from './useToasts';
+import { t } from '@/lib/i18n';
 
 const ACTIVE_KEY = 'firlauncher.activeAccountId';
 
@@ -68,7 +69,7 @@ export const useAccounts = create<AccountsState>()((set, get) => ({
       const account = await accountsApi.addOfflineAccount(username);
       set((state) => ({ accounts: [...state.accounts, account] }));
       get().setActive(account.id);
-      useToasts.getState().notify(`Аккаунт ${account.username} добавлен`, 'success');
+      useToasts.getState().notify(t`Аккаунт ${account.username} добавлен`, 'success');
     } catch (raw) {
       useToasts.getState().fail(raw);
     }
@@ -80,7 +81,7 @@ export const useAccounts = create<AccountsState>()((set, get) => ({
       set((state) => ({
         accounts: state.accounts.map((item) => (item.id === account.id ? account : item)),
       }));
-      useToasts.getState().notify(`${account.username}: вход обновлён`, 'success');
+      useToasts.getState().notify(t`${account.username}: вход обновлён`, 'success');
     } catch (raw) {
       useToasts.getState().fail(raw, () => void get().refresh(id));
       // A failed refresh may have marked the account expired server-side.

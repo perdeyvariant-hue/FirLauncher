@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { useAccounts } from '@/store/useAccounts';
+import { t } from '@/lib/i18n';
 
 export interface AddAccountDialogProps {
   open: boolean;
@@ -28,7 +29,7 @@ export function AddAccountDialog({
 
   const trimmed = username.trim();
   const valid = USERNAME_PATTERN.test(trimmed);
-  const error = touched && !valid ? 'От 3 до 16 символов: латиница, цифры и «_»' : null;
+  const error = touched && !valid ? t`От 3 до 16 символов: латиница, цифры и «_»` : null;
 
   const submitOffline = async (): Promise<void> => {
     setSubmitting(true);
@@ -43,8 +44,8 @@ export function AddAccountDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="Добавить аккаунт"
-      description="Microsoft — для игры на серверах и доступа к скинам. Оффлайн — только одиночная игра."
+      title={t`Добавить аккаунт`}
+      description={t`Microsoft — для игры на серверах и доступа к скинам. Оффлайн — только одиночная игра.`}
       busy={submitting}
     >
       <div className="flex flex-col gap-4 py-2">
@@ -56,9 +57,7 @@ export function AddAccountDialog({
             <div className="min-w-0">
               <h3 className="text-xs font-semibold text-text">Microsoft</h3>
               <p className="mt-1 text-2xs leading-relaxed text-text-dim">
-                Вход по коду устройства: лаунчер покажет код, вы подтвердите его в браузере.
-                Токен сохранится в системном хранилище ключей.
-              </p>
+                {t`Вход по коду устройства: лаунчер покажет код, вы подтвердите его в браузере. Токен сохранится в системном хранилище ключей.`}</p>
             </div>
           </div>
           <div>
@@ -67,8 +66,7 @@ export function AddAccountDialog({
               size="sm"
               onClick={onMicrosoft}
             >
-              Войти через Microsoft
-            </Button>
+              {t`Войти через Microsoft`}</Button>
           </div>
         </section>
 
@@ -78,15 +76,14 @@ export function AddAccountDialog({
               <UserCircle2 size={17} strokeWidth={1.5} />
             </span>
             <div className="min-w-0">
-              <h3 className="text-xs font-semibold text-text">Оффлайн-аккаунт</h3>
+              <h3 className="text-xs font-semibold text-text">{t`Оффлайн-аккаунт`}</h3>
               <p className="mt-1 text-2xs leading-relaxed text-text-dim">
-                UUID вычисляется из ника детерминированно, как в официальном клиенте.
-              </p>
+                {t`UUID вычисляется из ника детерминированно, как в официальном клиенте.`}</p>
             </div>
           </div>
 
           <Input
-            label="Ник"
+            label={t`Ник`}
             placeholder="Steve"
             value={username}
             error={error}
@@ -107,8 +104,7 @@ export function AddAccountDialog({
                 void submitOffline();
               }}
             >
-              Создать оффлайн-аккаунт
-            </Button>
+              {t`Создать оффлайн-аккаунт`}</Button>
           </div>
         </section>
       </div>

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Copy, FolderOpen, Play, Share2, Square, Trash2 } from 'lucide-react';
+import { Copy, FolderInput, FolderOpen, Link2, Play, Share2, Square, Star, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { ContextMenu } from '@/components/ui/ContextMenu';
@@ -7,6 +7,7 @@ import type { ContextMenuItem } from '@/components/ui/ContextMenu';
 import { formatPlaytime, formatRelativeDate, initialsOf } from '@/lib/format';
 import type { Instance } from '@/types/instance';
 import { LOADER_LABELS } from '@/types/instance';
+import { t } from '@/lib/i18n';
 
 export interface InstanceCardActions {
   onOpen: (id: string) => void;
@@ -16,6 +17,9 @@ export interface InstanceCardActions {
   onDuplicate: (id: string) => void;
   onExport: (id: string) => void;
   onDelete: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onChooseGroup: (id: string) => void;
+  onShortcut: (id: string) => void;
 }
 
 export interface InstanceCardProps extends InstanceCardActions {
@@ -29,7 +33,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
   const menu: readonly ContextMenuItem[] = [
     {
       id: 'play',
-      label: running ? 'Остановить' : 'Играть',
+      label: running ? t`Остановить` : t`Играть`,
       icon: running ? (
         <Square size={14} strokeWidth={1.5} />
       ) : (
@@ -42,7 +46,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
     },
     {
       id: 'folder',
-      label: 'Папка',
+      label: t`Папка`,
       icon: <FolderOpen size={14} strokeWidth={1.5} />,
       onSelect: () => {
         actions.onOpenFolder(instance.id);
@@ -50,15 +54,40 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
     },
     {
       id: 'duplicate',
-      label: 'Дублировать',
+      label: t`Дублировать`,
       icon: <Copy size={14} strokeWidth={1.5} />,
       onSelect: () => {
         actions.onDuplicate(instance.id);
       },
     },
     {
+      id: 'favorite',
+      label: instance.favorite ? t`Убрать из избранного` : t`В избранное`,
+      icon: <Star size={14} strokeWidth={1.5} />,
+      separatorBefore: true,
+      onSelect: () => {
+        actions.onToggleFavorite(instance.id);
+      },
+    },
+    {
+      id: 'group',
+      label: t`Группа…`,
+      icon: <FolderInput size={14} strokeWidth={1.5} />,
+      onSelect: () => {
+        actions.onChooseGroup(instance.id);
+      },
+    },
+    {
+      id: 'shortcut',
+      label: t`Ярлык на рабочий стол`,
+      icon: <Link2 size={14} strokeWidth={1.5} />,
+      onSelect: () => {
+        actions.onShortcut(instance.id);
+      },
+    },
+    {
       id: 'export',
-      label: 'Экспорт',
+      label: t`Экспорт`,
       icon: <Share2 size={14} strokeWidth={1.5} />,
       onSelect: () => {
         actions.onExport(instance.id);
@@ -66,7 +95,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
     },
     {
       id: 'delete',
-      label: 'Удалить',
+      label: t`Удалить`,
       icon: <Trash2 size={14} strokeWidth={1.5} />,
       tone: 'danger',
       separatorBefore: true,
@@ -101,7 +130,12 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
           <InstanceIcon instance={instance} />
 
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-medium text-text">{instance.name}</h3>
+            <h3 className="flex items-center gap-1.5 text-sm font-medium text-text">
+              <span className="truncate">{instance.name}</span>
+              {instance.favorite && (
+                <Star size={12} strokeWidth={2} className="shrink-0 fill-accent text-accent" aria-label={t`В избранном`} />
+              )}
+            </h3>
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
               <Badge tone="outline">{instance.mcVersion}</Badge>
               {instance.loader !== 'vanilla' && (
@@ -115,7 +149,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
 
           <button
             type="button"
-            aria-label={running ? 'Остановить' : 'Играть'}
+            aria-label={running ? t`Остановить` : t`Играть`}
             onClick={(event) => {
               event.stopPropagation();
               if (running) actions.onStop(instance.id);
@@ -143,7 +177,7 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
           <span>
             {instance.totalPlaySeconds > 0
               ? formatPlaytime(instance.totalPlaySeconds)
-              : 'ещё не запускалась'}
+              : t`ещё не запускалась`}
           </span>
           <span>{formatRelativeDate(instance.lastPlayedAt)}</span>
         </footer>

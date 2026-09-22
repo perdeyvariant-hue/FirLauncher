@@ -34,6 +34,14 @@ pub struct Settings {
     pub msa_client_id: String,
     /// Colours, wallpaper, mascot and interface tweaks.
     pub appearance: Appearance,
+    /// Look for a new launcher release on start.
+    pub check_for_updates: bool,
+    /// Zip every world of an instance before mod or modpack updates.
+    pub backup_worlds_before_updates: bool,
+    /// Show the running instance in the Discord status.
+    pub discord_presence: bool,
+    /// Discord application id; empty falls back to the one built in.
+    pub discord_app_id: String,
 }
 
 impl Default for Settings {
@@ -52,6 +60,10 @@ impl Default for Settings {
             data_dir_override: String::new(),
             msa_client_id: String::new(),
             appearance: Appearance::default(),
+            check_for_updates: true,
+            backup_worlds_before_updates: true,
+            discord_presence: true,
+            discord_app_id: String::new(),
         }
     }
 }

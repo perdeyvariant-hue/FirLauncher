@@ -5,6 +5,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { formatBytes } from '@/lib/format';
 import type { ContentKind } from '@/api/mods';
 import type { ModVersion, ResolvedInstallPlan } from '@/types/mod';
+import { t } from '@/lib/i18n';
 
 export interface DependencyDialogProps {
   plan: ResolvedInstallPlan | null;
@@ -46,20 +47,19 @@ export function DependencyDialog({
     <Dialog
       open={plan !== null}
       onClose={onCancel}
-      title={plan === null ? '' : `Установить ${plan.primary.name}?`}
+      title={plan === null ? '' : t`Установить ${plan.primary.name}?`}
       description={
         isMod
-          ? 'Этому моду нужны другие — они установятся вместе с ним.'
-          : 'Для работы нужны моды — сами они не поставятся.'
+          ? t`Этому моду нужны другие — они установятся вместе с ним.`
+          : t`Для работы нужны моды — сами они не поставятся.`
       }
       busy={busy}
       footer={
         <>
           <Button variant="ghost" onClick={onCancel} disabled={busy}>
-            Отмена
-          </Button>
+            {t`Отмена`}</Button>
           <Button variant="primary" onClick={onConfirm} loading={busy}>
-            Установить ({files})
+            {t`Установить (`}{files})
           </Button>
         </>
       }
@@ -79,8 +79,8 @@ export function DependencyDialog({
               <div className="min-w-0">
                 <p className="text-xs text-text">
                   {isMod
-                    ? 'Не нашлись совместимые версии — без них мод может не запуститься:'
-                    : 'Поставьте эти моды во вкладке «Моды», иначе пак будет работать не полностью:'}
+                    ? t`Не нашлись совместимые версии — без них мод может не запуститься:`
+                    : t`Поставьте эти моды во вкладке «Моды», иначе пак будет работать не полностью:`}
                 </p>
                 <p className="mt-1 text-2xs leading-relaxed text-text-dim">
                   {plan.unresolved.map((dep) => dep.name ?? dep.projectId).join(', ')}
@@ -90,7 +90,7 @@ export function DependencyDialog({
           )}
 
           <p className="text-right font-mono text-2xs text-text-dim">
-            Всего {formatBytes(plan.totalBytes)}
+            {t`Всего `}{formatBytes(plan.totalBytes)}
           </p>
         </div>
       )}

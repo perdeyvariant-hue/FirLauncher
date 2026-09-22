@@ -7,6 +7,7 @@ import * as instancesApi from '@/api/instances';
 import { formatBytes, formatRelativeDate } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { Instance, ScreenshotEntry } from '@/types/instance';
+import { t } from '@/lib/i18n';
 
 export function ScreenshotsTab({ instance }: { instance: Instance }): ReactElement {
   const { data, loading, error, reload } = useAsyncData<ScreenshotEntry[]>(
@@ -32,8 +33,8 @@ export function ScreenshotsTab({ instance }: { instance: Instance }): ReactEleme
       <EmptyState
         compact
         icon={<ImageIcon size={20} strokeWidth={1.5} />}
-        title="Скриншотов нет"
-        description="Нажмите F2 в игре — снимки появятся здесь."
+        title={t`Скриншотов нет`}
+        description={t`Нажмите F2 в игре — снимки появятся здесь.`}
       />
     );
   }

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { IconButton } from './IconButton';
+import { t } from '@/lib/i18n';
 
 export interface DialogProps {
   open: boolean;
@@ -98,7 +99,7 @@ export function Dialog({
             )}
           </div>
           <IconButton
-            label="Закрыть"
+            label={t`Закрыть`}
             size="sm"
             disabled={busy}
             icon={<X size={15} strokeWidth={1.5} />}

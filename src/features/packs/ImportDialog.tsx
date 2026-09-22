@@ -6,6 +6,7 @@ import * as packsApi from '@/api/packs';
 import { isTauri } from '@/lib/ipc';
 import { usePacks } from '@/store/usePacks';
 import { useToasts } from '@/store/useToasts';
+import { t } from '@/lib/i18n';
 
 export interface ImportDialogProps {
   open: boolean;
@@ -49,7 +50,7 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): ReactElement
 
   const run = async (pick: () => Promise<string | null>): Promise<void> => {
     if (!isTauri()) {
-      notify('Импорт доступен только в приложении');
+      notify(t`Импорт доступен только в приложении`);
       return;
     }
     const path = await pick();
@@ -68,15 +69,15 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): ReactElement
     <Dialog
       open={open}
       onClose={onClose}
-      title="Импорт сборки"
-      description="Сборка появится как новая, со своей папкой. Прогресс — в нижней панели."
+      title={t`Импорт сборки`}
+      description={t`Сборка появится как новая, со своей папкой. Прогресс — в нижней панели.`}
       busy={busy}
     >
       <div className="flex flex-col gap-2 py-2">
         <Option
           icon={<FileArchive size={16} strokeWidth={1.5} />}
-          title="Файл сборки"
-          text="Модпак Modrinth (.mrpack), модпак CurseForge (.zip с manifest.json), экспорт MultiMC/Prism или архив FirLauncher."
+          title={t`Файл сборки`}
+          text={t`Модпак Modrinth (.mrpack), модпак CurseForge (.zip с manifest.json), экспорт MultiMC/Prism или архив FirLauncher.`}
           disabled={busy}
           onClick={() => {
             void run(packsApi.pickPackFile);
@@ -84,14 +85,14 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): ReactElement
         />
         <Option
           icon={<FolderOpen size={16} strokeWidth={1.5} />}
-          title="Папка MultiMC / Prism"
-          text="Папка инстанса, где лежат instance.cfg и mmc-pack.json — например, из instances/ в PrismLauncher."
+          title={t`Папка MultiMC / Prism`}
+          text={t`Папка инстанса, где лежат instance.cfg и mmc-pack.json — например, из instances/ в PrismLauncher.`}
           disabled={busy}
           onClick={() => {
             void run(packsApi.pickInstanceFolder);
           }}
         />
-        {busy && <p className="text-2xs text-text-dim">Импорт идёт…</p>}
+        {busy && <p className="text-2xs text-text-dim">{t`Импорт идёт…`}</p>}
       </div>
     </Dialog>
   );

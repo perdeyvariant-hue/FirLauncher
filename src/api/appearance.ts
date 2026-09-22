@@ -1,4 +1,5 @@
 import { ipc, ipcUnit, mocked, shouldMock } from './shared';
+import { t } from '@/lib/i18n';
 
 /** Where a single custom picture goes. */
 export type ImageSlot = 'wallpaper';
@@ -15,14 +16,14 @@ export async function pickImage(): Promise<string | null> {
   const { open } = await import('@tauri-apps/plugin-dialog');
   const picked = await open({
     multiple: false,
-    filters: [{ name: 'Изображение', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }],
+    filters: [{ name: t`Изображение`, extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }],
   });
   return typeof picked === 'string' ? picked : null;
 }
 
 /** Copies the picture into the launcher's data folder; returns a data URL. */
 export function setAppearanceImage(slot: ImageSlot, path: string): Promise<string> {
-  if (shouldMock()) return Promise.reject(new Error('Выбор файла доступен только в приложении'));
+  if (shouldMock()) return Promise.reject(new Error(t`Выбор файла доступен только в приложении`));
   return ipc<string>('set_appearance_image', { slot, path });
 }
 
@@ -43,7 +44,7 @@ export function listCustomMascots(): Promise<CustomMascot[]> {
 
 /** Copies a picture into the collection. */
 export function addCustomMascot(path: string): Promise<CustomMascot> {
-  if (shouldMock()) return Promise.reject(new Error('Выбор файла доступен только в приложении'));
+  if (shouldMock()) return Promise.reject(new Error(t`Выбор файла доступен только в приложении`));
   return ipc<CustomMascot>('add_custom_mascot', { path });
 }
 

@@ -14,6 +14,7 @@ import type { JavaRuntime, SystemMemory } from '@/types/java';
 import type { Instance, InstanceJavaSettings } from '@/types/instance';
 import { useInstances } from '@/store/useInstances';
 import { useSettings } from '@/store/useSettings';
+import { t } from '@/lib/i18n';
 
 const AUTO = '__auto__';
 const MEMORY_STEP_MB = 256;
@@ -74,11 +75,16 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
   const effectiveMemory = draft.memoryMb ?? defaults.defaultMemoryMb;
 
   const javaOptions: SelectOption<string>[] = [
-    { value: AUTO, label: 'Автоматически по версии игры' },
+    { value: AUTO, label: t`Автоматически по версии игры` },
     ...(data?.runtimes ?? []).map((runtime) => ({
       value: runtime.path,
       label: `Java ${String(runtime.major)} · ${runtime.vendor} ${runtime.fullVersion}`,
     })),
+  ];
+
+  const majorOptions: SelectOption<string>[] = [
+    { value: AUTO, label: t`Как требует версия игры` },
+    ...[8, 17, 21, 25].map((major) => ({ value: String(major), label: `Java ${String(major)}` })),
   ];
 
   const envEntries = Object.entries(draft.env);
@@ -87,10 +93,10 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
     <div className="flex flex-col gap-3">
       <Section
         title="Java"
-        description="Пусто — лаунчер сам подберёт JDK: 8 для версий ≤1.16, 17 для 1.17–1.20.4, 21 для 1.20.5 и новее."
+        description={t`Пусто — лаунчер сам подберёт JDK: 8 для версий ≤1.16, 17 для 1.17–1.20.4, 21 для 1.20.5 и новее.`}
       >
         <Select
-          label="Среда выполнения"
+          label={t`Среда выполнения`}
           value={draft.javaPath ?? AUTO}
           options={javaOptions}
           onChange={(value) => {
@@ -98,17 +104,31 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
           }}
         />
 
+        {draft.javaPath === null ? (
+          <Select
+            label={t`Версия Java`}
+            value={draft.javaMajor === null ? AUTO : String(draft.javaMajor)}
+            options={majorOptions}
+            onChange={(value) => {
+              patch({ javaMajor: value === AUTO ? null : Number(value) });
+            }}
+            hint={t`Некоторым модам нужна Java новее, чем самой игре. Нужная версия скачается при запуске.`}
+          />
+        ) : (
+          <></>
+        )}
+
         <Slider
-          label="Оперативная память"
+          label={t`Оперативная память`}
           value={effectiveMemory}
           min={1024}
           max={maxMemoryMb}
           step={MEMORY_STEP_MB}
-          valueLabel={`${String(effectiveMemory)} МБ`}
+          valueLabel={t`${String(effectiveMemory)} МБ`}
           marks={[
             {
               at: (defaults.defaultMemoryMb - 1024) / Math.max(maxMemoryMb - 1024, 1),
-              title: 'Значение по умолчанию',
+              title: t`Значение по умолчанию`,
             },
           ]}
           onChange={(value) => {
@@ -121,12 +141,12 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
           onChange={(checked) => {
             patch({ memoryMb: checked ? null : defaults.defaultMemoryMb });
           }}
-          label="Использовать глобальное значение"
-          description={`Сейчас в настройках: ${String(defaults.defaultMemoryMb)} МБ.`}
+          label={t`Использовать глобальное значение`}
+          description={t`Сейчас в настройках: ${String(defaults.defaultMemoryMb)} МБ.`}
         />
 
         <Input
-          label="Дополнительные аргументы JVM"
+          label={t`Дополнительные аргументы JVM`}
           monospace
           placeholder={defaults.defaultJvmArgs}
           value={draft.extraJvmArgs ?? ''}
@@ -137,14 +157,14 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
           onBlur={() => {
             patch({ extraJvmArgs: draft.extraJvmArgs });
           }}
-          hint="Пусто — берутся аргументы из глобальных настроек."
+          hint={t`Пусто — берутся аргументы из глобальных настроек.`}
         />
       </Section>
 
-      <Section title="Окно игры" description="Размер окна при запуске.">
+      <Section title={t`Окно игры`} description={t`Размер окна при запуске.`}>
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Ширина"
+            label={t`Ширина`}
             type="number"
             min={640}
             value={String(draft.window?.width ?? 854)}
@@ -161,7 +181,7 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
             }}
           />
           <Input
-            label="Высота"
+            label={t`Высота`}
             type="number"
             min={480}
             value={String(draft.window?.height ?? 480)}
@@ -184,7 +204,7 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
           onChange={(checked) => {
             patch({ window: checked ? { width: 854, height: 480, fullscreen: false } : null });
           }}
-          label="Задать размер окна"
+          label={t`Задать размер окна`}
         />
 
         <Switch
@@ -199,17 +219,17 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
               },
             });
           }}
-          label="Полноэкранный режим"
+          label={t`Полноэкранный режим`}
         />
       </Section>
 
       <Section
-        title="Переменные окружения"
-        description="Передаются процессу игры. Например, __GL_THREADED_OPTIMIZATIONS=1 на Linux."
+        title={t`Переменные окружения`}
+        description={t`Передаются процессу игры. Например, __GL_THREADED_OPTIMIZATIONS=1 на Linux.`}
       >
         <div className="flex flex-col gap-2">
           {envEntries.length === 0 && (
-            <p className="text-2xs text-text-dim">Переменные не заданы.</p>
+            <p className="text-2xs text-text-dim">{t`Переменные не заданы.`}</p>
           )}
 
           {envEntries.map(([key, value]) => (
@@ -219,21 +239,21 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
                   monospace
                   value={key}
                   readOnly
-                  aria-label={`Имя переменной ${key}`}
+                  aria-label={t`Имя переменной ${key}`}
                 />
               </div>
               <div className="flex-1">
                 <Input
                   monospace
                   value={value}
-                  aria-label={`Значение ${key}`}
+                  aria-label={t`Значение ${key}`}
                   onChange={(event) => {
                     patch({ env: { ...draft.env, [key]: event.target.value } });
                   }}
                 />
               </div>
               <IconButton
-                label={`Удалить ${key}`}
+                label={t`Удалить ${key}`}
                 tone="danger"
                 icon={<Trash2 size={14} strokeWidth={1.5} />}
                 onClick={() => {
@@ -261,8 +281,7 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
                 patch({ env: { ...draft.env, [name]: '' } });
               }}
             >
-              Добавить переменную
-            </Button>
+              {t`Добавить переменную`}</Button>
           </div>
         </div>
       </Section>

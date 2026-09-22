@@ -1,6 +1,7 @@
 ﻿import type { Account } from '@/types/account';
 import { MOCK_ACCOUNTS } from '@/mocks/data';
 import { ipc, ipcUnit, mocked, shouldMock } from './shared';
+import { t } from '@/lib/i18n';
 
 export function listAccounts(): Promise<Account[]> {
   if (shouldMock()) return mocked([...MOCK_ACCOUNTS]);
@@ -11,7 +12,7 @@ export function listAccounts(): Promise<Account[]> {
 export function beginMicrosoftLogin(): Promise<void> {
   // The flow is driven by backend events, which a plain browser tab never gets.
   if (shouldMock()) {
-    return Promise.reject(new Error('Вход через Microsoft доступен только в приложении'));
+    return Promise.reject(new Error(t`Вход через Microsoft доступен только в приложении`));
   }
   return ipcUnit('begin_microsoft_login');
 }

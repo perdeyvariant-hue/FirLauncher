@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { useToasts } from '@/store/useToasts';
 import type { Toast } from '@/store/useToasts';
 import { IconButton } from './IconButton';
+import { t } from '@/lib/i18n';
 
 const ICONS = {
   info: <Info size={15} strokeWidth={1.5} />,
@@ -56,8 +57,7 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
                   strokeWidth={1.5}
                   className={cn('transition-transform duration-fast', expanded && 'rotate-180')}
                 />
-                Подробности
-              </button>
+                {t`Подробности`}</button>
               {expanded && (
                 <pre className="selectable mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-surface-2 p-2 font-mono text-2xs leading-relaxed text-text-dim">
                   {toast.detail}
@@ -76,13 +76,12 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
               className="mt-2 inline-flex items-center gap-1.5 text-2xs font-medium text-accent hover:text-accent-hover"
             >
               <RotateCw size={12} strokeWidth={1.5} />
-              Повторить
-            </button>
+              {t`Повторить`}</button>
           )}
         </div>
 
         <IconButton
-          label="Закрыть уведомление"
+          label={t`Закрыть уведомление`}
           size="sm"
           icon={<X size={14} strokeWidth={1.5} />}
           onClick={() => {

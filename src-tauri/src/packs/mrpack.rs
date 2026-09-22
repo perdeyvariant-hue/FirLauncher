@@ -210,6 +210,15 @@ pub async fn import(ctx: &PackContext<'_>, archive: &Path) -> Result<(InstanceMe
         }
     }
 
+    // Remember what the pack installed, so it can be updated later. Modrinth
+    // recognises its own packs by hash, which links a local file to its
+    // project too.
+    let origin = match crate::mods::provider(ctx.settings, ctx.client, ProviderId::Modrinth) {
+        Ok(modrinth) => super::update::identify_archive(modrinth.as_ref(), archive).await,
+        Err(_) => None,
+    };
+    super::update::record(ctx.paths, &meta.id, archive, origin).await?;
+
     Ok((meta, skipped))
 }
 

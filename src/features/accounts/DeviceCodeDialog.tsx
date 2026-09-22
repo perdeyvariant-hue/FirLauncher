@@ -11,6 +11,7 @@ import { onEvent } from '@/lib/events';
 import { toLauncherError } from '@/lib/ipc';
 import type { DeviceCodeState } from '@/types/account';
 import { useAccounts } from '@/store/useAccounts';
+import { t, translate } from '@/lib/i18n';
 
 export interface DeviceCodeDialogProps {
   open: boolean;
@@ -21,9 +22,9 @@ type Step = Extract<DeviceCodeState, { phase: 'exchanging' }>['step'];
 
 const STEPS: readonly { readonly id: Step; readonly label: string }[] = [
   { id: 'xbox', label: 'Xbox Live' },
-  { id: 'xsts', label: 'Авторизация Xbox' },
-  { id: 'minecraft', label: 'Сервисы Minecraft' },
-  { id: 'profile', label: 'Профиль игрока' },
+  { id: 'xsts', label: t`Авторизация Xbox` },
+  { id: 'minecraft', label: t`Сервисы Minecraft` },
+  { id: 'profile', label: t`Профиль игрока` },
 ];
 
 /** Closing on success is deferred just long enough to register the tick. */
@@ -159,15 +160,14 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
     <Dialog
       open={open}
       onClose={onClose}
-      title="Вход через Microsoft"
-      description="Пароль вводится только на сайте Microsoft — лаунчер его не видит."
+      title={t`Вход через Microsoft`}
+      description={t`Пароль вводится только на сайте Microsoft — лаунчер его не видит.`}
       width="sm"
       busy={busy}
       footer={
         state.phase === 'done' ? undefined : (
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Отмена
-          </Button>
+            {t`Отмена`}</Button>
         )
       }
     >
@@ -175,15 +175,14 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
         {state.phase === 'requesting' && (
           <div className="flex flex-col items-center gap-3 text-center">
             <Loader2 size={20} strokeWidth={1.5} className="animate-spin-slow text-accent" />
-            <p className="text-xs text-text-dim">Получаем код у Microsoft…</p>
+            <p className="text-xs text-text-dim">{t`Получаем код у Microsoft…`}</p>
           </div>
         )}
 
         {state.phase === 'waiting' && (
           <div className="flex flex-col gap-4">
             <p className="text-xs leading-relaxed text-text-dim">
-              Откройте страницу входа и введите этот код. Лаунчер сам заметит подтверждение.
-            </p>
+              {t`Откройте страницу входа и введите этот код. Лаунчер сам заметит подтверждение.`}</p>
 
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3">
               <span className="selectable font-mono text-xl tracking-[0.2em] text-text">
@@ -203,7 +202,7 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
                   void copyCode(state.userCode);
                 }}
               >
-                {copied ? 'Скопирован' : 'Копировать'}
+                {copied ? t`Скопирован` : t`Копировать`}
               </Button>
             </div>
 
@@ -216,13 +215,12 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
                 void copyCode(state.userCode).then(() => openExternal(state.verificationUri));
               }}
             >
-              Скопировать код и открыть страницу
-            </Button>
+              {t`Скопировать код и открыть страницу`}</Button>
 
             <div className="flex flex-col gap-1.5">
               <Progress value={secondsLeft / totalSeconds} size="xs" />
               <p className="text-2xs text-text-dim">
-                Код действует ещё {formatCountdown(secondsLeft)}
+                {t`Код действует ещё `}{formatCountdown(secondsLeft)}
               </p>
             </div>
           </div>
@@ -235,14 +233,14 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
               <Check size={20} strokeWidth={2} />
             </span>
-            <p className="text-sm text-text">Аккаунт добавлен</p>
+            <p className="text-sm text-text">{t`Аккаунт добавлен`}</p>
           </div>
         )}
 
         {state.phase === 'failed' && (
           <div className="flex flex-col gap-3">
             <p className="selectable whitespace-pre-wrap text-xs leading-relaxed text-danger">
-              {state.message}
+              {translate(state.message)}
             </p>
             <div>
               <Button
@@ -252,8 +250,7 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
                   setAttempt((value) => value + 1);
                 }}
               >
-                Попробовать снова
-              </Button>
+                {t`Попробовать снова`}</Button>
             </div>
           </div>
         )}

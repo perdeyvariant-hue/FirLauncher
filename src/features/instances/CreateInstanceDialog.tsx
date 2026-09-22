@@ -17,6 +17,7 @@ import { LOADER_LABELS, MOD_LOADERS } from '@/types/instance';
 import { useInstances } from '@/store/useInstances';
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
+import { t } from '@/lib/i18n';
 
 export interface CreateInstanceDialogProps {
   open: boolean;
@@ -116,7 +117,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         .filter((version) => showSnapshots || version.type === 'release')
         .map((version) => ({
           value: version.id,
-          label: version.type === 'release' ? version.id : `${version.id} · снапшот`,
+          label: version.type === 'release' ? version.id : t`${version.id} · снапшот`,
         })),
     [versions, showSnapshots],
   );
@@ -129,15 +130,15 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   const loaderVersionOptions: SelectOption<string>[] = loaderVersions.map((item) => ({
     value: item.version,
     label: item.recommended
-      ? `${item.version} · рекомендуемая`
+      ? t`${item.version} · рекомендуемая`
       : item.stable
         ? item.version
-        : `${item.version} · нестабильная`,
+        : t`${item.version} · нестабильная`,
   }));
 
   const trimmedName = name.trim();
   const nameError =
-    nameTouched && trimmedName === '' ? 'Введите имя сборки' : null;
+    nameTouched && trimmedName === '' ? t`Введите имя сборки` : null;
   const canSubmit =
     trimmedName !== '' &&
     mcVersion !== '' &&
@@ -146,14 +147,14 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
 
   const pickIcon = async (): Promise<void> => {
     if (!isTauri()) {
-      useToasts.getState().notify('Выбор файла доступен только в приложении');
+      useToasts.getState().notify(t`Выбор файла доступен только в приложении`);
       return;
     }
     try {
       const { open: openFileDialog } = await import('@tauri-apps/plugin-dialog');
       const selected = await openFileDialog({
         multiple: false,
-        filters: [{ name: 'Изображение', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+        filters: [{ name: t`Изображение`, extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
       });
       if (typeof selected === 'string') setIconPath(selected);
     } catch (raw) {
@@ -180,14 +181,13 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     <Dialog
       open={open}
       onClose={onClose}
-      title="Новая сборка"
-      description="Версия и лоадер скачаются при первом запуске."
+      title={t`Новая сборка`}
+      description={t`Версия и лоадер скачаются при первом запуске.`}
       busy={submitting}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
-            Отмена
-          </Button>
+            {t`Отмена`}</Button>
           <Button
             variant="primary"
             disabled={!canSubmit}
@@ -196,8 +196,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
               void submit();
             }}
           >
-            Создать
-          </Button>
+            {t`Создать`}</Button>
         </>
       }
     >
@@ -223,14 +222,14 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
 
           <div className="min-w-0 flex-1">
             <Input
-              label="Имя"
-              placeholder="Например, Fabric Performance"
+              label={t`Имя`}
+              placeholder={t`Например, Fabric Performance`}
               value={name}
               error={nameError}
               hint={
                 iconPath === null
-                  ? 'Иконка необязательна — иначе берутся инициалы.'
-                  : `Иконка: ${iconPath.split(/[\\/]/).pop() ?? iconPath}`
+                  ? t`Иконка необязательна — иначе берутся инициалы.`
+                  : t`Иконка: ${iconPath.split(/[\\/]/).pop() ?? iconPath}`
               }
               autoFocus
               onChange={(event) => {
@@ -242,7 +241,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
               trailing={
                 iconPath === null ? undefined : (
                   <IconButton
-                    label="Убрать иконку"
+                    label={t`Убрать иконку`}
                     size="sm"
                     icon={<X size={13} strokeWidth={1.5} />}
                     onClick={() => {
@@ -256,12 +255,12 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         </div>
 
         <Select
-          label="Версия Minecraft"
+          label={t`Версия Minecraft`}
           value={mcVersion}
           options={
             versionOptions.length > 0
               ? versionOptions
-              : [{ value: '', label: loadingVersions ? 'Загрузка…' : 'Нет версий' }]
+              : [{ value: '', label: loadingVersions ? t`Загрузка…` : t`Нет версий` }]
           }
           disabled={loadingVersions || versionOptions.length === 0}
           onChange={setMcVersion}
@@ -270,13 +269,13 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         <Switch
           checked={showSnapshots}
           onChange={setShowSnapshots}
-          label="Показывать снапшоты"
-          description="Экспериментальные сборки Mojang между релизами."
+          label={t`Показывать снапшоты`}
+          description={t`Экспериментальные сборки Mojang между релизами.`}
         />
 
         <div className="grid grid-cols-2 gap-3">
           <Select
-            label="Модлоадер"
+            label={t`Модлоадер`}
             value={loader}
             options={loaderOptions}
             onChange={(value) => {
@@ -285,15 +284,15 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
           />
 
           <Select
-            label="Версия лоадера"
+            label={t`Версия лоадера`}
             value={loaderVersion ?? ''}
             disabled={loader === 'vanilla' || loadingLoader || loaderVersionOptions.length === 0}
             options={
               loader === 'vanilla'
-                ? [{ value: '', label: 'Не требуется' }]
+                ? [{ value: '', label: t`Не требуется` }]
                 : loaderVersionOptions.length > 0
                   ? loaderVersionOptions
-                  : [{ value: '', label: loadingLoader ? 'Загрузка…' : 'Нет сборок' }]
+                  : [{ value: '', label: loadingLoader ? t`Загрузка…` : t`Нет сборок` }]
             }
             onChange={(value) => {
               setLoaderVersion(value === '' ? null : value);

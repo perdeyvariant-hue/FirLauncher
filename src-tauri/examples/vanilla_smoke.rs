@@ -137,6 +137,7 @@ async fn main() -> Result<()> {
         last_played_at: None,
         total_play_seconds: 0,
         group: None,
+        favorite: false,
         java: InstanceJava::default(),
     },
     };

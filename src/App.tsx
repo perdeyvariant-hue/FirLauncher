@@ -12,8 +12,29 @@ import { useAccounts } from '@/store/useAccounts';
 import { useInstances } from '@/store/useInstances';
 import { useSettings } from '@/store/useSettings';
 import { useTasks } from '@/store/useTasks';
-import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
+import { useUpdater } from '@/store/useUpdater';
+import { useCrash } from '@/store/useCrash';
+import { takeStartupLaunch } from '@/api/shortcuts';
+import { activeAccountOf } from '@/store/useAccounts';
+import { useToasts } from '@/store/useToasts';
+import { t } from '@/lib/i18n';
+
+/** A desktop shortcut asked to start this instance. */
+function launchFromShortcut(id: string): void {
+  const account = activeAccountOf(useAccounts.getState());
+  const instance = useInstances.getState().instances.find((item) => item.id === id);
+  if (instance === undefined) {
+    useToasts.getState().notify(t`Сборка из ярлыка не найдена — возможно, её удалили`, 'error');
+    return;
+  }
+  useUI.getState().openInstance(id, 'logs');
+  if (account === null) {
+    useToasts.getState().notify(t`Сначала добавьте аккаунт`, 'error');
+    return;
+  }
+  void useInstances.getState().launch(id, account.id);
+}
 
 function CurrentPage(): ReactElement {
   const route = useUI((state) => state.route);
@@ -44,9 +65,14 @@ export default function App(): ReactElement {
   const subscribeTasks = useTasks((state) => state.subscribe);
 
   useEffect(() => {
-    void loadSettings();
-    void loadInstances();
-    void loadAccounts();
+    void loadSettings().then(() => {
+      // Quietly: no network or no release yet must not greet the user with an error.
+      if (useSettings.getState().settings.checkForUpdates) void useUpdater.getState().check(true);
+    });
+    void Promise.all([loadInstances(), loadAccounts()]).then(async () => {
+      const id = await takeStartupLaunch();
+      if (id !== null) launchFromShortcut(id);
+    });
     void loadTasks();
   }, [loadSettings, loadInstances, loadAccounts, loadTasks]);
 
@@ -94,14 +120,14 @@ export default function App(): ReactElement {
     track(
       onEvent('game://exit', (payload) => {
         void loadInstances();
-        if (payload.crashed) {
-          useToasts.getState().push({
-            tone: 'error',
-            title: 'Игра завершилась с ошибкой',
-            detail: `Код выхода ${String(payload.exitCode)}. Откройте вкладку «Логи» этой сборки.`,
-            onRetry: null,
-          });
-        }
+        // A crash opens the crash assistant with the diagnosis.
+        if (payload.crashed) void useCrash.getState().open(payload.instanceId);
+      }),
+    );
+
+    track(
+      onEvent('launch://request', (id) => {
+        launchFromShortcut(id);
       }),
     );
 

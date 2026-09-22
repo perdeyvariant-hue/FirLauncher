@@ -8,6 +8,7 @@ import { useToasts } from '@/store/useToasts';
 import { DependencyDialog } from './DependencyDialog';
 import { VersionDialog } from './VersionDialog';
 import type { VersionTarget } from './VersionDialog';
+import { t } from '@/lib/i18n';
 
 export interface ContentInstaller {
   /**
@@ -46,8 +47,8 @@ export function useContentInstaller(
     const extra = target.dependencies.length;
     notify(
       extra === 0
-        ? `Установлено: ${target.primary.name} ${target.primary.versionNumber}`
-        : `Установлено: ${target.primary.name} и зависимости (${String(extra)})`,
+        ? t`Установлено: ${target.primary.name} ${target.primary.versionNumber}`
+        : t`Установлено: ${target.primary.name} и зависимости (${String(extra)})`,
       'success',
     );
     onInstalled(target);

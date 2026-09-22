@@ -6,6 +6,7 @@ pub mod export;
 pub mod mmc;
 pub mod mrpack;
 pub mod native;
+pub mod update;
 
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
@@ -212,5 +213,17 @@ pub async fn install_from_provider(
     )
     .await?;
 
-    import(ctx, &archive).await
+    let imported = import(ctx, &archive).await?;
+    // The version is known exactly here; `.mrpack` imports record it for
+    // updates (CurseForge packs are not updatable yet).
+    if read_zip_entry(&archive, mrpack::INDEX_FILE)?.is_some() {
+        update::record(
+            ctx.paths,
+            &imported.0.id,
+            &archive,
+            Some((version.project_id.clone(), version.version_id.clone())),
+        )
+        .await?;
+    }
+    Ok(imported)
 }

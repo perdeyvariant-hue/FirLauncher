@@ -53,8 +53,9 @@ export const MOCK_INSTANCES: Instance[] = [
     createdAt: daysAgo(30),
     lastPlayedAt: daysAgo(0),
     totalPlaySeconds: 46_800,
-    group: null,
-    java: { javaPath: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
+    group: 'Выживание',
+    favorite: true,
+    java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
   {
@@ -68,7 +69,8 @@ export const MOCK_INSTANCES: Instance[] = [
     lastPlayedAt: daysAgo(2),
     totalPlaySeconds: 129_600,
     group: null,
-    java: { javaPath: null, memoryMb: 6144, extraJvmArgs: null, window: null, env: {} },
+    favorite: false,
+    java: { javaPath: null, javaMajor: null, memoryMb: 6144, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
   {
@@ -82,7 +84,8 @@ export const MOCK_INSTANCES: Instance[] = [
     lastPlayedAt: daysAgo(9),
     totalPlaySeconds: 331_200,
     group: null,
-    java: { javaPath: null, memoryMb: 8192, extraJvmArgs: null, window: null, env: {} },
+    favorite: false,
+    java: { javaPath: null, javaMajor: null, memoryMb: 8192, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
   {
@@ -96,7 +99,8 @@ export const MOCK_INSTANCES: Instance[] = [
     lastPlayedAt: null,
     totalPlaySeconds: 0,
     group: null,
-    java: { javaPath: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
+    favorite: false,
+    java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
   {
@@ -110,7 +114,8 @@ export const MOCK_INSTANCES: Instance[] = [
     lastPlayedAt: daysAgo(34),
     totalPlaySeconds: 918_000,
     group: null,
-    java: { javaPath: null, memoryMb: 4096, extraJvmArgs: null, window: null, env: {} },
+    favorite: false,
+    java: { javaPath: null, javaMajor: null, memoryMb: 4096, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
   {
@@ -124,7 +129,8 @@ export const MOCK_INSTANCES: Instance[] = [
     lastPlayedAt: daysAgo(1),
     totalPlaySeconds: 5400,
     group: null,
-    java: { javaPath: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
+    favorite: false,
+    java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
   },
 ];

@@ -22,6 +22,8 @@ pub mod mods;
 pub mod net;
 pub mod packs;
 pub mod paths;
+pub mod presence;
+pub mod shortcuts;
 pub mod state;
 pub mod tasks;
 
@@ -56,8 +58,22 @@ fn app_info(state: tauri::State<'_, AppState>) -> Result<AppInfo> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
+        // First: a second start (a desktop shortcut) hands its arguments to
+        // the running launcher instead of opening another window.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            use tauri::{Emitter, Manager};
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+            if let Some(id) = shortcuts::launch_target(&args) {
+                let _ = app.emit(shortcuts::EVENT_LAUNCH_REQUEST, id);
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Settings may redirect the data directory, so they are read from
             // the default location first and the paths re-resolved after.
@@ -111,6 +127,9 @@ pub fn run() {
             commands::appearance::add_custom_mascot,
             commands::appearance::remove_custom_mascot,
             commands::appearance::account_figure,
+            commands::crash::diagnose_crash,
+            commands::crash::apply_crash_fix,
+            commands::logs::share_log,
             commands::tasks::list_tasks,
             commands::tasks::cancel_task,
             commands::tasks::retry_task,
@@ -136,6 +155,19 @@ pub fn run() {
             commands::instances::set_mod_enabled,
             commands::instances::remove_mod,
             commands::instances::list_worlds,
+            commands::instances::list_world_backups,
+            commands::instances::backup_world,
+            commands::instances::restore_world_backup,
+            commands::instances::delete_world_backup,
+            commands::instances::import_world,
+            commands::instances::delete_world,
+            commands::instances::list_servers,
+            commands::instances::add_server,
+            commands::instances::remove_server,
+            commands::instances::ping_server,
+            commands::instances::add_content_file,
+            commands::instances::create_desktop_shortcut,
+            commands::instances::take_startup_launch,
             commands::instances::list_resource_packs,
             commands::instances::list_shader_packs,
             commands::instances::list_screenshots,
@@ -150,10 +182,15 @@ pub fn run() {
             commands::mods::project_details,
             commands::mods::check_updates,
             commands::mods::apply_updates,
+            commands::mods::optimize_plan,
+            commands::mods::apply_optimize,
             commands::mods::remove_content,
             commands::packs::import_pack,
             commands::packs::install_modpack,
             commands::packs::export_instance,
+            commands::packs::modpack_info,
+            commands::packs::check_modpack_update,
+            commands::packs::update_modpack,
         ])
         .run(tauri::generate_context!());
 

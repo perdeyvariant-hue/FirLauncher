@@ -3,6 +3,7 @@ import { ArrowUpCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import type { ContentUpdates } from './useContentUpdates';
+import { t } from '@/lib/i18n';
 
 /** "Check for updates", then "select all / update selected / update all". */
 export function UpdatesBar({
@@ -29,15 +30,14 @@ export function UpdatesBar({
             void state.check();
           }}
         >
-          Проверить обновления
-        </Button>
+          {t`Проверить обновления`}</Button>
       )}
 
       {pending.length > 0 && (
         <>
           <div className="flex h-8 items-center gap-2 rounded-lg border border-border px-2.5">
             <Checkbox
-              label={all ? 'Снять выбор со всех' : 'Выбрать все обновления'}
+              label={all ? t`Снять выбор со всех` : t`Выбрать все обновления`}
               checked={all}
               indeterminate={chosen.length > 0 && !all}
               disabled={busy}
@@ -46,7 +46,7 @@ export function UpdatesBar({
               }}
             />
             <span className="text-2xs text-text-dim">
-              {chosen.length} из {pending.length}
+              {chosen.length} {t` из `}{pending.length}
             </span>
           </div>
           {!all && (
@@ -58,7 +58,7 @@ export function UpdatesBar({
                 void state.apply(chosen);
               }}
             >
-              Обновить выбранные ({chosen.length})
+              {t`Обновить выбранные (`}{chosen.length})
             </Button>
           )}
           <Button
@@ -70,7 +70,7 @@ export function UpdatesBar({
               void state.apply(pending);
             }}
           >
-            Обновить все ({pending.length})
+            {t`Обновить все (`}{pending.length})
           </Button>
         </>
       )}

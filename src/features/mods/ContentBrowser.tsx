@@ -27,17 +27,18 @@ import type { InstallState } from './ModCard';
 import { ProjectDialog } from './ProjectDialog';
 import type { ProjectTarget } from './ProjectDialog';
 import { useContentInstaller } from './useContentInstaller';
+import { t } from '@/lib/i18n';
 
 const PAGE = 20;
 const ANY = '__any__';
 
 type Sort = SearchQuery['sort'];
 const SORT_OPTIONS: SelectOption<Sort>[] = [
-  { value: 'relevance', label: 'По релевантности' },
-  { value: 'downloads', label: 'По загрузкам' },
-  { value: 'follows', label: 'По популярности' },
-  { value: 'updated', label: 'Недавно обновлённые' },
-  { value: 'newest', label: 'Новые' },
+  { value: 'relevance', label: t`По релевантности` },
+  { value: 'downloads', label: t`По загрузкам` },
+  { value: 'follows', label: t`По популярности` },
+  { value: 'updated', label: t`Недавно обновлённые` },
+  { value: 'newest', label: t`Новые` },
 ];
 
 /** Per-kind wording; the browser itself is the same for all three. */
@@ -45,19 +46,19 @@ const COPY: Readonly<
   Record<ContentKind, { title: string; back: string; nothing: string }>
 > = {
   mod: {
-    title: 'Добавить моды',
-    back: 'К установленным модам',
-    nothing: 'модов',
+    title: t`Добавить моды`,
+    back: t`К установленным модам`,
+    nothing: t`модов`,
   },
   resourcepack: {
-    title: 'Добавить ресурспаки',
-    back: 'К установленным ресурспакам',
-    nothing: 'ресурспаков',
+    title: t`Добавить ресурспаки`,
+    back: t`К установленным ресурспакам`,
+    nothing: t`ресурспаков`,
   },
   shader: {
-    title: 'Добавить шейдеры',
-    back: 'К установленным шейдерам',
-    nothing: 'шейдеров',
+    title: t`Добавить шейдеры`,
+    back: t`К установленным шейдерам`,
+    nothing: t`шейдеров`,
   },
 };
 
@@ -223,7 +224,7 @@ export function ContentBrowser({
 
   const categoryOptions = useMemo<SelectOption<string>[]>(
     () => [
-      { value: ANY, label: 'Все категории' },
+      { value: ANY, label: t`Все категории` },
       ...categories.map((item) => ({ value: item.id, label: item.name })),
     ],
     [categories],
@@ -263,7 +264,7 @@ export function ContentBrowser({
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <Input
-            placeholder={`Поиск на ${PROVIDER_LABELS[provider]}`}
+            placeholder={t`Поиск на ${PROVIDER_LABELS[provider]}`}
             value={text}
             autoFocus
             onChange={(event) => {
@@ -294,16 +295,16 @@ export function ContentBrowser({
           <EmptyState
             compact
             icon={<PackageSearch size={20} strokeWidth={1.5} />}
-            title="Ничего не найдено"
+            title={t`Ничего не найдено`}
             description={
               kind === 'mod'
-                ? `Под Minecraft ${instance.mcVersion} с ${LOADER_LABELS[instance.loader]} таких модов нет. Попробуйте другой запрос или категорию.`
-                : `Под Minecraft ${instance.mcVersion} таких ${copy.nothing} нет. Попробуйте другой запрос или категорию.`
+                ? t`Под Minecraft ${instance.mcVersion} с ${LOADER_LABELS[instance.loader]} таких модов нет. Попробуйте другой запрос или категорию.`
+                : t`Под Minecraft ${instance.mcVersion} таких ${copy.nothing} нет. Попробуйте другой запрос или категорию.`
             }
           />
         ) : (
           <div className="flex flex-col gap-3 pb-2">
-            <p className="text-2xs text-text-dim">Найдено: {total}</p>
+            <p className="text-2xs text-text-dim">{t`Найдено: `}{total}</p>
             <div className="grid animate-fade-in grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-2">
               {hits.map((project) => (
                 <ModCard
@@ -336,8 +337,7 @@ export function ContentBrowser({
             {hits.length < total && (
               <div className="flex justify-center">
                 <Button size="sm" loading={loadingMore} onClick={loadMore}>
-                  Показать ещё
-                </Button>
+                  {t`Показать ещё`}</Button>
               </div>
             )}
           </div>
@@ -363,8 +363,7 @@ export function ContentBrowser({
                   chooseVersion(project);
                 }}
               >
-                Выбрать версию
-              </Button>
+                {t`Выбрать версию`}</Button>
               <Button
                 variant="primary"
                 loading={state === 'working'}
@@ -373,7 +372,7 @@ export function ContentBrowser({
                   void install(project);
                 }}
               >
-                {state === 'installed' ? 'Установлен' : 'Установить'}
+                {state === 'installed' ? t`Установлен` : t`Установить`}
               </Button>
             </>
           );

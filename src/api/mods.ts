@@ -12,6 +12,7 @@ import type {
 } from '@/types/mod';
 import { MOCK_PROJECTS } from '@/mocks/data';
 import { ipc, ipcUnit, mocked, shouldMock } from './shared';
+import { t } from '@/lib/i18n';
 
 /** Providers the backend considers usable (CurseForge needs an API key). */
 export function availableProviders(): Promise<ProviderId[]> {
@@ -57,12 +58,12 @@ export function projectDetails(provider: ProviderId, projectId: string): Promise
         body: [
           `## ${project.name}`,
           '',
-          `${project.summary} Описание из фикстур: **жирный**, *курсив*, \`код\` и [ссылка](https://modrinth.com).`,
+          t`${project.summary} Описание из фикстур: **жирный**, *курсив*, \`код\` и [ссылка](https://modrinth.com).`,
           '',
-          '- Первый пункт',
-          '- Второй пункт',
+          t`- Первый пункт`,
+          t`- Второй пункт`,
           '',
-          '> Цитата автора.',
+          t`> Цитата автора.`,
           '',
           '<center><iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe></center>',
           '',
@@ -232,4 +233,52 @@ export function applyUpdates(
 ): Promise<void> {
   if (shouldMock()) return mocked(undefined, 900);
   return ipcUnit('apply_updates', { instanceId, kind, updates });
+}
+
+export interface OptimizeMod {
+  readonly projectId: string;
+  readonly name: string;
+  readonly about: string;
+  /** Null when there is no version for this Minecraft version and loader. */
+  readonly versionNumber: string | null;
+  readonly installed: boolean;
+}
+
+export interface OptimizePlan {
+  readonly mods: readonly OptimizeMod[];
+  readonly currentMemoryMb: number;
+  readonly recommendedMemoryMb: number;
+  readonly currentJvmArgs: string;
+  readonly recommendedJvmArgs: string;
+}
+
+export function optimizePlan(instanceId: string): Promise<OptimizePlan> {
+  if (shouldMock()) {
+    return mocked<OptimizePlan>(
+      {
+        mods: [
+          { projectId: 'AANobbMI', name: 'Sodium', about: t`Новый движок рендера — FPS выше в разы`, versionNumber: '0.6.5', installed: true },
+          { projectId: 'gvQqBUqZ', name: 'Lithium', about: t`Быстрее игровая логика: мобы, редстоун, чанки`, versionNumber: '0.14.3', installed: false },
+          { projectId: 'uXXizFIs', name: 'FerriteCore', about: t`Заметно меньше расход оперативной памяти`, versionNumber: '7.0.3', installed: false },
+          { projectId: 'nmDcB62a', name: 'ModernFix', about: t`Быстрее загрузка игры и миров`, versionNumber: null, installed: false },
+        ],
+        currentMemoryMb: 4096,
+        recommendedMemoryMb: 6144,
+        currentJvmArgs: '-XX:+UseG1GC',
+        recommendedJvmArgs: '-XX:+UseG1GC -XX:MaxGCPauseMillis=200',
+      },
+      500,
+    );
+  }
+  return ipc<OptimizePlan>('optimize_plan', { instanceId });
+}
+
+export function applyOptimize(
+  instanceId: string,
+  projectIds: readonly string[],
+  memoryMb: number | null,
+  jvmArgs: string | null,
+): Promise<void> {
+  if (shouldMock()) return mocked(undefined, 900);
+  return ipcUnit('apply_optimize', { instanceId, projectIds, memoryMb, jvmArgs });
 }

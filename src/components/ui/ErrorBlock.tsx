@@ -4,6 +4,7 @@ import { AlertCircle, ChevronDown, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { LauncherError } from '@/types/error';
 import { Button } from './Button';
+import { t } from '@/lib/i18n';
 
 export interface ErrorBlockProps {
   error: LauncherError;
@@ -41,8 +42,7 @@ export function ErrorBlock({ error, onRetry, className }: ErrorBlockProps): Reac
                   strokeWidth={1.5}
                   className={cn('transition-transform duration-fast', expanded && 'rotate-180')}
                 />
-                Подробности
-              </button>
+                {t`Подробности`}</button>
               {expanded && (
                 <pre className="selectable mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-surface-2 p-2 font-mono text-2xs leading-relaxed text-text-dim">
                   {error.detail}
@@ -56,8 +56,7 @@ export function ErrorBlock({ error, onRetry, className }: ErrorBlockProps): Reac
       {onRetry !== undefined && (
         <div className="flex justify-end">
           <Button size="sm" icon={<RotateCw size={13} strokeWidth={1.5} />} onClick={onRetry}>
-            Повторить
-          </Button>
+            {t`Повторить`}</Button>
         </div>
       )}
     </div>

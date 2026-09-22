@@ -5,6 +5,7 @@ import { Logo } from '@/components/ui/Logo';
 import { useUI } from '@/store/useUI';
 import type { Route } from '@/types/route';
 import { AccountCard } from './AccountCard';
+import { t } from '@/lib/i18n';
 
 interface NavItem {
   readonly route: Route;
@@ -13,12 +14,12 @@ interface NavItem {
 }
 
 const NAV: readonly NavItem[] = [
-  { route: { name: 'instances' }, label: 'Сборки', icon: <Boxes size={19} strokeWidth={1.5} /> },
-  { route: { name: 'accounts' }, label: 'Аккаунты', icon: <Users size={19} strokeWidth={1.5} /> },
-  { route: { name: 'appearance' }, label: 'Стиль', icon: <Palette size={19} strokeWidth={1.5} /> },
+  { route: { name: 'instances' }, label: t`Сборки`, icon: <Boxes size={19} strokeWidth={1.5} /> },
+  { route: { name: 'accounts' }, label: t`Аккаунты`, icon: <Users size={19} strokeWidth={1.5} /> },
+  { route: { name: 'appearance' }, label: t`Стиль`, icon: <Palette size={19} strokeWidth={1.5} /> },
   {
     route: { name: 'settings' },
-    label: 'Настройки',
+    label: t`Настройки`,
     icon: <SettingsIcon size={19} strokeWidth={1.5} />,
   },
 ];
