@@ -15,6 +15,14 @@ pub fn launch_target(args: &[String]) -> Option<String> {
     args.get(position + 1).filter(|id| !id.starts_with('-')).cloned()
 }
 
+/// Whether this process was started by a shortcut rather than by hand. Such
+/// a start shows only a small progress card and steps aside once the game is
+/// up, so the launcher never gets between the person and the game.
+pub fn started_from_shortcut() -> bool {
+    let args: Vec<String> = std::env::args().collect();
+    launch_target(&args).is_some()
+}
+
 fn shortcut_error(message: &str, detail: impl std::fmt::Display) -> LauncherError {
     LauncherError::new(ErrorKind::Io, message.to_owned()).with_detail(detail.to_string())
 }

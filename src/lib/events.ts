@@ -12,6 +12,8 @@ export interface LauncherEvents {
   'game://log': { instanceId: string; stream: LogStream; line: string };
   /** A desktop shortcut was used while the launcher was open. */
   'launch://request': string;
+  /** The game's process is up. */
+  'game://started': { instanceId: string; pid: number };
   'game://exit': {
     instanceId: string;
     exitCode: number;

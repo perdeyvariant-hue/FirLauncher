@@ -10,3 +10,4 @@ pub mod mods;
 pub mod packs;
 pub mod settings;
 pub mod tasks;
+pub mod window;

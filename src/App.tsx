@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { AppearancePage } from '@/features/appearance/AppearancePage';
+import { DirectLaunch } from '@/features/launch/DirectLaunch';
 import { InstancePage } from '@/features/instances/InstancePage';
 import { InstancesPage } from '@/features/instances/InstancesPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
@@ -16,11 +17,22 @@ import { useUI } from '@/store/useUI';
 import { useUpdater } from '@/store/useUpdater';
 import { useCrash } from '@/store/useCrash';
 import { takeStartupLaunch } from '@/api/shortcuts';
+import * as windowApi from '@/api/window';
 import { activeAccountOf } from '@/store/useAccounts';
 import { useToasts } from '@/store/useToasts';
 import { t } from '@/lib/i18n';
 
-/** A desktop shortcut asked to start this instance. */
+/**
+ * The backend answers `--launch <id>` once, and React 18 runs effects twice
+ * in development, so the answer is remembered here.
+ */
+let startupLaunchOnce: Promise<string | null> | null = null;
+function startupLaunch(): Promise<string | null> {
+  startupLaunchOnce ??= takeStartupLaunch();
+  return startupLaunchOnce;
+}
+
+/** A desktop shortcut asked to start this instance while the launcher was open. */
 function launchFromShortcut(id: string): void {
   const account = activeAccountOf(useAccounts.getState());
   const instance = useInstances.getState().instances.find((item) => item.id === id);
@@ -64,14 +76,22 @@ export default function App(): ReactElement {
   const subscribeAccounts = useAccounts((state) => state.subscribe);
   const subscribeTasks = useTasks((state) => state.subscribe);
 
+  /** Non-null while a shortcut launch owns the window. */
+  const [shortcutLaunch, setShortcutLaunch] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  // Asked for first: the window is hidden until the launch card can be shown.
+  useEffect(() => {
+    void startupLaunch().then(setShortcutLaunch);
+  }, []);
+
   useEffect(() => {
     void loadSettings().then(() => {
       // Quietly: no network or no release yet must not greet the user with an error.
       if (useSettings.getState().settings.checkForUpdates) void useUpdater.getState().check(true);
     });
-    void Promise.all([loadInstances(), loadAccounts()]).then(async () => {
-      const id = await takeStartupLaunch();
-      if (id !== null) launchFromShortcut(id);
+    void Promise.all([loadInstances(), loadAccounts()]).then(() => {
+      setLoaded(true);
     });
     void loadTasks();
   }, [loadSettings, loadInstances, loadAccounts, loadTasks]);
@@ -118,6 +138,15 @@ export default function App(): ReactElement {
     };
 
     track(
+      onEvent('game://started', () => {
+        // A shortcut launch hides the launcher outright; this is the setting
+        // for an ordinary one.
+        if (shortcutLaunch !== null) return;
+        if (useSettings.getState().settings.closeLauncherOnLaunch) void windowApi.minimizeLauncher();
+      }),
+    );
+
+    track(
       onEvent('game://exit', (payload) => {
         void loadInstances();
         // A crash opens the crash assistant with the diagnosis.
@@ -141,7 +170,24 @@ export default function App(): ReactElement {
       disposed = true;
       for (const unsubscribe of unsubscribers) unsubscribe();
     };
-  }, [loadInstances]);
+  }, [loadInstances, shortcutLaunch]);
+
+  // Read through a ref so the callback stays stable and the launch card
+  // does not resubscribe to game events on every render.
+  const shortcutRef = useRef(shortcutLaunch);
+  shortcutRef.current = shortcutLaunch;
+
+  const openLauncher = useCallback((): void => {
+    const id = shortcutRef.current;
+    if (id !== null) useUI.getState().openInstance(id, 'logs');
+    setShortcutLaunch(null);
+  }, []);
+
+  if (shortcutLaunch !== null) {
+    return (
+      <DirectLaunch instanceId={shortcutLaunch} ready={loaded} onOpenLauncher={openLauncher} />
+    );
+  }
 
   return (
     <AppShell>

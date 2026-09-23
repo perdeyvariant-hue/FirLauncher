@@ -15,6 +15,7 @@ use tokio::sync::oneshot;
 use crate::error::{ErrorKind, LauncherError, Result};
 
 pub const EVENT_GAME_LOG: &str = "game://log";
+pub const EVENT_GAME_STARTED: &str = "game://started";
 pub const EVENT_GAME_EXIT: &str = "game://exit";
 
 #[derive(Debug, Clone, Serialize)]
@@ -24,6 +25,15 @@ pub struct GameLogEvent {
     /// "stdout", "stderr" or "launcher" for our own messages.
     pub stream: String,
     pub line: String,
+}
+
+/// The game's process is up. The launcher has nothing left to do until it
+/// exits, which is when a shortcut launch gets out of the way.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameStartedEvent {
+    pub instance_id: String,
+    pub pid: u32,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -218,6 +228,14 @@ pub async fn spawn_game(
             pid,
             started,
             kill: Some(kill_tx),
+        },
+    );
+
+    let _ = app.emit(
+        EVENT_GAME_STARTED,
+        GameStartedEvent {
+            instance_id: spec.instance_id.clone(),
+            pid,
         },
     );
 

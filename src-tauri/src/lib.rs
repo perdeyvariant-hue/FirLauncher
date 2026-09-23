@@ -87,6 +87,16 @@ pub fn run() {
             let state = AppState::new(app.handle().clone(), paths, settings)?;
             app.manage(state);
 
+            // The window is created hidden (tauri.conf.json), so nothing
+            // flashes before the interface is themed. A shortcut start keeps
+            // it hidden: there the launcher is a means to an end, and the
+            // small launch card shows itself when it is ready.
+            if !shortcuts::started_from_shortcut() {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                }
+            }
+
             // Renew stale Microsoft sessions in the background so names and
             // skins are current and the first launch needs no network hop.
             let handle = app.handle().clone();
@@ -164,6 +174,11 @@ pub fn run() {
             commands::instances::add_content_file,
             commands::instances::create_desktop_shortcut,
             commands::instances::take_startup_launch,
+            commands::window::shrink_launcher,
+            commands::window::hide_launcher,
+            commands::window::minimize_launcher,
+            commands::window::restore_launcher,
+            commands::window::quit_launcher,
             commands::instances::list_resource_packs,
             commands::instances::list_shader_packs,
             commands::instances::list_screenshots,
