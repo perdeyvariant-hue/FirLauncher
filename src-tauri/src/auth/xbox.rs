@@ -96,7 +96,9 @@ pub async fn authenticate(client: &reqwest::Client, msa_access_token: &str) -> R
         "Properties": {
             "AuthMethod": "RPS",
             "SiteName": "user.auth.xboxlive.com",
-            "RpsTicket": format!("d={msa_access_token}"),
+            // A token from the legacy `MBI_SSL` scope goes in as it is; the
+            // `d=` prefix belongs to Azure AD tokens and Xbox rejects it here.
+            "RpsTicket": msa_access_token,
         },
         "RelyingParty": "http://auth.xboxlive.com",
         "TokenType": "JWT",

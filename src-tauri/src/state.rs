@@ -26,7 +26,7 @@ pub struct AppState {
     pub presence: Arc<crate::presence::Presence>,
     /// OS keyring holding refresh and Minecraft tokens.
     pub secrets: SecretStore,
-    /// The device-code sign-in in progress, if any; only one at a time.
+    /// The Microsoft sign-in in progress, if any; only one at a time.
     login: Mutex<Option<CancellationToken>>,
 }
 

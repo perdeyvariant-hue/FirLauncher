@@ -370,8 +370,8 @@ git tag v0.2.0 && git push origin v0.2.0
 Workflow публикует релиз с установщиками и `latest.json`. Установленный лаунчер при запуске
 смотрит `releases/latest/download/latest.json`, показывает полосу «Доступна версия…» и ставит
 обновление, проверив подпись. Секреты репозитория: `TAURI_SIGNING_PRIVATE_KEY` и
-`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (обязательно), `FIRLAUNCHER_CURSEFORGE_KEY`,
-`FIRLAUNCHER_MSA_CLIENT_ID`, `FIRLAUNCHER_DISCORD_APP_ID` (по желанию). Публичный ключ подписи — в
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (обязательно), `FIRLAUNCHER_CURSEFORGE_KEY` и
+`FIRLAUNCHER_DISCORD_APP_ID` (по желанию). Публичный ключ подписи — в
 `tauri.conf.json`; потеря приватного ключа означает, что уже установленные копии не смогут
 обновиться, поэтому храните его резервную копию.
 
@@ -390,40 +390,34 @@ npm run tauri build
 
 ## Вход через Microsoft
 
-Вход идёт по коду устройства: лаунчер показывает короткий код, вы подтверждаете его на сайте
-Microsoft в любом браузере. Пароль через лаунчер не проходит.
+Лаунчер открывает страницу входа Microsoft в отдельном окне. Пароль вводится только на ней —
+в лаунчер он не попадает. После входа Microsoft уводит окно на пустую страницу-редирект
+`login.live.com/oauth20_desktop.srf`, в адресе которой лежит одноразовый код; обработчик
+навигации перехватывает её, окно закрывается, код меняется на токены.
 
 ```
-код устройства → токен Microsoft → Xbox Live → XSTS → токен Minecraft → профиль
+окно входа → код → токен Microsoft → Xbox Live → XSTS → токен Minecraft → профиль
 ```
 
 ### Client ID
 
-Для этого нужен **Client ID приложения Azure**. Своего ID в репозитории нет и не будет: чужой
-встраивать нельзя, а собственный — это ваш ключ.
+Используется `00000000402b5328` — публичный идентификатор официального лаунчера Minecraft
+(`src-tauri/src/auth/msa.rs`). Он не секрет и ничего не подписывает, но и не принадлежит
+FirLauncher: Microsoft может перестать его принимать, и тогда вход придётся переводить на
+собственное приложение Azure, одобренное Mojang для Minecraft API (форма — на
+[aka.ms/AppRegInfo](https://aka.ms/AppRegInfo)). Ничего настраивать не нужно: поля в настройках
+нет, при сборке переменные не требуются.
 
-1. Зарегистрируйте приложение на [portal.azure.com](https://portal.azure.com) → *App registrations*:
-   тип аккаунтов — **Personal Microsoft accounts only**, в разделе *Authentication* включите
-   **Allow public client flows** (без этого device code не работает).
-2. Запросите у Mojang доступ этого приложения к Minecraft API — ссылка на форму есть на
-   [aka.ms/AppRegInfo](https://aka.ms/AppRegInfo). Пока доступа нет, Microsoft вход пропустит,
-   а `api.minecraftservices.com` ответит `403 Invalid app registration` — лаунчер покажет это
-   отдельным понятным сообщением.
-3. Передайте ID лаунчеру одним из способов:
-   - при сборке — ID вшивается в бинарник, Cargo пересоберёт крейт, если значение изменится:
-     ```bash
-     FIRLAUNCHER_MSA_CLIENT_ID=<id> npm run tauri build            # bash / zsh
-     ```
-     ```powershell
-     $env:FIRLAUNCHER_MSA_CLIENT_ID = "<id>"; npm run tauri build   # PowerShell
-     ```
-   - в приложении: «Настройки → Вход через Microsoft» — перекрывает вшитый.
+Область доступа — старая, `service::user.auth.xboxlive.com::MBI_SSL`. Её токен уходит в Xbox
+Live как есть, без префикса `d=`, который нужен токенам Azure AD, — в этом главное отличие от
+device code, и перепутать нельзя: Xbox ответит отказом.
 
-Проверить регистрацию можно без интерфейса, тем же кодом, что использует приложение (токены
-держатся только в памяти, ни keyring, ни ваши аккаунты не трогаются):
+Проверить цепочку целиком можно из терминала, тем же кодом, что и приложение (страницу входа
+вы открываете в браузере и вставляете адрес, на котором она закончилась; токены держатся
+только в памяти, ни keyring, ни ваши аккаунты не трогаются):
 
 ```bash
-cargo run --example msa_login --manifest-path src-tauri/Cargo.toml -- <client-id>
+cargo run --example msa_login --manifest-path src-tauri/Cargo.toml
 ```
 
 ### Где хранятся токены
@@ -466,7 +460,7 @@ src-tauri/                бэкенд
   src/appearance.rs       свои обои и талисман: проверка формата, хранение
   src/packs/              импорт .mrpack / CurseForge / MultiMC / zip, экспорт
   src/loaders/            Fabric, Quilt, NeoForge, Forge и общий разбор установщиков
-  src/auth/               вход Microsoft: device code, Xbox Live, XSTS, Minecraft,
+  src/auth/               вход Microsoft: окно входа, Xbox Live, XSTS, Minecraft,
                           keyring с разбиением на части, рендер головы из скина
   src/commands/           поверхность, доступная фронтенду
   examples/vanilla_smoke.rs  headless-проверка ядра
@@ -508,7 +502,7 @@ src-tauri/                бэкенд
 - [x] **Этап 1** — скелет проекта, дизайн-система, оболочка интерфейса на фикстурах.
 - [x] **Этап 2** — ядро загрузки (manifest, библиотеки, нативы, ассеты, SHA1, параллель,
       отмена и докачка) и запуск ванильной версии.
-- [x] **Этап 3** — аккаунты Microsoft (device code → Xbox Live → XSTS → Minecraft), keyring.
+- [x] **Этап 3** — аккаунты Microsoft (окно входа → Xbox Live → XSTS → Minecraft), keyring.
 - [x] **Этап 4** — модлоадеры: Fabric, Quilt, NeoForge, Forge.
 - [x] **Этап 5** — браузер модов: Modrinth и CurseForge через общий трейт `ModProvider`.
 - [x] **Этап 6** — импорт/экспорт сборок: `.mrpack`, CurseForge, MultiMC/PrismLauncher.

@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter, State};
 
 use crate::accounts::{self, Account, AccountKind, AccountStore};
-use crate::auth::{self, DeviceCodeState, EVENT_DEVICE_CODE};
+use crate::auth::{self, LoginState, EVENT_LOGIN};
 use crate::error::{ErrorKind, LauncherError, Result};
 use crate::state::AppState;
 
@@ -62,31 +62,15 @@ pub async fn refresh_account(state: State<'_, AppState>, id: String) -> Result<A
         return Ok(account);
     }
 
-    let (account, _, _) = auth::refresh(
-        &state.client(),
-        &state.paths,
-        &state.secrets,
-        &state.settings(),
-        &id,
-    )
-    .await?;
+    let (account, _, _) =
+        auth::refresh(&state.client(), &state.paths, &state.secrets, &id).await?;
     Ok(account)
 }
 
-/// Starts the device-code flow in the background. Progress, the code to show
-/// and the outcome all arrive through `auth://device-code`.
+/// Opens Microsoft's sign-in window and runs the exchange in the background.
+/// Progress and the outcome arrive through `auth://login`.
 #[tauri::command]
 pub async fn begin_microsoft_login(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
-    let settings = state.settings();
-    // Fail fast on configuration, before the dialog starts spinning.
-    if auth::client_id(&settings).is_none() {
-        return Err(LauncherError::new(
-            ErrorKind::Auth,
-            "Не задан Client ID приложения Azure. Укажите его в «Настройки → Вход через \
-             Microsoft» — как получить, описано в README",
-        ));
-    }
-
     let cancel = state.begin_login();
     let client = state.client();
     let paths = state.paths.clone();
@@ -94,19 +78,23 @@ pub async fn begin_microsoft_login(app: AppHandle, state: State<'_, AppState>) -
 
     tokio::spawn(async move {
         let emitter = app.clone();
-        let emit = move |event: DeviceCodeState| {
-            let _ = emitter.emit(EVENT_DEVICE_CODE, event);
+        let emit = move |event: LoginState| {
+            let _ = emitter.emit(EVENT_LOGIN, event);
         };
 
-        let outcome = auth::login(&client, &paths, &secrets, &settings, &cancel, &emit).await;
+        let ask_code = auth::window::ask_for_code(&app, &cancel);
+        let outcome = auth::login(&client, &paths, &secrets, &emit, ask_code).await;
         if let Err(error) = outcome {
-            // A cancelled dialog is already closed; nobody is waiting for news.
-            if error.kind != ErrorKind::Cancelled {
+            // Closing the Microsoft window is not a failure; the dialog just
+            // goes away. If the dialog closed first, nobody is listening.
+            if error.kind == ErrorKind::Cancelled {
+                emit(LoginState::Cancelled);
+            } else {
                 let message = match &error.detail {
                     Some(detail) => format!("{}\n\n{detail}", error.message),
                     None => error.message.clone(),
                 };
-                emit(DeviceCodeState::Failed { message });
+                emit(LoginState::Failed { message });
             }
         }
     });

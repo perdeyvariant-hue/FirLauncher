@@ -1,24 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Check, Copy, ExternalLink, Loader2, RotateCw } from 'lucide-react';
+import { Check, Loader2, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
-import { Progress } from '@/components/ui/Progress';
 import * as accountsApi from '@/api/accounts';
-import { openExternal } from '@/api/system';
 import { onEvent } from '@/lib/events';
 import { toLauncherError } from '@/lib/ipc';
-import type { DeviceCodeState } from '@/types/account';
+import type { LoginState } from '@/types/account';
 import { useAccounts } from '@/store/useAccounts';
 import { t, translate } from '@/lib/i18n';
 
-export interface DeviceCodeDialogProps {
+export interface LoginDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-type Step = Extract<DeviceCodeState, { phase: 'exchanging' }>['step'];
+type Step = Extract<LoginState, { phase: 'exchanging' }>['step'];
 
 const STEPS: readonly { readonly id: Step; readonly label: string }[] = [
   { id: 'xbox', label: 'Xbox Live' },
@@ -29,13 +27,6 @@ const STEPS: readonly { readonly id: Step; readonly label: string }[] = [
 
 /** Closing on success is deferred just long enough to register the tick. */
 const DONE_CLOSE_MS = 900;
-
-function formatCountdown(seconds: number): string {
-  const safe = Math.max(0, seconds);
-  const minutes = Math.floor(safe / 60);
-  const rest = safe % 60;
-  return `${String(minutes)}:${String(rest).padStart(2, '0')}`;
-}
 
 function StepList({ current }: { current: Step }): ReactElement {
   const currentIndex = STEPS.findIndex((step) => step.id === current);
@@ -70,14 +61,12 @@ function StepList({ current }: { current: Step }): ReactElement {
   );
 }
 
-export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): ReactElement {
+/** Watches the sign-in that happens in Microsoft's own window. */
+export function LoginDialog({ open, onClose }: LoginDialogProps): ReactElement {
   const load = useAccounts((store) => store.load);
   const setActive = useAccounts((store) => store.setActive);
 
-  const [state, setState] = useState<DeviceCodeState>({ phase: 'requesting' });
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [totalSeconds, setTotalSeconds] = useState(1);
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<LoginState>({ phase: 'waiting' });
   const [attempt, setAttempt] = useState(0);
 
   // The parent re-creates onClose on every render; the flow must not restart
@@ -93,17 +82,14 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
     let unlisten: (() => void) | null = null;
     let closeTimer: number | null = null;
     finishedRef.current = false;
-    setState({ phase: 'requesting' });
-    setCopied(false);
+    setState({ phase: 'waiting' });
 
-    void onEvent('auth://device-code', (next) => {
+    void onEvent('auth://login', (next) => {
       if (disposed) return;
       setState(next);
-      if (next.phase === 'waiting') {
-        setSecondsLeft(next.expiresInSeconds);
-        setTotalSeconds(Math.max(1, next.expiresInSeconds));
-      }
-      if (next.phase === 'done' || next.phase === 'failed') finishedRef.current = true;
+      if (next.phase !== 'waiting' && next.phase !== 'exchanging') finishedRef.current = true;
+      // The person closed Microsoft's window: nothing to report, just leave.
+      if (next.phase === 'cancelled') onCloseRef.current();
       if (next.phase === 'done') {
         void load().then(() => {
           setActive(next.accountId);
@@ -130,29 +116,10 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
       disposed = true;
       unlisten?.();
       if (closeTimer !== null) window.clearTimeout(closeTimer);
-      // Closing mid-flow must stop the backend from polling Microsoft.
+      // Closing mid-flow must also close Microsoft's window.
       if (!finishedRef.current) void accountsApi.cancelMicrosoftLogin();
     };
   }, [open, attempt, load, setActive]);
-
-  useEffect(() => {
-    if (state.phase !== 'waiting') return;
-    const timer = window.setInterval(() => {
-      setSecondsLeft((value) => Math.max(0, value - 1));
-    }, 1000);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [state.phase]);
-
-  const copyCode = async (code: string): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
 
   const busy = state.phase === 'exchanging';
 
@@ -161,7 +128,7 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
       open={open}
       onClose={onClose}
       title={t`Вход через Microsoft`}
-      description={t`Пароль вводится только на сайте Microsoft — лаунчер его не видит.`}
+      description={t`Пароль вводится только на странице Microsoft — лаунчер его не видит.`}
       width="sm"
       busy={busy}
       footer={
@@ -172,57 +139,13 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps): Reac
       }
     >
       <div className="flex min-h-[180px] flex-col justify-center py-3">
-        {state.phase === 'requesting' && (
+        {(state.phase === 'waiting' || state.phase === 'cancelled') && (
           <div className="flex flex-col items-center gap-3 text-center">
             <Loader2 size={20} strokeWidth={1.5} className="animate-spin-slow text-accent" />
-            <p className="text-xs text-text-dim">{t`Получаем код у Microsoft…`}</p>
-          </div>
-        )}
-
-        {state.phase === 'waiting' && (
-          <div className="flex flex-col gap-4">
             <p className="text-xs leading-relaxed text-text-dim">
-              {t`Откройте страницу входа и введите этот код. Лаунчер сам заметит подтверждение.`}</p>
-
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3">
-              <span className="selectable font-mono text-xl tracking-[0.2em] text-text">
-                {state.userCode}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon={
-                  copied ? (
-                    <Check size={13} strokeWidth={1.5} className="text-accent" />
-                  ) : (
-                    <Copy size={13} strokeWidth={1.5} />
-                  )
-                }
-                onClick={() => {
-                  void copyCode(state.userCode);
-                }}
-              >
-                {copied ? t`Скопирован` : t`Копировать`}
-              </Button>
-            </div>
-
-            <Button
-              variant="primary"
-              fullWidth
-              icon={<ExternalLink size={14} strokeWidth={1.5} />}
-              onClick={() => {
-                // Copy first: the page asks for the code immediately.
-                void copyCode(state.userCode).then(() => openExternal(state.verificationUri));
-              }}
-            >
-              {t`Скопировать код и открыть страницу`}</Button>
-
-            <div className="flex flex-col gap-1.5">
-              <Progress value={secondsLeft / totalSeconds} size="xs" />
-              <p className="text-2xs text-text-dim">
-                {t`Код действует ещё `}{formatCountdown(secondsLeft)}
-              </p>
-            </div>
+              {t`Войдите в открывшемся окне Microsoft — лаунчер сам подхватит вход.`}</p>
+            <p className="text-2xs text-text-dim">
+              {t`Окно не видно? Оно могло открыться за лаунчером.`}</p>
           </div>
         )}
 

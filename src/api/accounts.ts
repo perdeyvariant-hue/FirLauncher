@@ -8,7 +8,7 @@ export function listAccounts(): Promise<Account[]> {
   return ipc<Account[]>('list_accounts');
 }
 
-/** Starts the device-code flow; progress arrives via the `auth://device-code` event. */
+/** Opens the Microsoft window; progress arrives via the `auth://login` event. */
 export function beginMicrosoftLogin(): Promise<void> {
   // The flow is driven by backend events, which a plain browser tab never gets.
   if (shouldMock()) {

@@ -206,7 +206,7 @@ async fn run_launch(
     // second, not after half a gigabyte of assets.
     progress.set_stage(String::from("Проверка аккаунта"));
     let game_session =
-        crate::auth::session_for(&client, &paths, &secrets, &settings, &account).await;
+        crate::auth::session_for(&client, &paths, &secrets, &account).await;
     // A refresh may have renamed the player, changed the skin or marked the
     // account expired; let the sidebar catch up either way.
     let _ = app.emit(crate::auth::EVENT_ACCOUNTS_CHANGED, ());

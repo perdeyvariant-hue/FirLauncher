@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { formatRelativeDate } from '@/lib/format';
 import { useAccounts } from '@/store/useAccounts';
 import { AddAccountDialog } from './AddAccountDialog';
-import { DeviceCodeDialog } from './DeviceCodeDialog';
+import { LoginDialog } from './LoginDialog';
 import { t } from '@/lib/i18n';
 
 export function AccountsPage(): ReactElement {
@@ -171,7 +171,7 @@ export function AccountsPage(): ReactElement {
         }}
       />
 
-      <DeviceCodeDialog
+      <LoginDialog
         open={msaOpen}
         onClose={() => {
           setMsaOpen(false);

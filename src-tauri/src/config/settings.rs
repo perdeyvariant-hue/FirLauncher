@@ -29,9 +29,6 @@ pub struct Settings {
     pub close_launcher_on_launch: bool,
     pub show_snapshots: bool,
     pub data_dir_override: String,
-    /// Azure application id for Microsoft sign-in. Empty falls back to the id
-    /// baked in at build time via FIRLAUNCHER_MSA_CLIENT_ID.
-    pub msa_client_id: String,
     /// Colours, wallpaper, mascot and interface tweaks.
     pub appearance: Appearance,
     /// Look for a new launcher release on start.
@@ -58,7 +55,6 @@ impl Default for Settings {
             close_launcher_on_launch: false,
             show_snapshots: false,
             data_dir_override: String::new(),
-            msa_client_id: String::new(),
             appearance: Appearance::default(),
             check_for_updates: true,
             backup_worlds_before_updates: true,

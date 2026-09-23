@@ -92,13 +92,9 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let state = handle.state::<AppState>();
-                let changed = auth::refresh_stale_accounts(
-                    &state.client(),
-                    &state.paths,
-                    &state.secrets,
-                    &state.settings(),
-                )
-                .await;
+                let changed =
+                    auth::refresh_stale_accounts(&state.client(), &state.paths, &state.secrets)
+                        .await;
                 if changed {
                     let _ = handle.emit(auth::EVENT_ACCOUNTS_CHANGED, ());
                 }

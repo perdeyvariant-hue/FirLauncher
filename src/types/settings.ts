@@ -62,11 +62,6 @@ export interface Settings {
   readonly showSnapshots: boolean;
   /** Overrides the platform default data directory when non-empty. */
   readonly dataDirOverride: string;
-  /**
-   * Azure application id for Microsoft sign-in. Empty means "use the id the
-   * launcher was built with", which may itself be absent.
-   */
-  readonly msaClientId: string;
   readonly appearance: Appearance;
   /** Look for a new launcher release on start. */
   readonly checkForUpdates: boolean;
@@ -88,7 +83,6 @@ export const DEFAULT_SETTINGS: Settings = {
   closeLauncherOnLaunch: false,
   showSnapshots: false,
   dataDirOverride: '',
-  msaClientId: '',
   appearance: DEFAULT_APPEARANCE,
   checkForUpdates: true,
   backupWorldsBeforeUpdates: true,

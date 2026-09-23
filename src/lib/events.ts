@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import type { Task } from '@/types/task';
 import type { LogStream } from '@/types/instance';
-import type { DeviceCodeState } from '@/types/account';
+import type { LoginState } from '@/types/account';
 import { isTauri } from './ipc';
 
 /** Event name → payload. Kept in sync with `src-tauri/src/tasks/progress.rs`. */
@@ -18,7 +18,7 @@ export interface LauncherEvents {
     crashed: boolean;
     playedSeconds: number;
   };
-  'auth://device-code': DeviceCodeState;
+  'auth://login': LoginState;
   /** A background refresh renamed, re-skinned or expired an account. */
   'accounts://changed': null;
 }

@@ -1,38 +1,32 @@
-//! Microsoft OAuth 2.0 device-code flow against the consumer tenant.
+//! Microsoft sign-in: the OAuth 2.0 authorization-code flow against the
+//! consumer endpoints at `login.live.com`.
 //!
-//! The launcher shows a short code, the user confirms it in any browser, and
-//! we poll until Microsoft hands back an access token plus a refresh token.
-//! No password ever passes through the launcher.
-
-use std::time::{Duration, Instant};
+//! The launcher opens Microsoft's own sign-in page in a separate window and
+//! waits for it to land on the desktop redirect, which carries a one-time
+//! code in its query string. That code is traded for an access token and a
+//! refresh token. No password ever passes through the launcher.
 
 use serde::Deserialize;
-use tokio_util::sync::CancellationToken;
+use url::Url;
 
 use crate::error::{ErrorKind, LauncherError, Result};
 use crate::net::retry::network_error;
 
-const DEVICE_CODE_URL: &str =
-    "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
-const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
-/// `XboxLive.signin` is what the Xbox user-token exchange accepts;
-/// `offline_access` is what yields a refresh token.
-const SCOPE: &str = "XboxLive.signin offline_access";
-const DEVICE_GRANT: &str = "urn:ietf:params:oauth:grant-type:device_code";
+/// The application id Minecraft's own launcher signs in with. It is public
+/// knowledge, carries no secret, and is the only id Microsoft accepts for the
+/// `MBI_SSL` Xbox Live scope without a Mojang-approved Azure registration.
+pub const CLIENT_ID: &str = "00000000402b5328";
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct DeviceCode {
-    pub device_code: String,
-    pub user_code: String,
-    pub verification_uri: String,
-    pub expires_in: u64,
-    #[serde(default = "default_interval")]
-    pub interval: u64,
-}
+const AUTHORIZE_URL: &str = "https://login.live.com/oauth20_authorize.srf";
+const TOKEN_URL: &str = "https://login.live.com/oauth20_token.srf";
 
-fn default_interval() -> u64 {
-    5
-}
+/// The "desktop" redirect: a blank page on Microsoft's side that exists only
+/// so a native application can read the code out of the address bar.
+pub const REDIRECT_URI: &str = "https://login.live.com/oauth20_desktop.srf";
+
+/// The legacy Xbox Live scope. Its access token goes to Xbox Live as-is,
+/// without the `d=` prefix an Azure AD token would need.
+const SCOPE: &str = "service::user.auth.xboxlive.com::MBI_SSL";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct MsaTokens {
@@ -62,31 +56,92 @@ impl From<LauncherError> for RefreshError {
     }
 }
 
-/// Turns an OAuth error body into something a person can act on.
+/// Percent-encodes everything outside the unreserved set, which is all the
+/// escaping these few parameters can ever need.
+fn encoded(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
+                out.push(char::from(byte));
+            }
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
+}
+
+/// Where to send the sign-in window. `prompt=select_account` keeps a second
+/// account from being signed in silently with the first one's cookies.
+pub fn authorize_url() -> String {
+    let query = [
+        ("client_id", CLIENT_ID),
+        ("response_type", "code"),
+        ("scope", SCOPE),
+        ("redirect_uri", REDIRECT_URI),
+        ("prompt", "select_account"),
+    ];
+    let mut url = String::from(AUTHORIZE_URL);
+    for (index, (key, value)) in query.iter().enumerate() {
+        url.push(if index == 0 { '?' } else { '&' });
+        url.push_str(key);
+        url.push('=');
+        url.push_str(&encoded(value));
+    }
+    url
+}
+
+/// Reads a navigation the sign-in window is about to make.
+///
+/// `None` means "an ordinary page of the sign-in flow, let it through".
+/// Anything else ends the flow: the code to exchange, or the reason
+/// Microsoft refused.
+pub fn code_from_redirect(url: &Url) -> Option<Result<String>> {
+    let landed = url.as_str().split(['?', '#']).next().unwrap_or_default();
+    if landed.trim_end_matches('/') != REDIRECT_URI {
+        return None;
+    }
+
+    let mut code = None;
+    let mut error = None;
+    let mut description = None;
+    for (key, value) in url.query_pairs() {
+        match key.as_ref() {
+            "code" => code = Some(value.into_owned()),
+            "error" => error = Some(value.into_owned()),
+            "error_description" => description = Some(value.into_owned()),
+            _ => {}
+        }
+    }
+
+    Some(match (code, error) {
+        (Some(code), _) => Ok(code),
+        (None, Some(error)) => Err(describe_oauth_error(&error, description.as_deref())),
+        (None, None) => Err(LauncherError::new(
+            ErrorKind::Auth,
+            "Microsoft закрыл вход без кода — попробуйте ещё раз",
+        )),
+    })
+}
+
+/// Turns an OAuth error into something a person can act on.
 pub fn describe_oauth_error(code: &str, description: Option<&str>) -> LauncherError {
     let detail = description.unwrap_or(code).to_owned();
     match code {
-        "authorization_declined" => {
-            LauncherError::new(ErrorKind::Auth, "Вход отклонён в браузере")
+        "access_denied" | "authorization_declined" => {
+            LauncherError::new(ErrorKind::Auth, "Вход отклонён в окне Microsoft")
         }
-        "expired_token" | "code_expired" => LauncherError::new(
-            ErrorKind::Auth,
-            "Код входа устарел — начните вход заново",
-        ),
-        "bad_verification_code" => {
-            LauncherError::new(ErrorKind::Auth, "Microsoft не узнал код входа")
+        "expired_token" | "code_expired" => {
+            LauncherError::new(ErrorKind::Auth, "Код входа устарел — начните вход заново")
         }
-        "invalid_client" | "unauthorized_client" => LauncherError::new(
-            ErrorKind::Auth,
-            "Microsoft не принял Client ID приложения. Проверьте его в настройках \
-             и что в Azure включены «public client flows»",
-        )
-        .with_detail(detail),
-        "invalid_grant" => LauncherError::new(
-            ErrorKind::Auth,
-            "Сессия Microsoft истекла — войдите заново",
-        )
-        .with_detail(detail),
+        "invalid_client" | "unauthorized_client" => {
+            LauncherError::new(ErrorKind::Auth, "Microsoft больше не принимает это приложение")
+                .with_detail(detail)
+        }
+        "invalid_grant" => {
+            LauncherError::new(ErrorKind::Auth, "Сессия Microsoft истекла — войдите заново")
+                .with_detail(detail)
+        }
         _ => LauncherError::new(ErrorKind::Auth, "Microsoft отклонил запрос входа")
             .with_detail(format!("{code}: {detail}")),
     }
@@ -103,112 +158,55 @@ async fn read_oauth_error(response: reqwest::Response) -> OAuthError {
     }
 }
 
-/// Step one: ask Microsoft for a code to show the user.
-pub async fn request_device_code(client: &reqwest::Client, client_id: &str) -> Result<DeviceCode> {
+/// Trades the one-time code from the redirect for real tokens.
+pub async fn exchange_code(client: &reqwest::Client, code: &str) -> Result<MsaTokens> {
     let response = client
-        .post(DEVICE_CODE_URL)
-        .form(&[("client_id", client_id), ("scope", SCOPE)])
+        .post(TOKEN_URL)
+        .form(&[
+            ("client_id", CLIENT_ID),
+            ("grant_type", "authorization_code"),
+            ("code", code),
+            ("redirect_uri", REDIRECT_URI),
+            ("scope", SCOPE),
+        ])
         .send()
         .await
         .map_err(|error| network_error("Не удалось связаться с Microsoft", &error))?;
 
     if !response.status().is_success() {
         let error = read_oauth_error(response).await;
+        // Here a refused grant means the one-time code went stale, which
+        // reads nothing like the expired session the same code means later.
+        if error.error == "invalid_grant" {
+            return Err(LauncherError::new(
+                ErrorKind::Auth,
+                "Код входа не подошёл — войдите ещё раз",
+            )
+            .with_detail(error.error_description.unwrap_or(error.error)));
+        }
         return Err(describe_oauth_error(
             &error.error,
             error.error_description.as_deref(),
         ));
     }
-
-    response.json::<DeviceCode>().await.map_err(|error| {
+    response.json::<MsaTokens>().await.map_err(|error| {
         LauncherError::new(ErrorKind::Parse, "Ответ Microsoft не разобрался")
             .with_detail(error.to_string())
     })
 }
 
-/// What one poll of the token endpoint told us.
-#[derive(Debug, PartialEq, Eq)]
-pub enum PollOutcome {
-    Pending,
-    SlowDown,
-}
-
-/// Classifies a token-endpoint error during device-code polling.
-pub fn classify_poll_error(code: &str, description: Option<&str>) -> std::result::Result<PollOutcome, LauncherError> {
-    match code {
-        "authorization_pending" => Ok(PollOutcome::Pending),
-        "slow_down" => Ok(PollOutcome::SlowDown),
-        _ => Err(describe_oauth_error(code, description)),
-    }
-}
-
-/// Step two: poll until the user confirms, declines, or the code expires.
-pub async fn poll_for_token(
-    client: &reqwest::Client,
-    client_id: &str,
-    code: &DeviceCode,
-    cancel: &CancellationToken,
-) -> Result<MsaTokens> {
-    let deadline = Instant::now() + Duration::from_secs(code.expires_in);
-    let mut interval = Duration::from_secs(code.interval.max(1));
-
-    loop {
-        tokio::select! {
-            biased;
-            () = cancel.cancelled() => {
-                return Err(LauncherError::new(ErrorKind::Cancelled, "Вход отменён"));
-            }
-            () = tokio::time::sleep(interval) => {}
-        }
-
-        if Instant::now() >= deadline {
-            return Err(describe_oauth_error("expired_token", None));
-        }
-
-        let response = client
-            .post(TOKEN_URL)
-            .form(&[
-                ("grant_type", DEVICE_GRANT),
-                ("client_id", client_id),
-                ("device_code", code.device_code.as_str()),
-            ])
-            .send()
-            .await;
-
-        let response = match response {
-            Ok(response) => response,
-            // A dropped poll is not a reason to abandon the whole sign-in.
-            Err(_) => continue,
-        };
-
-        if response.status().is_success() {
-            return response.json::<MsaTokens>().await.map_err(|error| {
-                LauncherError::new(ErrorKind::Parse, "Токен Microsoft не разобрался")
-                    .with_detail(error.to_string())
-            });
-        }
-
-        let error = read_oauth_error(response).await;
-        match classify_poll_error(&error.error, error.error_description.as_deref())? {
-            PollOutcome::Pending => {}
-            // RFC 8628: back off by five seconds and keep going.
-            PollOutcome::SlowDown => interval += Duration::from_secs(5),
-        }
-    }
-}
-
 /// Exchanges a refresh token for fresh tokens.
 pub async fn refresh(
     client: &reqwest::Client,
-    client_id: &str,
     refresh_token: &str,
 ) -> std::result::Result<MsaTokens, RefreshError> {
     let response = client
         .post(TOKEN_URL)
         .form(&[
+            ("client_id", CLIENT_ID),
             ("grant_type", "refresh_token"),
-            ("client_id", client_id),
             ("refresh_token", refresh_token),
+            ("redirect_uri", REDIRECT_URI),
             ("scope", SCOPE),
         ])
         .send()
@@ -238,40 +236,56 @@ pub async fn refresh(
 mod tests {
     use super::*;
 
-    #[test]
-    fn pending_and_slow_down_keep_polling() {
-        assert_eq!(classify_poll_error("authorization_pending", None).ok(), Some(PollOutcome::Pending));
-        assert_eq!(classify_poll_error("slow_down", None).ok(), Some(PollOutcome::SlowDown));
+    fn parse(raw: &str) -> Url {
+        match Url::parse(raw) {
+            Ok(url) => url,
+            Err(error) => panic!("parse {raw}: {error}"),
+        }
     }
 
     #[test]
-    fn terminal_errors_become_readable_messages() {
-        let declined = classify_poll_error("authorization_declined", None).err();
-        assert_eq!(declined.map(|e| e.message), Some(String::from("Вход отклонён в браузере")));
-
-        let expired = classify_poll_error("expired_token", None).err();
-        assert!(expired.is_some_and(|e| e.message.contains("устарел")));
-
-        let unknown = classify_poll_error("weird_thing", Some("details")).err();
-        assert!(unknown.is_some_and(|e| e.detail.as_deref() == Some("weird_thing: details")));
+    fn the_authorize_url_carries_the_whole_request() {
+        let url = authorize_url();
+        assert!(url.starts_with("https://login.live.com/oauth20_authorize.srf?"));
+        assert!(url.contains("client_id=00000000402b5328"));
+        assert!(url.contains("response_type=code"));
+        // The scope's colons must survive encoding.
+        assert!(url.contains("scope=service%3A%3Auser.auth.xboxlive.com%3A%3AMBI_SSL"));
+        assert!(url.contains("redirect_uri=https%3A%2F%2Flogin.live.com%2Foauth20_desktop.srf"));
     }
 
     #[test]
-    fn a_bad_client_id_points_at_the_setting() {
-        let error = describe_oauth_error("invalid_client", Some("AADSTS700016"));
-        assert!(error.message.contains("Client ID"));
-        assert_eq!(error.detail.as_deref(), Some("AADSTS700016"));
+    fn pages_of_the_sign_in_flow_pass_through() {
+        assert!(code_from_redirect(&parse("https://login.live.com/oauth20_authorize.srf?x=1")).is_none());
+        assert!(code_from_redirect(&parse("https://login.live.com/ppsecure/post.srf")).is_none());
+        assert!(code_from_redirect(&parse("https://account.live.com/recover")).is_none());
     }
 
     #[test]
-    fn device_code_defaults_the_poll_interval() {
-        let parsed: DeviceCode = match serde_json::from_str(
-            r#"{"device_code":"d","user_code":"ABCD-1234","verification_uri":"https://microsoft.com/link","expires_in":900}"#,
-        ) {
-            Ok(parsed) => parsed,
-            Err(error) => panic!("parse: {error}"),
+    fn the_redirect_gives_up_its_code() {
+        let url = parse("https://login.live.com/oauth20_desktop.srf?code=M.C123_BAY.2.U.abc&lc=1033");
+        assert_eq!(
+            code_from_redirect(&url).and_then(std::result::Result::ok),
+            Some(String::from("M.C123_BAY.2.U.abc"))
+        );
+    }
+
+    #[test]
+    fn a_refused_sign_in_reads_as_a_refusal() {
+        let url = parse(
+            "https://login.live.com/oauth20_desktop.srf?error=access_denied&error_description=The+user+has+denied+access",
+        );
+        let error = match code_from_redirect(&url) {
+            Some(Err(error)) => error,
+            other => panic!("expected a refusal, got {other:?}"),
         };
-        assert_eq!(parsed.interval, 5);
-        assert_eq!(parsed.user_code, "ABCD-1234");
+        assert_eq!(error.kind, ErrorKind::Auth);
+        assert!(error.message.contains("отклонён"));
+    }
+
+    #[test]
+    fn an_empty_redirect_is_not_mistaken_for_success() {
+        let url = parse("https://login.live.com/oauth20_desktop.srf");
+        assert!(code_from_redirect(&url).is_some_and(|outcome| outcome.is_err()));
     }
 }

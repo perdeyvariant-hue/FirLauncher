@@ -10,7 +10,7 @@ import { t } from '@/lib/i18n';
 export interface AddAccountDialogProps {
   open: boolean;
   onClose: () => void;
-  /** Hands over to the device-code dialog. */
+  /** Hands over to the sign-in dialog. */
   onMicrosoft: () => void;
 }
 

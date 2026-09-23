@@ -21,11 +21,6 @@ import { t } from '@/lib/i18n';
 
 const REPO_URL = 'https://github.com/perdeyvariant-hue/FirLauncher';
 
-/** Microsoft's own guide; the Minecraft approval form is linked from the README. */
-const AZURE_GUIDE_URL =
-  'https://learn.microsoft.com/entra/identity-platform/quickstart-register-app';
-
-
 export function SettingsPage(): ReactElement {
   const settings = useSettings((state) => state.settings);
   const patch = useSettings((state) => state.patch);
@@ -185,35 +180,6 @@ export function SettingsPage(): ReactElement {
               }}
               hint={t`Modrinth и CurseForge требуют контакт в User-Agent. Без него запросы могут ограничиваться.`}
             />
-          </Section>
-
-          <Section
-            title={t`Вход через Microsoft`}
-            description={t`Нужен Client ID приложения Azure, одобренного Mojang для Minecraft API. Если поле пустое, используется ID, заданный при сборке лаунчера.`}
-          >
-            <Input
-              label={t`Client ID приложения Azure`}
-              monospace
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="00000000-0000-0000-0000-000000000000"
-              value={settings.msaClientId}
-              onChange={(event) => {
-                void patch({ msaClientId: event.target.value.trim() });
-              }}
-              hint={t`Хранится только на этом компьютере. Токены входа лежат в системном хранилище паролей, не в файлах лаунчера.`}
-            />
-            <div>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon={<ExternalLink size={13} strokeWidth={1.5} />}
-                onClick={() => {
-                  void openExternal(AZURE_GUIDE_URL);
-                }}
-              >
-                {t`Как зарегистрировать приложение`}</Button>
-            </div>
           </Section>
 
           <Section title={t`Поведение`}>

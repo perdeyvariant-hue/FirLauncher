@@ -111,12 +111,12 @@ pub async fn login_with_xbox(client: &reqwest::Client, xsts: &XboxToken) -> Resu
 
     let body = response.text().await.unwrap_or_default();
     Err(match status {
-        // The trap every new launcher falls into: Microsoft is happy, Mojang
-        // is not, because the Azure app was never approved for this API.
+        // Microsoft is happy, Minecraft is not. With a launcher client id the
+        // usual reason is an account that has no Java Edition behind it.
         reqwest::StatusCode::FORBIDDEN => LauncherError::new(
             ErrorKind::Auth,
-            "Вход в Microsoft прошёл, но Mojang отклонил приложение: этот Client ID \
-             не одобрен для Minecraft API. Нужен одобренный ID — см. README",
+            "Вход в Microsoft прошёл, но сервисы Minecraft отказали. Чаще всего это \
+             значит, что на аккаунте нет Minecraft: Java Edition",
         )
         .with_detail(body),
         reqwest::StatusCode::TOO_MANY_REQUESTS => LauncherError::new(

@@ -1,57 +1,67 @@
 //! Terminal sign-in through the exact code path the app uses.
 //!
-//! Handy for checking an Azure app registration before wiring it into the
-//! launcher: it prints the device code, waits for you to confirm it, walks the
-//! Xbox -> XSTS -> Minecraft chain and prints the profile. Tokens are kept in
-//! memory only; nothing touches the OS keyring or your real accounts.json.
+//! The app opens Microsoft's page in a window of its own and reads the code
+//! out of the redirect; here you open the page in your browser and paste the
+//! address it ends up at. Everything after that — Xbox, XSTS, Minecraft,
+//! profile — is the same code. Tokens are kept in memory only; nothing
+//! touches the OS keyring or your real accounts.json.
 //!
 //! ```text
-//! cargo run --example msa_login -- <azure-client-id>
+//! cargo run --example msa_login
 //! ```
 
+use std::io::Write;
 use std::sync::Arc;
 
 use firlauncher_lib::auth::secrets::{MemoryBackend, SecretStore};
-use firlauncher_lib::auth::{self, DeviceCodeState};
-use firlauncher_lib::config::settings::Settings;
-use firlauncher_lib::error::Result;
+use firlauncher_lib::auth::{self, msa, LoginState};
+use firlauncher_lib::error::{ErrorKind, LauncherError, Result};
 use firlauncher_lib::net::build_client;
 use firlauncher_lib::paths::Paths;
-use tokio_util::sync::CancellationToken;
+
+/// Stands in for the sign-in window: prints the page to open and waits for
+/// the address it finished on.
+async fn ask_code() -> Result<String> {
+    println!("\n  1. Откройте в браузере:\n\n{}\n", msa::authorize_url());
+    println!("  2. Войдите. Страница станет пустой — это и есть редирект.");
+    println!("  3. Скопируйте её адрес целиком и вставьте сюда:\n");
+    print!("  > ");
+    let _ = std::io::stdout().flush();
+
+    let mut line = String::new();
+    std::io::stdin()
+        .read_line(&mut line)
+        .map_err(|error| LauncherError::internal("Не прочитать ввод").with_detail(error.to_string()))?;
+
+    let url = url::Url::parse(line.trim()).map_err(|error| {
+        LauncherError::new(ErrorKind::Auth, "Это не адрес").with_detail(error.to_string())
+    })?;
+    msa::code_from_redirect(&url).unwrap_or_else(|| {
+        Err(LauncherError::new(
+            ErrorKind::Auth,
+            "В этом адресе нет кода — нужен тот, что начинается с oauth20_desktop.srf",
+        ))
+    })
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let client_id = std::env::args().nth(1).unwrap_or_default();
-    let settings = Settings {
-        msa_client_id: client_id,
-        ..Settings::default()
-    };
-
     let scratch = std::env::temp_dir().join("firlauncher-msa-probe");
     let paths = Paths::resolve(Some(&scratch.to_string_lossy()))?;
     paths.ensure()?;
 
     let client = build_client("")?;
     let store = SecretStore::new(Arc::new(MemoryBackend::default()));
-    let cancel = CancellationToken::new();
 
-    let emit = |state: DeviceCodeState| match state {
-        DeviceCodeState::Requesting => println!("Запрос кода у Microsoft..."),
-        DeviceCodeState::Waiting {
-            user_code,
-            verification_uri,
-            expires_in_seconds,
-        } => {
-            println!("\n  Откройте {verification_uri}");
-            println!("  и введите код  {user_code}");
-            println!("  (действителен {} мин)\n", expires_in_seconds / 60);
-        }
-        DeviceCodeState::Exchanging { step } => println!("  шаг: {step:?}"),
-        DeviceCodeState::Done { account_id } => println!("Готово, аккаунт {account_id}"),
-        DeviceCodeState::Failed { message } => println!("Ошибка: {message}"),
+    let emit = |state: LoginState| match state {
+        LoginState::Waiting => println!("Ожидание входа..."),
+        LoginState::Cancelled => println!("Вход отменён"),
+        LoginState::Exchanging { step } => println!("  шаг: {step:?}"),
+        LoginState::Done { account_id } => println!("Готово, аккаунт {account_id}"),
+        LoginState::Failed { message } => println!("Ошибка: {message}"),
     };
 
-    match auth::login(&client, &paths, &store, &settings, &cancel, &emit).await {
+    match auth::login(&client, &paths, &store, &emit, ask_code()).await {
         Ok(account) => {
             println!("\nИгрок:  {}", account.username);
             println!("UUID:   {}", account.uuid);

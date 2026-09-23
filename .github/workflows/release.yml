@@ -5,7 +5,6 @@
 # Repository secrets:
 #   TAURI_SIGNING_PRIVATE_KEY / _PASSWORD  signs the update packages (required)
 #   FIRLAUNCHER_CURSEFORGE_KEY             embeds the CurseForge key (optional)
-#   FIRLAUNCHER_MSA_CLIENT_ID              embeds the Azure client id (optional)
 #   FIRLAUNCHER_DISCORD_APP_ID             embeds the Discord application id (optional)
 name: Release
 
@@ -62,7 +61,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           FIRLAUNCHER_CURSEFORGE_KEY: ${{ secrets.FIRLAUNCHER_CURSEFORGE_KEY }}
-          FIRLAUNCHER_MSA_CLIENT_ID: ${{ secrets.FIRLAUNCHER_MSA_CLIENT_ID }}
           FIRLAUNCHER_DISCORD_APP_ID: ${{ secrets.FIRLAUNCHER_DISCORD_APP_ID }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}

@@ -1,7 +1,7 @@
 //! Microsoft account sign-in and game sessions.
 //!
 //! ```text
-//! device code -> Microsoft token -> Xbox Live -> XSTS -> Minecraft token -> profile
+//! sign-in window -> Microsoft token -> Xbox Live -> XSTS -> Minecraft token -> profile
 //! ```
 //!
 //! The refresh token and the cached Minecraft token live in the OS keyring
@@ -11,19 +11,20 @@ pub mod minecraft;
 pub mod msa;
 pub mod secrets;
 pub mod skin;
+pub mod window;
 pub mod xbox;
 
+use std::future::Future;
+
 use serde::{Deserialize, Serialize};
-use tokio_util::sync::CancellationToken;
 
 use crate::accounts::{Account, AccountKind, AccountStore};
-use crate::config::settings::Settings;
 use crate::error::{ErrorKind, LauncherError, Result};
 use crate::paths::Paths;
 
 use self::secrets::SecretStore;
 
-pub const EVENT_DEVICE_CODE: &str = "auth://device-code";
+pub const EVENT_LOGIN: &str = "auth://login";
 pub const EVENT_ACCOUNTS_CHANGED: &str = "accounts://changed";
 
 /// Refresh the Minecraft token this long before it actually expires, so a
@@ -39,17 +40,14 @@ pub enum ExchangeStep {
     Profile,
 }
 
-/// Mirror of `DeviceCodeState` in `src/types/account.ts`.
+/// Mirror of `LoginState` in `src/types/account.ts`.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "phase", rename_all = "lowercase")]
-pub enum DeviceCodeState {
-    Requesting,
-    #[serde(rename_all = "camelCase")]
-    Waiting {
-        user_code: String,
-        verification_uri: String,
-        expires_in_seconds: u64,
-    },
+pub enum LoginState {
+    /// The sign-in window is open; the rest is up to the person in front of it.
+    Waiting,
+    /// The sign-in window was closed without signing in.
+    Cancelled,
     Exchanging {
         step: ExchangeStep,
     },
@@ -100,29 +98,6 @@ impl GameSession {
             user_type: String::from("legacy"),
         }
     }
-}
-
-/// The Azure application id: a per-user override from settings wins over the
-/// one baked in at build time. Neither is ever committed to the repository.
-pub fn client_id(settings: &Settings) -> Option<String> {
-    let configured = settings.msa_client_id.trim();
-    if !configured.is_empty() {
-        return Some(configured.to_owned());
-    }
-    option_env!("FIRLAUNCHER_MSA_CLIENT_ID")
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_owned)
-}
-
-fn require_client_id(settings: &Settings) -> Result<String> {
-    client_id(settings).ok_or_else(|| {
-        LauncherError::new(
-            ErrorKind::Auth,
-            "Не задан Client ID приложения Azure. Укажите его в «Настройки → Вход через \
-             Microsoft» — как получить, описано в README",
-        )
-    })
 }
 
 fn refresh_key(account_id: &str) -> String {
@@ -231,36 +206,29 @@ async fn render_head(client: &reqwest::Client, profile: &minecraft::Profile) -> 
     skin::fetch_head(client, &url).await
 }
 
-/// The interactive sign-in. `emit` receives every state change for the
-/// dialog; the caller reports failures.
+/// The interactive sign-in. `ask_code` is whatever shows Microsoft's page to
+/// the person and comes back with the authorization code; `emit` receives
+/// every state change for the dialog, and the caller reports failures.
 pub async fn login(
     client: &reqwest::Client,
     paths: &Paths,
     store: &SecretStore,
-    settings: &Settings,
-    cancel: &CancellationToken,
-    emit: &(dyn Fn(DeviceCodeState) + Send + Sync),
+    emit: &(dyn Fn(LoginState) + Send + Sync),
+    ask_code: impl Future<Output = Result<String>>,
 ) -> Result<Account> {
-    let client_id = require_client_id(settings)?;
+    emit(LoginState::Waiting);
+    let code = ask_code.await?;
 
-    emit(DeviceCodeState::Requesting);
-    let code = msa::request_device_code(client, &client_id).await?;
-    emit(DeviceCodeState::Waiting {
-        user_code: code.user_code.clone(),
-        verification_uri: code.verification_uri.clone(),
-        expires_in_seconds: code.expires_in,
-    });
-
-    let tokens = msa::poll_for_token(client, &client_id, &code, cancel).await?;
+    let tokens = msa::exchange_code(client, &code).await?;
     let refresh_token = tokens.refresh_token.clone().ok_or_else(|| {
         LauncherError::new(
             ErrorKind::Auth,
-            "Microsoft не выдал refresh-токен — проверьте, что приложению разрешён offline_access",
+            "Microsoft не выдал refresh-токен — войдите ещё раз",
         )
     })?;
 
     let exchanged = exchange(client, &tokens.access_token, &|step| {
-        emit(DeviceCodeState::Exchanging { step });
+        emit(LoginState::Exchanging { step });
     })
     .await?;
 
@@ -301,7 +269,7 @@ pub async fn login(
     persist_secrets(store, &account.id, &refresh_token, &cached_from(&exchanged.token)).await?;
     accounts.save(paths).await?;
 
-    emit(DeviceCodeState::Done {
+    emit(LoginState::Done {
         account_id: account.id.clone(),
     });
     Ok(account)
@@ -328,18 +296,15 @@ pub async fn refresh(
     client: &reqwest::Client,
     paths: &Paths,
     store: &SecretStore,
-    settings: &Settings,
     account_id: &str,
 ) -> Result<(Account, String, Option<String>)> {
-    let client_id = require_client_id(settings)?;
-
     let Some(refresh_token) = read_secret(store, refresh_key(account_id)).await? else {
         // Tokens wiped from the keyring by hand, or a different machine.
         mark_expired(paths, account_id).await?;
         return Err(session_expired_error());
     };
 
-    let tokens = match msa::refresh(client, &client_id, &refresh_token).await {
+    let tokens = match msa::refresh(client, &refresh_token).await {
         Ok(tokens) => tokens,
         Err(msa::RefreshError::SessionExpired) => {
             mark_expired(paths, account_id).await?;
@@ -374,7 +339,6 @@ pub async fn session_for(
     client: &reqwest::Client,
     paths: &Paths,
     store: &SecretStore,
-    settings: &Settings,
     account: &Account,
 ) -> Result<GameSession> {
     if account.kind == AccountKind::Offline {
@@ -395,7 +359,7 @@ pub async fn session_for(
         });
     }
 
-    let (account, access_token, xuid) = refresh(client, paths, store, settings, &account.id).await?;
+    let (account, access_token, xuid) = refresh(client, paths, store, &account.id).await?;
     Ok(GameSession {
         username: account.username,
         uuid: account.uuid,
@@ -412,11 +376,7 @@ pub async fn refresh_stale_accounts(
     client: &reqwest::Client,
     paths: &Paths,
     store: &SecretStore,
-    settings: &Settings,
 ) -> bool {
-    if client_id(settings).is_none() {
-        return false;
-    }
     let Ok(accounts) = AccountStore::load(paths).await else {
         return false;
     };
@@ -438,7 +398,7 @@ pub async fn refresh_stale_accounts(
         }
         // Failures are recorded on the account (expired) or retried at launch;
         // a start-up pass must never surface an error on its own.
-        let _ = refresh(client, paths, store, settings, &account.id).await;
+        let _ = refresh(client, paths, store, &account.id).await;
         changed = true;
     }
     changed
@@ -463,32 +423,17 @@ mod tests {
     }
 
     #[test]
-    fn the_settings_client_id_wins() {
-        let settings = Settings {
-            msa_client_id: String::from("  from-settings  "),
-            ..Settings::default()
-        };
-        assert_eq!(client_id(&settings).as_deref(), Some("from-settings"));
-    }
-
-    #[test]
-    fn device_code_states_match_the_front_end_contract() -> std::result::Result<(), serde_json::Error> {
-        let waiting = serde_json::to_value(DeviceCodeState::Waiting {
-            user_code: String::from("ABCD-1234"),
-            verification_uri: String::from("https://microsoft.com/link"),
-            expires_in_seconds: 900,
-        })?;
+    fn login_states_match_the_front_end_contract() -> std::result::Result<(), serde_json::Error> {
+        let waiting = serde_json::to_value(LoginState::Waiting)?;
         assert_eq!(waiting["phase"], "waiting");
-        assert_eq!(waiting["userCode"], "ABCD-1234");
-        assert_eq!(waiting["expiresInSeconds"], 900);
 
-        let step = serde_json::to_value(DeviceCodeState::Exchanging {
+        let step = serde_json::to_value(LoginState::Exchanging {
             step: ExchangeStep::Xsts,
         })?;
         assert_eq!(step["phase"], "exchanging");
         assert_eq!(step["step"], "xsts");
 
-        let done = serde_json::to_value(DeviceCodeState::Done {
+        let done = serde_json::to_value(LoginState::Done {
             account_id: String::from("a1"),
         })?;
         assert_eq!(done["accountId"], "a1");

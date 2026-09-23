@@ -14,15 +14,10 @@ export interface Account {
   readonly addedAt: string;
 }
 
-/** Progress of the Microsoft device-code flow, driven from the backend. */
-export type DeviceCodeState =
-  | { readonly phase: 'requesting' }
-  | {
-      readonly phase: 'waiting';
-      readonly userCode: string;
-      readonly verificationUri: string;
-      readonly expiresInSeconds: number;
-    }
+/** Progress of the Microsoft sign-in, driven from the backend. */
+export type LoginState =
+  | { readonly phase: 'waiting' }
+  | { readonly phase: 'cancelled' }
   | { readonly phase: 'exchanging'; readonly step: 'xbox' | 'xsts' | 'minecraft' | 'profile' }
   | { readonly phase: 'done'; readonly accountId: string }
   | { readonly phase: 'failed'; readonly message: string };
