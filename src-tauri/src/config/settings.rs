@@ -22,8 +22,6 @@ pub struct Settings {
     pub default_memory_mb: u32,
     pub default_jvm_args: String,
     pub max_concurrent_downloads: usize,
-    /// Empty means CurseForge stays hidden in the UI.
-    pub curseforge_api_key: String,
     /// Goes into the User-Agent, as Modrinth and CurseForge require.
     pub contact_email: String,
     pub close_launcher_on_launch: bool,
@@ -50,7 +48,6 @@ impl Default for Settings {
                 "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20",
             ),
             max_concurrent_downloads: 16,
-            curseforge_api_key: String::new(),
             contact_email: String::new(),
             close_launcher_on_launch: false,
             show_snapshots: false,

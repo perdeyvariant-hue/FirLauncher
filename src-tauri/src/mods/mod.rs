@@ -16,7 +16,6 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::settings::Settings;
 use crate::error::{ErrorKind, LauncherError, Result};
 use crate::instances::ModLoader;
 
@@ -316,42 +315,25 @@ pub fn builtin_curseforge_key() -> Option<&'static str> {
         .filter(|value| !value.is_empty())
 }
 
-/// The key to use: the built-in one wins, so a release build cannot be
-/// reconfigured; builds without it fall back to the key from settings.
-pub fn curseforge_key(settings: &Settings) -> Option<String> {
-    if let Some(key) = builtin_curseforge_key() {
-        return Some(key.to_owned());
-    }
-    let configured = settings.curseforge_api_key.trim();
-    (!configured.is_empty()).then(|| configured.to_owned())
-}
-
-/// The providers usable with the current settings, Modrinth first. CurseForge
-/// needs an API key and stays out of the list without one.
-pub fn providers(settings: &Settings, client: &reqwest::Client) -> Vec<Arc<dyn ModProvider>> {
+/// The providers this build can use, Modrinth first. CurseForge needs the
+/// key from the build and stays out of the list when there is none.
+pub fn providers(client: &reqwest::Client) -> Vec<Arc<dyn ModProvider>> {
     let mut list: Vec<Arc<dyn ModProvider>> =
         vec![Arc::new(modrinth::Modrinth::new(client.clone()))];
-    if let Some(key) = curseforge_key(settings) {
-        list.push(Arc::new(curseforge::CurseForge::new(client.clone(), &key)));
+    if let Some(key) = builtin_curseforge_key() {
+        list.push(Arc::new(curseforge::CurseForge::new(client.clone(), key)));
     }
     list
 }
 
-pub fn provider(
-    settings: &Settings,
-    client: &reqwest::Client,
-    id: ProviderId,
-) -> Result<Arc<dyn ModProvider>> {
-    providers(settings, client)
+pub fn provider(client: &reqwest::Client, id: ProviderId) -> Result<Arc<dyn ModProvider>> {
+    providers(client)
         .into_iter()
         .find(|provider| provider.id() == id)
         .ok_or_else(|| {
             LauncherError::new(
                 ErrorKind::Provider,
-                format!(
-                    "{} недоступен — для CurseForge укажите ключ API в настройках",
-                    id.label()
-                ),
+                format!("{} недоступен в этой сборке лаунчера", id.label()),
             )
         })
 }
@@ -359,20 +341,6 @@ pub fn provider(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn builtin_curseforge_key_wins_over_settings() {
-        let settings = Settings {
-            curseforge_api_key: String::from("  from-settings  "),
-            ..Settings::default()
-        };
-        let expected = builtin_curseforge_key().unwrap_or("from-settings");
-        assert_eq!(curseforge_key(&settings).as_deref(), Some(expected));
-        assert_eq!(
-            curseforge_key(&Settings::default()).as_deref(),
-            builtin_curseforge_key()
-        );
-    }
 
     fn version(loaders: Vec<ModLoader>, game: &str) -> ModVersion {
         ModVersion {

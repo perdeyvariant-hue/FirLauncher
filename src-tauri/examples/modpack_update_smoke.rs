@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
     let paths = Paths::resolve(Some(&data_dir))?;
     let settings = Settings::default();
     let client = build_client("firlauncher-smoke@example.invalid")?;
-    let modrinth = mods::provider(&settings, &client, ProviderId::Modrinth)?;
+    let modrinth = mods::provider(&client, ProviderId::Modrinth)?;
     let progress: Arc<dyn Progress> = Arc::new(Quiet(CancellationToken::new()));
     let ctx = PackContext { client: &client, paths: &paths, settings: &settings, progress: Arc::clone(&progress) };
 

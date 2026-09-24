@@ -101,10 +101,10 @@ pub async fn import(ctx: &PackContext<'_>, archive: &Path) -> Result<(InstanceMe
     }
 
     let wanted: Vec<&FileRef> = manifest.files.iter().filter(|file| file.required).collect();
-    let key = crate::mods::curseforge_key(ctx.settings).unwrap_or_default();
+    let key = crate::mods::builtin_curseforge_key().unwrap_or_default();
     if key.is_empty() && !wanted.is_empty() {
         return Err(pack_error(
-            "Для импорта модпака CurseForge нужен ключ API — укажите его в «Настройки → Сеть и источники»",
+            "В этой сборке лаунчера нет ключа CurseForge — модпак CurseForge не импортировать",
         ));
     }
 
@@ -125,7 +125,7 @@ pub async fn import(ctx: &PackContext<'_>, archive: &Path) -> Result<(InstanceMe
     let mut skipped = Vec::new();
 
     if !wanted.is_empty() {
-        let api = CurseForge::new(ctx.client.clone(), &key);
+        let api = CurseForge::new(ctx.client.clone(), key);
         ctx.progress
             .set_stage(format!("Список файлов CurseForge ({})", wanted.len()));
         let file_ids: Vec<u64> = wanted.iter().map(|file| file.file_id).collect();

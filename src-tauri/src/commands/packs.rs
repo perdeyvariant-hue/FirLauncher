@@ -71,7 +71,7 @@ pub async fn install_modpack(
     let outcome = async {
         let settings = state.settings();
         let client = state.client();
-        let provider_impl = mods::provider(&settings, &client, provider)?;
+        let provider_impl = mods::provider(&client, provider)?;
         let ctx = PackContext {
             client: &client,
             paths: &state.paths,
@@ -123,7 +123,7 @@ pub async fn check_modpack_update(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<Option<packs::update::ModpackUpdate>> {
-    let modrinth = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let modrinth = mods::provider(&state.client(), ProviderId::Modrinth)?;
     packs::update::check(&state.paths, modrinth.as_ref(), &id).await
 }
 
@@ -142,7 +142,7 @@ pub async fn update_modpack(state: State<'_, AppState>, id: String) -> Result<pa
     let outcome = async {
         let settings = state.settings();
         let client = state.client();
-        let modrinth = mods::provider(&settings, &client, ProviderId::Modrinth)?;
+        let modrinth = mods::provider(&client, ProviderId::Modrinth)?;
         if settings.backup_worlds_before_updates {
             task.set_stage(String::from("Резервная копия миров"));
             instances::worlds::backup_all(&state.paths, &meta.id).await?;

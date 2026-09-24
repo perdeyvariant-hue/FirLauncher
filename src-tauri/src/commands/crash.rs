@@ -159,7 +159,7 @@ async fn install_missing(
     if meta.loader == ModLoader::Vanilla {
         return Err(LauncherError::new(ErrorKind::Instance, "В ванильную сборку моды не ставятся"));
     }
-    let provider = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let provider = mods::provider(&state.client(), ProviderId::Modrinth)?;
     let target = Target::for_instance(&meta.mc_version, meta.loader);
     let task = state.tasks.start(
         TaskKind::InstallMod,

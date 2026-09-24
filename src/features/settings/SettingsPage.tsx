@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { Coffee, ExternalLink, Eye, EyeOff, Palette, RefreshCw } from 'lucide-react';
+import { Coffee, ExternalLink, Palette, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
 import { Section } from '@/components/ui/Section';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -27,7 +25,6 @@ export function SettingsPage(): ReactElement {
   const keyBuiltin = useSettings((state) => state.curseforgeKeyBuiltin);
   const navigate = useUI((state) => state.navigate);
   const discordBuiltin = useSettings((state) => state.discordAppIdBuiltin);
-  const [showKey, setShowKey] = useState(false);
 
   const java = useAsyncData<JavaRuntime[]>(() => metaApi.listJavaRuntimes(), []);
   const version = useAsyncData<string>(() => updatesApi.appVersion(), []);
@@ -124,7 +121,7 @@ export function SettingsPage(): ReactElement {
             description={
               keyBuiltin
                 ? t`Modrinth и CurseForge подключены.`
-                : t`CurseForge требует ключ API. Пока поле пустое, источник скрыт в браузере модов.`
+                : t`В этой сборке лаунчера нет ключа CurseForge — доступен только Modrinth.`
             }
           >
             <Slider
@@ -138,37 +135,6 @@ export function SettingsPage(): ReactElement {
                 void patch({ maxConcurrentDownloads: value });
               }}
             />
-
-            {!keyBuiltin && (
-              <Input
-                label={t`Ключ CurseForge API`}
-                type={showKey ? 'text' : 'password'}
-                monospace
-                autoComplete="off"
-                placeholder={t`не задан`}
-                value={settings.curseforgeApiKey}
-                onChange={(event) => {
-                  void patch({ curseforgeApiKey: event.target.value });
-                }}
-                trailing={
-                  <IconButton
-                    label={showKey ? t`Скрыть ключ` : t`Показать ключ`}
-                    size="sm"
-                    icon={
-                      showKey ? (
-                        <EyeOff size={13} strokeWidth={1.5} />
-                      ) : (
-                        <Eye size={13} strokeWidth={1.5} />
-                      )
-                    }
-                    onClick={() => {
-                      setShowKey((value) => !value);
-                    }}
-                  />
-                }
-                hint={t`Хранится только на этом компьютере, в settings.json.`}
-              />
-            )}
 
             <Input
               label={t`Контакт для User-Agent`}

@@ -5,7 +5,6 @@
 //! cargo run --example details_smoke -- [project ...]
 //! ```
 
-use firlauncher_lib::config::settings::Settings;
 use firlauncher_lib::error::Result;
 use firlauncher_lib::mods::{self, ProviderId};
 use firlauncher_lib::net::build_client;
@@ -18,9 +17,8 @@ async fn main() -> Result<()> {
             .map(String::from)
             .to_vec();
     }
-    let settings = Settings::default();
     let client = build_client("firlauncher-smoke@example.invalid")?;
-    let provider = mods::provider(&settings, &client, ProviderId::Modrinth)?;
+    let provider = mods::provider(&client, ProviderId::Modrinth)?;
 
     for id in &projects {
         let details = provider.details(id).await?;

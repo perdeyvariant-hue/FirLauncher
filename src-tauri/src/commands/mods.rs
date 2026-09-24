@@ -34,7 +34,7 @@ async fn target_of(state: &AppState, instance_id: &str, kind: ProjectKind) -> Re
 
 #[tauri::command]
 pub async fn available_providers(state: State<'_, AppState>) -> Result<Vec<ProviderId>> {
-    Ok(mods::providers(&state.settings(), &state.client())
+    Ok(mods::providers(&state.client())
         .iter()
         .map(|provider| provider.id())
         .collect())
@@ -42,7 +42,7 @@ pub async fn available_providers(state: State<'_, AppState>) -> Result<Vec<Provi
 
 #[tauri::command]
 pub async fn search_projects(state: State<'_, AppState>, query: SearchQuery) -> Result<SearchResult> {
-    let provider = mods::provider(&state.settings(), &state.client(), query.provider)?;
+    let provider = mods::provider(&state.client(), query.provider)?;
     provider.search(&query).await
 }
 
@@ -52,7 +52,7 @@ pub async fn list_categories(
     provider: ProviderId,
     kind: ProjectKind,
 ) -> Result<Vec<Category>> {
-    let provider = mods::provider(&state.settings(), &state.client(), provider)?;
+    let provider = mods::provider(&state.client(), provider)?;
     provider.categories(kind).await
 }
 
@@ -62,7 +62,7 @@ pub async fn project_details(
     provider: ProviderId,
     project_id: String,
 ) -> Result<ProjectDetails> {
-    let provider = mods::provider(&state.settings(), &state.client(), provider)?;
+    let provider = mods::provider(&state.client(), provider)?;
     provider.details(&project_id).await
 }
 
@@ -95,7 +95,7 @@ pub async fn list_versions(
     if any_game_version {
         target.mc_version.clear();
     }
-    let provider_impl = mods::provider(&state.settings(), &state.client(), provider)?;
+    let provider_impl = mods::provider(&state.client(), provider)?;
     let versions = provider_impl.versions(&project_id, &target).await?;
     Ok(versions.into_iter().filter(|v| target.accepts(v)).collect())
 }
@@ -111,7 +111,7 @@ pub async fn resolve_install(
     version_id: Option<String>,
 ) -> Result<ResolvedInstallPlan> {
     let target = target_of(&state, &instance_id, kind).await?;
-    let provider_impl = mods::provider(&state.settings(), &state.client(), provider)?;
+    let provider_impl = mods::provider(&state.client(), provider)?;
     let installed = ModIndex::load(&state.paths, &instance_id, kind)
         .await?
         .projects(provider);
@@ -170,7 +170,7 @@ pub async fn check_updates(
     kind: ProjectKind,
 ) -> Result<Vec<ModUpdate>> {
     let target = target_of(&state, &instance_id, kind).await?;
-    let providers = mods::providers(&state.settings(), &state.client());
+    let providers = mods::providers(&state.client());
     install::check_updates(&providers, &state.paths, &instance_id, kind, &target).await
 }
 
@@ -240,7 +240,7 @@ pub async fn optimize_plan(
             "В ванильную сборку моды не ставятся — создайте сборку с лоадером",
         ));
     }
-    let modrinth = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let modrinth = mods::provider(&state.client(), ProviderId::Modrinth)?;
     let installed = ModIndex::load(&state.paths, &instance_id, ProjectKind::Mod)
         .await?
         .projects(ProviderId::Modrinth);
@@ -280,7 +280,7 @@ pub async fn apply_optimize(
     }
 
     let target = target_of(&state, &instance_id, ProjectKind::Mod).await?;
-    let modrinth = mods::provider(&state.settings(), &state.client(), ProviderId::Modrinth)?;
+    let modrinth = mods::provider(&state.client(), ProviderId::Modrinth)?;
     let task = state.tasks.start(TaskKind::InstallMod, format!("Оптимизация: {}", meta.name), Some(instance_id.clone()));
     let outcome = async {
         let mut installed = ModIndex::load(&state.paths, &instance_id, ProjectKind::Mod)

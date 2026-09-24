@@ -165,7 +165,7 @@ impl Http {
             }
             if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
                 let message = if self.api_key.is_some() {
-                    format!("{} отклонил ключ API — проверьте его в настройках", self.name)
+                    format!("{} отклонил ключ API этой сборки лаунчера", self.name)
                 } else {
                     format!("{} отказал в доступе", self.name)
                 };

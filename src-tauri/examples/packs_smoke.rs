@@ -79,11 +79,7 @@ async fn main() -> Result<()> {
     let (meta, skipped) = match source.to_string_lossy().strip_prefix("modrinth:") {
         Some(project) => {
             println!("1. Установка модпака {project} с Modrinth");
-            let provider = firlauncher_lib::mods::provider(
-                &settings,
-                &client,
-                firlauncher_lib::mods::ProviderId::Modrinth,
-            )?;
+            let provider = firlauncher_lib::mods::provider(&client, firlauncher_lib::mods::ProviderId::Modrinth)?;
             packs::install_from_provider(&ctx, provider.as_ref(), project).await?
         }
         None => {

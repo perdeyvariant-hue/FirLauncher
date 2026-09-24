@@ -194,7 +194,10 @@ cargo run --example vanilla_smoke --manifest-path src-tauri/Cargo.toml -- 1.20.4
 ограничитель частоты (Modrinth разрешает 300 в минуту), при `429` лаунчер ждёт столько, сколько
 просит сервер (`Retry-After` / `X-Ratelimit-Reset`).
 
-**CurseForge** включается, только когда есть ключ API. Если автор мода запретил
+**CurseForge** включается, только когда ключ API вшит в сборку
+(`FIRLAUNCHER_CURSEFORGE_KEY`); настройки на него не влияют, и во фронтенд он не уходит.
+Проверить всю цепочку можно примером `cargo run --example curseforge_smoke -- <папка>`.
+Если автор мода запретил
 скачивание в сторонних лаунчерах, API не отдаёт ссылку на файл, и лаунчер не пытается её
 подделать: он предлагает скачать мод вручную со страницы проекта.
 
@@ -472,6 +475,7 @@ src-tauri/                бэкенд
   examples/vanilla_smoke.rs  headless-проверка ядра
   examples/msa_login.rs      вход Microsoft в терминале
   examples/mods_smoke.rs     моды: поиск, зависимости, установка, обновление
+  examples/curseforge_smoke.rs то же самое через CurseForge (нужен вшитый ключ)
   examples/versions_smoke.rs выбор версий и выборочные обновления модов, паков, шейдеров
   examples/details_smoke.rs  страницы описания проектов с Modrinth
   examples/skin_smoke.rs     рендер головы и фигуры из скина
@@ -527,9 +531,9 @@ Java подбирается строго по мажорной версии из
 ## Ограничения и правила
 
 - В репозитории нет ассетов Mojang и ключей API — всё скачивается на машине пользователя.
-- Ключ CurseForge либо вшивается при сборке из `FIRLAUNCHER_CURSEFORGE_KEY` (и тогда не
-  меняется в настройках), либо вводится пользователем и хранится только в `settings.json`.
-  Без ключа источник скрыт в интерфейсе.
+- Ключ CurseForge вшивается при сборке из `FIRLAUNCHER_CURSEFORGE_KEY` (в репозитории его
+  нет: локально — в `.cargo/config.toml`, который в `.gitignore`, в CI — в секретах GitHub).
+  Пользователь его не задаёт и не видит; без ключа источник просто скрыт в интерфейсе.
 - User-Agent содержит контакт (поле «Контакт для User-Agent» в настройках), как того требуют
   условия использования Modrinth и CurseForge; rate limit соблюдается.
 - Minecraft — товарный знак Mojang AB. Проект не связан с Mojang и Microsoft.

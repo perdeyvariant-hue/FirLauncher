@@ -10,7 +10,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use firlauncher_lib::config::settings::Settings;
 use firlauncher_lib::error::{LauncherError, Result};
 use firlauncher_lib::instances::ModLoader;
 use firlauncher_lib::mods::{self, install, resolve, ModProvider, ModVersion, ProjectKind, Target};
@@ -174,11 +173,10 @@ async fn main() -> Result<()> {
     let paths = Paths::resolve(Some(&data_dir))?;
     let _ = tokio::fs::remove_dir_all(paths.instance(INSTANCE)).await;
 
-    let settings = Settings::default();
     let client = build_client("firlauncher-smoke@example.invalid")?;
     let ctx = Ctx {
-        provider: mods::provider(&settings, &client, mods::ProviderId::Modrinth)?,
-        providers: mods::providers(&settings, &client),
+        provider: mods::provider(&client, mods::ProviderId::Modrinth)?,
+        providers: mods::providers(&client),
         paths,
         client,
         progress: Arc::new(Quiet(CancellationToken::new())),

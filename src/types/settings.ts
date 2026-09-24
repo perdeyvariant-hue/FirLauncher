@@ -54,8 +54,6 @@ export interface Settings {
   readonly defaultJvmArgs: string;
   /** Parallel download slots. */
   readonly maxConcurrentDownloads: number;
-  /** Empty string means "CurseForge is disabled and hidden in the UI". */
-  readonly curseforgeApiKey: string;
   /** Contact appended to the User-Agent, as Modrinth/CurseForge ToS require. */
   readonly contactEmail: string;
   readonly closeLauncherOnLaunch: boolean;
@@ -78,7 +76,6 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultMemoryMb: 4096,
   defaultJvmArgs: '-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20',
   maxConcurrentDownloads: 16,
-  curseforgeApiKey: '',
   contactEmail: '',
   closeLauncherOnLaunch: false,
   showSnapshots: false,

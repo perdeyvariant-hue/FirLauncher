@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
     let paths = Paths::resolve(Some(&data_dir))?;
     let settings = Settings::default();
     let client = build_client("firlauncher-smoke@example.invalid")?;
-    let provider = mods::provider(&settings, &client, ProviderId::Modrinth)?;
+    let provider = mods::provider(&client, ProviderId::Modrinth)?;
     let target = Target::for_instance("1.20.4", ModLoader::Fabric);
     let progress: Arc<dyn Progress> = Arc::new(Quiet {
         bytes: AtomicU64::new(0),
@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
     }
 
     println!("5. Проверка обновлений");
-    let providers = mods::providers(&settings, &client);
+    let providers = mods::providers(&client);
     let updates = install::check_updates(&providers, &paths, "smoke", ProjectKind::Mod, &target).await?;
     for update in &updates {
         println!(
