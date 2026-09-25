@@ -21,9 +21,15 @@
         "center": true,
         "visible": false,
         "theme": "Dark",
-        "backgroundColor": "#0A0A0B"
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["acrylic", "underWindowBackground"],
+          "state": "active",
+          "radius": 14
+        }
       }
     ],
+    "macOSPrivateApi": true,
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
     }

@@ -12,7 +12,9 @@
   }
 
   body {
-    @apply bg-bg text-text font-sans antialiased;
+    /* The window is transparent; the shell paints the background itself. */
+    @apply text-text font-sans antialiased;
+    background-color: transparent;
     font-size: 14px;
     line-height: 1.5;
     overflow: hidden;
@@ -196,7 +198,7 @@
           transparent 62%,
           rgb(45 212 191 / 0.12)
         ),
-      var(--bg);
+      rgb(var(--bg-rgb) / var(--window-alpha));
   }
 
   /* The light theme wants the same pools much fainter, or it turns pastel. */
@@ -205,7 +207,7 @@
       radial-gradient(70% 55% at 8% -8%, rgb(var(--accent-rgb) / 0.18), transparent 70%),
       radial-gradient(65% 55% at 102% 104%, rgb(45 212 191 / 0.14), transparent 72%),
       radial-gradient(45% 45% at 78% 6%, rgb(var(--accent-rgb) / 0.1), transparent 75%),
-      var(--bg);
+      rgb(var(--bg-rgb) / var(--window-alpha));
   }
 
   /* A strip that scrolls sideways under a row of pills needs no track. */

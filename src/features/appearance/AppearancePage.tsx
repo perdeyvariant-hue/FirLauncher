@@ -597,6 +597,24 @@ export function AppearancePage(): ReactElement {
               label={t`Стеклянные панели`}
               description={t`Панели пропускают сквозь себя фон и размывают его. Выключите, если текст читается тяжело.`}
             />
+
+            <Slider
+              label={t`Прозрачность окна`}
+              value={appearance.windowTransparency}
+              min={0}
+              max={45}
+              step={5}
+              valueLabel={
+                appearance.windowTransparency === 0
+                  ? t`выключена`
+                  : `${String(appearance.windowTransparency)}%`
+              }
+              onChange={(value) => {
+                set({ windowTransparency: value });
+              }}
+            />
+            <p className="-mt-2 text-2xs leading-relaxed text-text-dim">
+              {t`Сквозь лаунчер видно рабочий стол. Система размывает то, что за окном.`}</p>
           </Section>
 
           <Section

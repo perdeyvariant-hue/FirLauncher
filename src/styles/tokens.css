@@ -119,6 +119,12 @@
   --accent-dim: rgb(var(--accent-dim-rgb));
   --danger: rgb(var(--danger-rgb));
 
+  /*
+   * How opaque the page's own background is. Below 1 the desktop shows
+   * through the window, blurred by the system (see tauri.conf.json).
+   */
+  --window-alpha: 0.8;
+
   /* Corner radius of panels; smaller shapes scale from it, pills ignore it. */
   --radius: 14px;
 
@@ -139,6 +145,8 @@
     --glass-layer-quiet: var(--glass-solid-quiet);
     --glass-blur: 0px;
     --glass-blur-strong: 0px;
+    /* And the window itself stops being see-through. */
+    --window-alpha: 1;
   }
 }
 

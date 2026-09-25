@@ -51,6 +51,9 @@ pub struct Appearance {
     pub wallpaper_blur: u8,
     /// Translucent, blurred panels so the wallpaper shows through.
     pub glass_panels: bool,
+    /// How much of the desktop shows through the window itself, percent.
+    /// The system blurs whatever is behind, so this stays readable.
+    pub window_transparency: u8,
     pub mascot: Mascot,
     /// Which gallery picture, when `mascot` is `Gallery`.
     pub mascot_gallery_id: String,
@@ -79,6 +82,7 @@ impl Default for Appearance {
             wallpaper_dim: 55,
             wallpaper_blur: 0,
             glass_panels: true,
+            window_transparency: 20,
             mascot: Mascot::None,
             mascot_gallery_id: String::from(DEFAULT_GALLERY_ID),
             mascot_custom_id: String::new(),
@@ -86,7 +90,7 @@ impl Default for Appearance {
             mascot_opacity: 85,
             mascot_side: Side::Right,
             ui_scale: 100,
-            radius: 10,
+            radius: 14,
             reduce_motion: false,
         }
     }
@@ -128,6 +132,8 @@ impl Appearance {
         self.mascot_opacity = self.mascot_opacity.clamp(10, 100);
         self.ui_scale = self.ui_scale.clamp(80, 130);
         self.radius = self.radius.min(16);
+        // Past this the desktop wins and the text stops being readable.
+        self.window_transparency = self.window_transparency.min(45);
         self
     }
 }
@@ -146,6 +152,7 @@ mod tests {
             mascot_opacity: 0,
             ui_scale: 900,
             radius: 80,
+            window_transparency: 99,
             mascot_gallery_id: String::from("../../etc/passwd"),
             ..Appearance::default()
         }
@@ -154,6 +161,7 @@ mod tests {
         assert_eq!(wild.accent, DEFAULT_ACCENT);
         assert_eq!(wild.wallpaper_dim, 90);
         assert_eq!(wild.wallpaper_blur, 24);
+        assert_eq!(wild.window_transparency, 45);
         assert_eq!(wild.mascot_size, 64);
         assert_eq!(wild.mascot_opacity, 10);
         assert_eq!(wild.ui_scale, 130);

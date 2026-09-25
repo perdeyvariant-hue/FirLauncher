@@ -57,6 +57,10 @@ export function applyAppearance(appearance: Appearance, theme: ResolvedTheme): v
   applyAccent(root, appearance.accent, theme);
   root.style.setProperty('--radius', `${String(Math.min(16, Math.max(0, appearance.radius)))}px`);
   root.classList.toggle('reduce-motion', appearance.reduceMotion);
+  // The window itself is translucent; this is how much of the page's own
+  // background is left painted over the desktop behind it.
+  const seeThrough = Math.min(45, Math.max(0, appearance.windowTransparency)) / 100;
+  root.style.setProperty('--window-alpha', String(1 - seeThrough));
   // There is always something behind the panels now: the wallpaper, or the
   // ambient wash the shell paints when none is chosen.
   root.dataset['glass'] = appearance.glassPanels ? 'on' : 'off';

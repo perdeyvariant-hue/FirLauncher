@@ -13,6 +13,8 @@ export interface Appearance {
   /** px, 0–24. */
   readonly wallpaperBlur: number;
   readonly glassPanels: boolean;
+  /** How much of the desktop shows through the window, percent, 0–45. */
+  readonly windowTransparency: number;
   readonly mascot: MascotKind;
   /** Which picture from features/appearance/gallery.ts, for 'gallery'. */
   readonly mascotGalleryId: string;
@@ -36,6 +38,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   wallpaperDim: 55,
   wallpaperBlur: 0,
   glassPanels: true,
+  windowTransparency: 20,
   mascot: 'none',
   mascotGalleryId: 'wikipe-tan-classic',
   mascotCustomId: '',
@@ -43,7 +46,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   mascotOpacity: 85,
   mascotSide: 'right',
   uiScale: 100,
-  radius: 10,
+  radius: 14,
   reduceMotion: false,
 };
 
