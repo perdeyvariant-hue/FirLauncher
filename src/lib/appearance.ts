@@ -57,8 +57,9 @@ export function applyAppearance(appearance: Appearance, theme: ResolvedTheme): v
   applyAccent(root, appearance.accent, theme);
   root.style.setProperty('--radius', `${String(Math.min(16, Math.max(0, appearance.radius)))}px`);
   root.classList.toggle('reduce-motion', appearance.reduceMotion);
-  // Glass only makes sense with something behind the panels.
-  root.dataset['glass'] = appearance.glassPanels && appearance.wallpaper !== 'none' ? 'on' : 'off';
+  // There is always something behind the panels now: the wallpaper, or the
+  // ambient wash the shell paints when none is chosen.
+  root.dataset['glass'] = appearance.glassPanels ? 'on' : 'off';
   applyZoom(appearance.uiScale);
 }
 

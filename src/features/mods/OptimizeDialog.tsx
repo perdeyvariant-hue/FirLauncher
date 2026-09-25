@@ -35,7 +35,7 @@ function Row({
   children: ReactNode;
 }): ReactElement {
   return (
-    <div className="flex items-start gap-3 rounded-md bg-surface-2 px-3 py-2.5">
+    <div className="flex items-start gap-3 rounded-md bg-[rgb(var(--text-rgb)/0.07)] px-3 py-2.5">
       <div className="pt-0.5">
         <Checkbox checked={checked} disabled={disabled} onChange={onChange} label={label} />
       </div>

@@ -47,7 +47,7 @@ export function Select<T extends string>({
 
       <div
         className={cn(
-          'relative flex items-center rounded-lg border border-border bg-surface-2',
+          'relative flex items-center rounded-pill border border-[rgb(var(--text-rgb)/0.1)] bg-[rgb(var(--text-rgb)/0.05)]',
           'transition-[border-color] duration-fast ease-out focus-within:border-accent',
           compact ? 'h-8' : 'h-9',
           disabled && 'opacity-45',

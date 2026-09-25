@@ -120,10 +120,10 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
           }
         }}
         className={cn(
-          'group relative flex cursor-pointer flex-col gap-3 rounded-lg border p-3',
-          'bg-surface transition-[border-color,transform] duration-fast ease-out',
-          'hover:border-text-dim/35 active:scale-[0.995]',
-          running ? 'border-accent/45' : 'border-border',
+          'panel group relative flex cursor-pointer flex-col gap-3 rounded-xl p-3.5',
+          'transition-[background-color,box-shadow,transform] duration-fast ease-spring',
+          'hover:-translate-y-0.5 hover:bg-[rgb(var(--surface-rgb)/0.92)] active:scale-[0.99]',
+          running && 'ring-1 ring-accent/45',
         )}
       >
         <div className="flex items-start gap-3">
@@ -157,12 +157,12 @@ export function InstanceCard({ instance, ...actions }: InstanceCardProps): React
             }}
             disabled={installing}
             className={cn(
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-              'transition-[opacity,background-color] duration-fast ease-out',
-              'disabled:pointer-events-none disabled:opacity-40',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-pill',
+              'transition-[opacity,background-color,transform] duration-fast ease-spring',
+              'active:scale-90 disabled:pointer-events-none disabled:opacity-40',
               running
-                ? 'bg-danger/15 text-danger hover:bg-danger/25'
-                : 'bg-accent text-on-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-accent-hover',
+                ? 'bg-danger/15 text-danger shadow-rim hover:bg-danger/25'
+                : 'bg-accent text-on-accent opacity-0 shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_4px_12px_rgb(var(--accent-rgb)/0.4)] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-accent-hover',
             )}
           >
             {running ? (
@@ -203,7 +203,7 @@ function InstanceIcon({ instance }: { instance: Instance }): ReactElement {
   return (
     <span
       aria-hidden
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-xs font-semibold text-text-dim"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-xs font-semibold text-text-dim"
     >
       {initialsOf(instance.name)}
     </span>

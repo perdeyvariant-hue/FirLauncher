@@ -9,22 +9,25 @@ import { DropZone } from '@/features/drop/DropZone';
 import { ExportDialog } from '@/features/packs/ExportDialog';
 import { SkippedFilesDialog } from '@/features/packs/SkippedFilesDialog';
 
-export interface AppShellProps {
-  children: ReactNode;
-}
-
-export function AppShell({ children }: AppShellProps): ReactElement {
+/**
+ * The wallpaper runs edge to edge under the whole window and everything
+ * else floats above it: that is what the glass has to bend. The rail and the
+ * task bar keep a margin so their edges stay visible.
+ */
+export function AppShell({ children }: { children: ReactNode }): ReactElement {
   return (
-    <div className="flex h-full w-full overflow-hidden bg-bg">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <UpdateBanner />
-        <main className="relative min-h-0 flex-1 overflow-hidden">
-          <BackgroundLayer />
-          <div className="relative h-full">{children}</div>
-        </main>
-        <TaskBar />
+    <div className="ambient relative flex h-full w-full overflow-hidden">
+      <BackgroundLayer />
+
+      <div className="relative z-10 flex h-full w-full min-w-0">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <UpdateBanner />
+          <main className="relative min-h-0 flex-1 overflow-hidden">{children}</main>
+          <TaskBar />
+        </div>
       </div>
+
       <ToastHost />
       <ExportDialog />
       <CrashDialog />

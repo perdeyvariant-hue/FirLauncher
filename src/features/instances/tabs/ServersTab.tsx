@@ -23,12 +23,12 @@ type Ping = { readonly state: 'loading' } | { readonly state: 'ok'; readonly sta
 function Icon({ src }: { src: string | null }): ReactElement {
   if (src === null) {
     return (
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         <Server size={16} strokeWidth={1.5} />
       </span>
     );
   }
-  return <img src={src} alt="" className="pixelated h-10 w-10 shrink-0 rounded-md bg-surface-2" />;
+  return <img src={src} alt="" className="pixelated h-10 w-10 shrink-0 rounded-md bg-[rgb(var(--text-rgb)/0.07)]" />;
 }
 
 export function ServersTab({ instance }: { instance: Instance }): ReactElement {

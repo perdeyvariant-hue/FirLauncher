@@ -42,7 +42,7 @@ function StepList({ current }: { current: Step }): ReactElement {
                 'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
                 done && 'bg-accent/15 text-accent',
                 active && 'text-accent',
-                !done && !active && 'bg-surface-2 text-text-dim',
+                !done && !active && 'bg-[rgb(var(--text-rgb)/0.07)] text-text-dim',
               )}
             >
               {done ? (

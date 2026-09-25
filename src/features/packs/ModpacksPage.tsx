@@ -172,7 +172,7 @@ export function ModpacksPage(): ReactElement {
         <span className="text-xs text-text-dim">{t`каждый ставится отдельной сборкой`}</span>
 
         {providers.length > 1 && (
-          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-surface-2 p-0.5">
+          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
             {providers.map((id) => (
               <button
                 key={id}

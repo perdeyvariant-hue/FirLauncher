@@ -97,7 +97,7 @@ export function SettingsPage(): ReactElement {
                 {(java.data ?? []).map((runtime) => (
                   <li
                     key={runtime.path}
-                    className="flex items-center gap-3 rounded-md bg-surface-2 p-2.5"
+                    className="flex items-center gap-3 rounded-md bg-[rgb(var(--text-rgb)/0.07)] p-2.5"
                   >
                     <Coffee size={15} strokeWidth={1.5} className="shrink-0 text-text-dim" />
                     <div className="min-w-0 flex-1">

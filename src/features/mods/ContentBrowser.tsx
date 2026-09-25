@@ -239,7 +239,7 @@ export function ContentBrowser({
         {kind === 'mod' && <Badge tone="neutral">{LOADER_LABELS[instance.loader]}</Badge>}
 
         {providers.length > 1 && (
-          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-surface-2 p-0.5">
+          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
             {providers.map((id) => (
               <button
                 key={id}

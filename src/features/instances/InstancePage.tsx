@@ -93,7 +93,7 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
           />
 
           {instance.iconPath === null ? (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-sm font-semibold text-text-dim">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--text-rgb)/0.07)] text-sm font-semibold text-text-dim">
               {initialsOf(instance.name)}
             </span>
           ) : (
@@ -156,6 +156,8 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
             ) : (
               <Button
                 variant="primary"
+                size="lg"
+                sheen
                 icon={<Play size={15} strokeWidth={1.5} fill="currentColor" />}
                 onClick={play}
               >

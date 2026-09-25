@@ -25,7 +25,7 @@ export function SkippedFilesDialog(): ReactElement {
     >
       <ul className="flex flex-col gap-1.5 py-2">
         {(skipped ?? []).map((file) => (
-          <li key={file.name} className="flex items-center gap-3 rounded-md bg-surface-2 px-3 py-2">
+          <li key={file.name} className="flex items-center gap-3 rounded-md bg-[rgb(var(--text-rgb)/0.07)] px-3 py-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs text-text">{file.name}</p>
               <p className="truncate text-2xs text-text-dim">{translate(file.reason)}</p>

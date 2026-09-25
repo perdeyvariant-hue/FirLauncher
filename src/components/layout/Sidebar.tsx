@@ -33,7 +33,7 @@ export function Sidebar(): ReactElement {
     route.name === 'instance' || route.name === 'modpacks' ? 'instances' : route.name;
 
   return (
-    <nav className="flex w-[76px] shrink-0 flex-col border-r border-border bg-surface">
+    <nav className="glass specular z-20 m-2.5 flex w-[76px] shrink-0 flex-col rounded-2xl">
       <div className="flex h-14 items-center justify-center text-accent">
         <Logo size={22} />
       </div>
@@ -50,14 +50,14 @@ export function Sidebar(): ReactElement {
                   navigate(item.route);
                 }}
                 className={cn(
-                  'group relative flex w-full flex-col items-center gap-1 rounded-lg py-2.5',
-                  'transition-[background-color,color] duration-fast ease-out',
-                  active ? 'text-accent' : 'text-text-dim hover:bg-surface-2 hover:text-text',
+                  'group relative flex w-full flex-col items-center gap-1 rounded-xl py-2.5',
+                  'transition-[background-color,color,box-shadow,transform] duration-fast ease-out',
+                  'active:scale-[0.96]',
+                  active
+                    ? 'bg-accent/[0.18] text-accent shadow-rim'
+                    : 'text-text-dim hover:bg-[rgb(var(--text-rgb)/0.07)] hover:text-text',
                 )}
               >
-                {active && (
-                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-accent" />
-                )}
                 {item.icon}
                 <span className="text-2xs font-medium leading-none">{item.label}</span>
               </button>

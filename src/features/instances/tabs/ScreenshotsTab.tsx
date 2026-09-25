@@ -47,7 +47,7 @@ export function ScreenshotsTab({ instance }: { instance: Instance }): ReactEleme
           className="panel overflow-hidden transition-[border-color] duration-fast ease-out hover:border-text-dim/35"
         >
           {/* Stage 2 replaces this with a convertFileSrc() thumbnail. */}
-          <div className="flex aspect-video items-center justify-center bg-surface-2 text-text-dim">
+          <div className="flex aspect-video items-center justify-center bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
             <ImageIcon size={20} strokeWidth={1.5} />
           </div>
           <figcaption className="p-2.5">

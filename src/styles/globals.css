@@ -81,14 +81,136 @@
     box-shadow: inset 0 -1px 0 var(--border);
   }
 
-  .panel {
-    @apply bg-surface border border-border rounded-lg;
+  /*
+   * The glass material.
+   *
+   * Three things make a surface read as glass: it lets the background
+   * through blurred and a little more saturated, light catches its top edge,
+   * and it casts a shadow on what it floats above. `.glass` is the
+   * navigation layer (rail, task bar, banners), `.glass-sheet` is what opens
+   * on top of everything (dialogs, menus), `.glass-quiet` is for controls
+   * that sit inside another glass surface and must not stack a second blur.
+   */
+  .glass,
+  .glass-sheet,
+  .glass-quiet {
+    position: relative;
+    background: var(--glass-layer);
+    box-shadow: var(--glass-rim), var(--glass-cast);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   }
 
-  /* Glass panels over a wallpaper: translucent, blurring what is behind. */
-  :root[data-glass='on'] .panel {
-    background-color: rgb(var(--surface-rgb) / 0.72);
-    backdrop-filter: blur(14px) saturate(1.2);
+  .glass-sheet {
+    background: var(--glass-layer-strong);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  }
+
+  .glass-quiet {
+    background: var(--glass-layer-quiet);
+    box-shadow: var(--glass-rim);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
+  }
+
+  /*
+   * Content, not chrome: opaque enough to read against any wallpaper, with
+   * the same rim so it belongs to the same world.
+   */
+  .panel {
+    background: linear-gradient(
+        to bottom,
+        rgb(255 255 255 / 0.11),
+        rgb(255 255 255 / 0.05) 55%,
+        rgb(255 255 255 / 0.07)
+      ),
+      rgb(var(--bg-rgb) / 0.32);
+    box-shadow: var(--glass-rim), var(--glass-cast-sm);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+  }
+
+  :root[data-theme='light'] .panel {
+    background: linear-gradient(to bottom, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.62)),
+      rgb(255 255 255 / 0.3);
+  }
+
+  /* Glass off, or the system asked for less transparency. */
+  :root[data-glass='off'] .glass,
+  :root[data-glass='off'] .glass-sheet {
+    background: var(--glass-solid);
+    backdrop-filter: none;
+  }
+
+  :root[data-glass='off'] .glass-quiet,
+  :root[data-glass='off'] .panel {
+    background: var(--glass-solid-quiet);
+    backdrop-filter: none;
+  }
+
+  /* No backdrop-filter at all: keep the surfaces readable rather than pretty. */
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass,
+    .glass-sheet {
+      background: var(--glass-solid);
+    }
+
+    .glass-quiet,
+    .panel {
+      background: var(--glass-solid-quiet);
+    }
+  }
+
+  /*
+   * The light that runs along the top of a lit surface. One line, brightest
+   * in the middle, so a wide panel does not look like a lit rectangle.
+   */
+  .specular::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.45) 22%,
+      rgb(255 255 255 / 0.55) 50%,
+      rgb(255 255 255 / 0.45) 78%,
+      transparent
+    );
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /*
+   * The ambient behind everything: two slow pools of colour so glass has
+   * something to bend even when no wallpaper is chosen.
+   */
+  .ambient {
+    background:
+      radial-gradient(90% 65% at 2% -12%, rgb(var(--accent-rgb) / 0.5), transparent 64%),
+      radial-gradient(80% 65% at 104% 108%, rgb(45 212 191 / 0.3), transparent 66%),
+      /* The wash that carries the middle of the screen between the pools. */
+        linear-gradient(
+          132deg,
+          rgb(var(--accent-rgb) / 0.2),
+          rgb(var(--accent-dim-rgb) / 0.1) 42%,
+          transparent 62%,
+          rgb(45 212 191 / 0.12)
+        ),
+      var(--bg);
+  }
+
+  /* The light theme wants the same pools much fainter, or it turns pastel. */
+  :root[data-theme='light'] .ambient {
+    background:
+      radial-gradient(70% 55% at 8% -8%, rgb(var(--accent-rgb) / 0.18), transparent 70%),
+      radial-gradient(65% 55% at 102% 104%, rgb(45 212 191 / 0.14), transparent 72%),
+      radial-gradient(45% 45% at 78% 6%, rgb(var(--accent-rgb) / 0.1), transparent 75%),
+      var(--bg);
+  }
+
+  /* A strip that scrolls sideways under a row of pills needs no track. */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   /* Skins and pixel art stay crisp when scaled up. */

@@ -78,7 +78,7 @@ export function AccountsPage(): ReactElement {
                 <li
                   key={account.id}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg border bg-surface p-3',
+                    'panel flex items-center gap-3 rounded-xl p-3',
                     'transition-[border-color] duration-fast ease-out',
                     active ? 'border-accent/45' : 'border-border hover:border-text-dim/35',
                   )}

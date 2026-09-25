@@ -60,7 +60,7 @@ export function ModpackCard({ instance }: { instance: Instance }): ReactElement 
 
   return (
     <div className="panel flex items-center gap-3 p-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         <Boxes size={16} strokeWidth={1.5} />
       </span>
       <div className="min-w-0 flex-1">

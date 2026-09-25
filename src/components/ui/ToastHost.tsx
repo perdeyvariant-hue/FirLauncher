@@ -21,8 +21,8 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
     <div
       role="status"
       className={cn(
-        'pointer-events-auto w-[360px] animate-slide-up overflow-hidden rounded-lg',
-        'border bg-surface shadow-[var(--shadow-panel)]',
+        'glass-sheet specular pointer-events-auto w-[360px] animate-glass-in',
+        'overflow-hidden rounded-xl border',
         toast.tone === 'error' ? 'border-danger/35' : 'border-border',
       )}
     >
@@ -59,7 +59,7 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
                 />
                 {t`Подробности`}</button>
               {expanded && (
-                <pre className="selectable mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-surface-2 p-2 font-mono text-2xs leading-relaxed text-text-dim">
+                <pre className="selectable mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-[rgb(var(--text-rgb)/0.07)] p-2 font-mono text-2xs leading-relaxed text-text-dim">
                   {toast.detail}
                 </pre>
               )}

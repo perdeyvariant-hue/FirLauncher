@@ -139,7 +139,7 @@ export function WorldsTab({ instance }: { instance: Instance }): ReactElement {
         <ul className="flex flex-col gap-2">
           {list.map((world) => (
             <li key={world.folderName} className="panel flex items-center gap-3 p-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
                 <Globe2 size={16} strokeWidth={1.5} />
               </span>
               <div className="min-w-0 flex-1">

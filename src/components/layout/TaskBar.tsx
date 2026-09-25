@@ -62,12 +62,12 @@ export function TaskBar(): ReactElement | null {
     active.length === 1 ? (active[0]?.title ?? '') : t`Активных задач: ${String(active.length)}`;
 
   return (
-    <div className="shrink-0 border-t border-border bg-surface">
+    <div className="glass specular z-20 mx-2.5 mb-2.5 shrink-0 overflow-hidden rounded-2xl">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={expanded}
-        className="flex h-11 w-full items-center gap-3 px-4 text-left transition-colors duration-fast ease-out hover:bg-surface-2"
+        className="flex h-11 w-full items-center gap-3 px-4 text-left transition-colors duration-fast ease-out hover:bg-[rgb(var(--text-rgb)/0.06)]"
       >
         <Loader2 size={14} strokeWidth={1.5} className="shrink-0 animate-spin-slow text-accent" />
         <span className="shrink-0 truncate text-xs text-text">{headline}</span>
@@ -86,7 +86,7 @@ export function TaskBar(): ReactElement | null {
       </button>
 
       {expanded && (
-        <div className="max-h-56 animate-slide-up overflow-y-auto border-t border-border">
+        <div className="hairline-t max-h-56 animate-slide-up overflow-y-auto">
           {active.map((task) => (
             <TaskRow key={task.id} task={task} />
           ))}

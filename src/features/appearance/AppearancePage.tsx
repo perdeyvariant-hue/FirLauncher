@@ -133,7 +133,7 @@ function Segmented<T extends string>({
   onChange: (value: T) => void;
 }): ReactElement {
   return (
-    <div role="radiogroup" className="flex w-fit rounded-lg border border-border bg-surface-2 p-0.5">
+    <div role="radiogroup" className="flex w-fit rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
@@ -184,7 +184,7 @@ function Tile({
       <div className="relative h-20 overflow-hidden bg-bg" style={previewStyle}>
         {children}
       </div>
-      <div className="flex items-center gap-1.5 border-t border-border bg-surface px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 border-t border-border bg-[rgb(var(--bg-rgb)/0.55)] px-2.5 py-1.5">
         <span className={cn('truncate text-2xs font-medium', selected ? 'text-accent' : 'text-text')}>
           {label}
         </span>
@@ -514,7 +514,7 @@ export function AppearancePage(): ReactElement {
               <Button size="sm" variant="primary">
                 {t`Так выглядит кнопка`}</Button>
               <span className="text-xs text-accent">{t`и ссылка`}</span>
-              <span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2">
+              <span className="h-1.5 w-24 overflow-hidden rounded-full bg-[rgb(var(--text-rgb)/0.07)]">
                 <span className="block h-full w-2/3 rounded-full bg-accent" />
               </span>
             </div>
@@ -589,16 +589,14 @@ export function AppearancePage(): ReactElement {
               </>
             )}
 
-            {appearance.wallpaper !== 'none' && (
-              <Switch
-                checked={appearance.glassPanels}
-                onChange={(value) => {
-                  set({ glassPanels: value });
-                }}
-                label={t`Стеклянные панели`}
-                description={t`Карточки становятся полупрозрачными и размывают обои под собой.`}
-              />
-            )}
+            <Switch
+              checked={appearance.glassPanels}
+              onChange={(value) => {
+                set({ glassPanels: value });
+              }}
+              label={t`Стеклянные панели`}
+              description={t`Панели пропускают сквозь себя фон и размывают его. Выключите, если текст читается тяжело.`}
+            />
           </Section>
 
           <Section

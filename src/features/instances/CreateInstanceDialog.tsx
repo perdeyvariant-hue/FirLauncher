@@ -207,7 +207,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
             onClick={() => {
               void pickIcon();
             }}
-            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-surface-2 text-text-dim transition-colors duration-fast ease-out hover:border-accent hover:text-accent"
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-[rgb(var(--text-rgb)/0.07)] text-text-dim transition-colors duration-fast ease-out hover:border-accent hover:text-accent"
           >
             {/* The picked file lives outside the webview's reach, so the
                 preview stays symbolic until the backend stores it. */}

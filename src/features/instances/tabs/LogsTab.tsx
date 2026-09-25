@@ -125,7 +125,7 @@ export function LogsTab({ instance }: { instance: Instance }): ReactElement {
           />
         </div>
 
-        <div role="radiogroup" className="flex rounded-lg border border-border bg-surface-2 p-0.5">
+        <div role="radiogroup" className="flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
           {LEVELS.map((option) => (
             <button
               key={option.value}
@@ -202,7 +202,7 @@ export function LogsTab({ instance }: { instance: Instance }): ReactElement {
         </div>
       </div>
 
-      <div className="panel min-h-0 flex-1 overflow-auto bg-surface p-3">
+      <div className="panel min-h-0 flex-1 overflow-auto p-3">
         {loading ? (
           <p className="font-mono text-xs text-text-dim">{t`Чтение журнала…`}</p>
         ) : visible.length === 0 ? (

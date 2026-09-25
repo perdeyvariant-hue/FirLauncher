@@ -25,7 +25,7 @@ function ProjectIcon({ project }: { project: ModProject }): ReactElement {
   const [broken, setBroken] = useState(false);
   if (project.iconUrl === null || broken) {
     return (
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-text-dim">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         <Package size={18} strokeWidth={1.5} />
       </span>
     );
@@ -40,7 +40,7 @@ function ProjectIcon({ project }: { project: ModProject }): ReactElement {
       onError={() => {
         setBroken(true);
       }}
-      className="h-12 w-12 shrink-0 rounded-lg bg-surface-2 object-cover"
+      className="h-12 w-12 shrink-0 rounded-lg bg-[rgb(var(--text-rgb)/0.07)] object-cover"
     />
   );
 }

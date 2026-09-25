@@ -25,7 +25,7 @@ export function Progress({
       aria-valuemax={100}
       aria-valuenow={clamped === null ? undefined : Math.round(clamped * 100)}
       className={cn(
-        'relative w-full overflow-hidden rounded-full bg-surface-2',
+        'relative w-full overflow-hidden rounded-full bg-[rgb(var(--text-rgb)/0.07)]',
         size === 'xs' ? 'h-1' : 'h-1.5',
         className,
       )}

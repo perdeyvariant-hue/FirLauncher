@@ -76,7 +76,7 @@ export function Dialog({
         if (event.target === event.currentTarget) requestClose();
       }}
     >
-      <div className="absolute inset-0 animate-fade-in bg-[var(--overlay)] backdrop-blur-[2px]" />
+      <div className="absolute inset-0 animate-fade-in bg-[var(--overlay)] backdrop-blur-[10px]" />
 
       <div
         ref={panelRef}
@@ -85,8 +85,8 @@ export function Dialog({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'relative flex w-full animate-scale-in flex-col overflow-hidden outline-none',
-          'rounded-xl border border-border bg-surface shadow-[var(--shadow-panel)]',
+          'glass-sheet specular relative flex w-full animate-glass-in flex-col outline-none',
+          'overflow-hidden rounded-2xl',
           'max-h-[calc(100vh-48px)]',
           WIDTHS[width],
         )}

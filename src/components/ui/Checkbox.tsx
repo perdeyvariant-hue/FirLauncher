@@ -35,7 +35,7 @@ export function Checkbox({
         'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
         'transition-colors duration-fast ease-out disabled:pointer-events-none disabled:opacity-45',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
-        on ? 'border-accent bg-accent text-on-accent' : 'border-border bg-surface-2 hover:border-text-dim',
+        on ? 'border-accent bg-accent text-on-accent' : 'border-border bg-[rgb(var(--text-rgb)/0.07)] hover:border-text-dim',
       )}
     >
       {indeterminate ? (

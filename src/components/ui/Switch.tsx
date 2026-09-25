@@ -33,7 +33,7 @@ export function Switch({
         className={cn(
           'relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors duration-fast ease-out',
           'disabled:pointer-events-none disabled:opacity-45',
-          checked ? 'bg-accent' : 'bg-surface-2 border border-border',
+          checked ? 'bg-accent' : 'bg-[rgb(var(--text-rgb)/0.07)] border border-border',
         )}
       >
         <span

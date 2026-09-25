@@ -26,7 +26,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-2 text-text-dim">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         {icon}
       </div>
       <div className="max-w-[320px]">

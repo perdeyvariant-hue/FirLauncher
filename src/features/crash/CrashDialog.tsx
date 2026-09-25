@@ -97,7 +97,7 @@ export function CrashDialog(): ReactElement {
               </div>
             </div>
             {analysis !== null && analysis.excerpt.length > 0 && (
-              <pre className="selectable max-h-48 overflow-auto rounded-lg bg-surface-2 p-3 font-mono text-2xs leading-relaxed text-text-dim">
+              <pre className="selectable max-h-48 overflow-auto rounded-lg bg-[rgb(var(--text-rgb)/0.07)] p-3 font-mono text-2xs leading-relaxed text-text-dim">
                 {analysis.excerpt.join('\n')}
               </pre>
             )}

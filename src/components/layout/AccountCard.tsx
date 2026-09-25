@@ -22,7 +22,7 @@ export function AccountCard(): ReactElement {
           <button
             type="button"
             onClick={openAccounts}
-            className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-border py-2.5 text-text-dim transition-colors duration-fast ease-out hover:border-accent hover:text-accent"
+            className="flex w-full flex-col items-center gap-1 rounded-xl border border-dashed border-border py-2.5 text-text-dim transition-[color,border-color,transform] duration-fast ease-out hover:border-accent hover:text-accent active:scale-[0.96]"
           >
             <UserPlus size={18} strokeWidth={1.5} />
             <span className="text-2xs leading-none">{t`Войти`}</span>
@@ -46,7 +46,7 @@ export function AccountCard(): ReactElement {
         <button
           type="button"
           onClick={openAccounts}
-          className="flex w-full flex-col items-center gap-1.5 rounded-lg py-2 transition-colors duration-fast ease-out hover:bg-surface-2"
+          className="flex w-full flex-col items-center gap-1.5 rounded-xl py-2 transition-[background-color,transform] duration-fast ease-out hover:bg-[rgb(var(--text-rgb)/0.07)] active:scale-[0.96]"
         >
           <span className="relative">
             <Avatar

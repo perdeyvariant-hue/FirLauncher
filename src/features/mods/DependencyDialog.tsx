@@ -17,7 +17,7 @@ export interface DependencyDialogProps {
 
 function Row({ version, primary }: { version: ModVersion; primary: boolean }): ReactElement {
   return (
-    <li className="flex items-center gap-2.5 rounded-md bg-surface-2 px-3 py-2">
+    <li className="flex items-center gap-2.5 rounded-md bg-[rgb(var(--text-rgb)/0.07)] px-3 py-2">
       <span className="text-text-dim">
         {primary ? <Package size={14} strokeWidth={1.5} /> : <Link2 size={14} strokeWidth={1.5} />}
       </span>

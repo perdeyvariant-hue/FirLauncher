@@ -47,7 +47,7 @@ export function Slider({
       )}
 
       <div className="relative flex h-5 items-center">
-        <div className="absolute inset-x-0 h-1 rounded-full bg-surface-2" />
+        <div className="absolute inset-x-0 h-1 rounded-full bg-[rgb(var(--text-rgb)/0.07)]" />
         <div
           className="absolute left-0 h-1 rounded-full bg-accent"
           style={{ width: percent }}

@@ -29,10 +29,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
       <div
         className={cn(
-          'flex h-9 items-center gap-2 rounded-lg border bg-surface-2 px-2.5',
-          'transition-[border-color] duration-fast ease-out',
-          'focus-within:border-accent',
-          hasError ? 'border-danger' : 'border-border',
+          'flex h-9 items-center gap-2 rounded-pill border px-3.5',
+          'bg-[rgb(var(--text-rgb)/0.05)] backdrop-blur-sm',
+          'transition-[border-color,background-color] duration-fast ease-out',
+          'focus-within:border-accent focus-within:bg-[rgb(var(--text-rgb)/0.08)]',
+          hasError ? 'border-danger' : 'border-[rgb(var(--text-rgb)/0.1)]',
         )}
       >
         {leading !== undefined && <span className="shrink-0 text-text-dim">{leading}</span>}

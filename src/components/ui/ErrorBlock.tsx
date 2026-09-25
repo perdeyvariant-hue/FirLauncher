@@ -44,7 +44,7 @@ export function ErrorBlock({ error, onRetry, className }: ErrorBlockProps): Reac
                 />
                 {t`Подробности`}</button>
               {expanded && (
-                <pre className="selectable mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-surface-2 p-2 font-mono text-2xs leading-relaxed text-text-dim">
+                <pre className="selectable mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-[rgb(var(--text-rgb)/0.07)] p-2 font-mono text-2xs leading-relaxed text-text-dim">
                   {error.detail}
                 </pre>
               )}

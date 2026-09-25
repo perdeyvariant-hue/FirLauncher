@@ -20,7 +20,7 @@ function Stat({
 }): ReactElement {
   return (
     <div className="panel flex items-center gap-3 p-3">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         {icon}
       </span>
       <div className="min-w-0">

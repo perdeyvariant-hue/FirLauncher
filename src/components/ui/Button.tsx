@@ -6,18 +6,24 @@ import { cn } from '@/lib/cn';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
+/**
+ * Controls are capsules of the same material family as the panels they sit
+ * on: the primary action is solid accent lit from above, everything else is
+ * glass or nothing at all.
+ */
 const VARIANTS: Readonly<Record<ButtonVariant, string>> = {
-  primary: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-dim',
-  secondary:
-    'bg-surface-2 text-text border border-border hover:border-text-dim/40 hover:bg-surface-2/70',
-  ghost: 'text-text-dim hover:text-text hover:bg-surface-2',
-  danger: 'bg-danger/10 text-danger border border-danger/25 hover:bg-danger/20',
+  primary:
+    'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-dim ' +
+    'shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_6px_16px_rgb(var(--accent-rgb)/0.35)]',
+  secondary: 'glass-quiet text-text hover:bg-[rgb(var(--text-rgb)/0.1)]',
+  ghost: 'text-text-dim hover:bg-[rgb(var(--text-rgb)/0.08)] hover:text-text',
+  danger: 'bg-danger/12 text-danger shadow-rim hover:bg-danger/20',
 };
 
 const SIZES: Readonly<Record<ButtonSize, string>> = {
-  sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-md',
-  md: 'h-9 px-3.5 text-sm gap-2 rounded-lg',
-  lg: 'h-11 px-5 text-sm gap-2 rounded-lg',
+  sm: 'h-7 px-3 text-xs gap-1.5',
+  md: 'h-9 px-4 text-sm gap-2',
+  lg: 'h-11 px-6 text-sm gap-2',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,6 +32,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   icon?: ReactNode;
   fullWidth?: boolean;
+  /** One pass of light across the button on hover. For the launch button. */
+  sheen?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -35,6 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     loading = false,
     icon,
     fullWidth = false,
+    sheen = false,
     className,
     children,
     disabled,
@@ -49,8 +58,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled === true || loading}
       className={cn(
-        'inline-flex select-none items-center justify-center whitespace-nowrap font-medium',
-        'transition-[background-color,border-color,color,opacity] duration-fast ease-out',
+        'group relative inline-flex select-none items-center justify-center overflow-hidden',
+        'whitespace-nowrap rounded-pill font-medium',
+        'transition-[background-color,border-color,color,opacity,transform,box-shadow]',
+        'duration-fast ease-spring active:scale-[0.96]',
         'disabled:pointer-events-none disabled:opacity-45',
         VARIANTS[variant],
         SIZES[size],
@@ -59,6 +70,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       {...rest}
     >
+      {sheen && (
+        <span
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute inset-y-0 left-0 w-1/4 opacity-0',
+            'bg-gradient-to-r from-transparent via-white/40 to-transparent',
+            'group-hover:animate-sheen group-hover:opacity-100',
+          )}
+        />
+      )}
       {loading ? (
         <Loader2 size={size === 'sm' ? 13 : 15} strokeWidth={1.5} className="animate-spin-slow" />
       ) : (

@@ -51,7 +51,7 @@ export function AddAccountDialog({
       <div className="flex flex-col gap-4 py-2">
         <section className="panel flex flex-col gap-3 p-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
               <Shield size={17} strokeWidth={1.5} />
             </span>
             <div className="min-w-0">
@@ -72,7 +72,7 @@ export function AddAccountDialog({
 
         <section className="panel flex flex-col gap-3 p-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-text-dim">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
               <UserCircle2 size={17} strokeWidth={1.5} />
             </span>
             <div className="min-w-0">

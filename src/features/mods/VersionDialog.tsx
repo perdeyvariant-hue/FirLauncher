@@ -164,7 +164,7 @@ export function VersionDialog({
                       'transition-colors duration-fast ease-out disabled:opacity-45',
                       isSelected
                         ? 'border-accent bg-accent/10'
-                        : 'border-transparent bg-surface-2 hover:border-border',
+                        : 'border-transparent bg-[rgb(var(--text-rgb)/0.07)] hover:border-border',
                     )}
                   >
                     <div className="min-w-0 flex-1">

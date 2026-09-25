@@ -92,8 +92,7 @@ export function ContextMenu({ items, children, className }: ContextMenuProps): R
               visibility: position === null ? 'hidden' : 'visible',
             }}
             className={cn(
-              'fixed z-50 animate-scale-in overflow-hidden rounded-lg p-1',
-              'border border-border bg-surface shadow-[var(--shadow-panel)]',
+              'glass-sheet specular fixed z-50 animate-glass-in overflow-hidden rounded-xl p-1',
             )}
           >
             {items.map((item) => (
@@ -108,12 +107,12 @@ export function ContextMenu({ items, children, className }: ContextMenuProps): R
                     item.onSelect();
                   }}
                   className={cn(
-                    'flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-xs',
+                    'flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-xs',
                     'transition-colors duration-fast ease-out',
                     'disabled:pointer-events-none disabled:opacity-40',
                     item.tone === 'danger'
                       ? 'text-danger hover:bg-danger/10'
-                      : 'text-text hover:bg-surface-2',
+                      : 'text-text hover:bg-[rgb(var(--text-rgb)/0.09)]',
                   )}
                 >
                   <span className="text-text-dim">{item.icon}</span>

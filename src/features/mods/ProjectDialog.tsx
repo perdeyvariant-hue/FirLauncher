@@ -94,7 +94,7 @@ function Icon({ url }: { url: string | null }): ReactElement {
   const [broken, setBroken] = useState(false);
   if (url === null || broken) {
     return (
-      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-text-dim">
+      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
         <Package size={22} strokeWidth={1.5} />
       </span>
     );
@@ -108,7 +108,7 @@ function Icon({ url }: { url: string | null }): ReactElement {
       onError={() => {
         setBroken(true);
       }}
-      className="h-16 w-16 shrink-0 rounded-xl bg-surface-2 object-cover"
+      className="h-16 w-16 shrink-0 rounded-xl bg-[rgb(var(--text-rgb)/0.07)] object-cover"
     />
   );
 }
@@ -130,7 +130,7 @@ function Gallery({ details }: { details: ProjectDetails }): ReactElement | null 
   return (
     <section className="flex flex-col gap-2">
       {shown !== undefined && (
-        <figure className="relative overflow-hidden rounded-lg border border-border bg-surface-2">
+        <figure className="relative overflow-hidden rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)]">
           <img
             src={shown.fullUrl}
             alt={shown.title ?? ''}
@@ -168,7 +168,7 @@ function Gallery({ details }: { details: ProjectDetails }): ReactElement | null 
               setOpen(index === open ? null : index);
             }}
             className={cn(
-              'h-20 w-32 shrink-0 overflow-hidden rounded-md border bg-surface-2',
+              'h-20 w-32 shrink-0 overflow-hidden rounded-md border bg-[rgb(var(--text-rgb)/0.07)]',
               'transition-colors duration-fast ease-out',
               index === open ? 'border-accent' : 'border-border hover:border-text-dim',
             )}
