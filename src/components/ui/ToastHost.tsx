@@ -21,7 +21,7 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
     <div
       role="status"
       className={cn(
-        'glass-sheet specular pointer-events-auto w-[360px] animate-glass-in',
+        'glass-sheet pointer-events-auto w-[360px] animate-glass-in',
         'overflow-hidden rounded-xl border',
         toast.tone === 'error' ? 'border-danger/35' : 'border-border',
       )}

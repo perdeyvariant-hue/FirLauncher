@@ -92,7 +92,7 @@ export function ContextMenu({ items, children, className }: ContextMenuProps): R
               visibility: position === null ? 'hidden' : 'visible',
             }}
             className={cn(
-              'glass-sheet specular fixed z-50 animate-glass-in overflow-hidden rounded-xl p-1',
+              'glass-sheet fixed z-50 animate-glass-in overflow-hidden rounded-xl p-1',
             )}
           >
             {items.map((item) => (

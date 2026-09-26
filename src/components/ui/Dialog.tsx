@@ -85,7 +85,7 @@ export function Dialog({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'glass-sheet specular relative flex w-full animate-glass-in flex-col outline-none',
+          'glass-sheet relative flex w-full animate-glass-in flex-col outline-none',
           'overflow-hidden rounded-2xl',
           'max-h-[calc(100vh-48px)]',
           WIDTHS[width],

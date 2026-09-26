@@ -161,28 +161,6 @@
   }
 
   /*
-   * The light that runs along the top of a lit surface. One line, brightest
-   * in the middle, so a wide panel does not look like a lit rectangle.
-   */
-  .specular::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
-    border-radius: inherit;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgb(255 255 255 / 0.45) 22%,
-      rgb(255 255 255 / 0.55) 50%,
-      rgb(255 255 255 / 0.45) 78%,
-      transparent
-    );
-    opacity: 0.55;
-    pointer-events: none;
-  }
-
-  /*
    * The ambient behind everything: two slow pools of colour so glass has
    * something to bend even when no wallpaper is chosen.
    */

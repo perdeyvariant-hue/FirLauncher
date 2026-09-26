@@ -62,7 +62,7 @@ export function TaskBar(): ReactElement | null {
     active.length === 1 ? (active[0]?.title ?? '') : t`Активных задач: ${String(active.length)}`;
 
   return (
-    <div className="glass specular z-20 mx-2.5 mb-2.5 shrink-0 overflow-hidden rounded-2xl">
+    <div className="glass z-20 mx-2.5 mb-2.5 shrink-0 overflow-hidden rounded-2xl">
       <button
         type="button"
         onClick={toggle}
