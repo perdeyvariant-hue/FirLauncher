@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { TaskBar } from './TaskBar';
+import { TitleBar } from './TitleBar';
 import { UpdateBanner } from './UpdateBanner';
 import { ToastHost } from '@/components/ui/ToastHost';
 import { BackgroundLayer } from '@/features/appearance/BackgroundLayer';
@@ -16,10 +17,12 @@ import { SkippedFilesDialog } from '@/features/packs/SkippedFilesDialog';
  */
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   return (
-    <div className="ambient relative flex h-full w-full overflow-hidden">
+    <div className="ambient relative flex h-full w-full flex-col overflow-hidden">
       <BackgroundLayer />
 
-      <div className="relative z-10 flex h-full w-full min-w-0">
+      <TitleBar />
+
+      <div className="relative z-10 flex min-h-0 w-full min-w-0 flex-1">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <UpdateBanner />

@@ -67,6 +67,23 @@ pub fn restore_launcher(app: AppHandle) -> Result<()> {
     Ok(())
 }
 
+/// The green light: full screen and back again.
+#[tauri::command]
+pub fn toggle_maximize_launcher(app: AppHandle) -> Result<()> {
+    let window = main_window(&app)?;
+    if window.is_maximized().map_err(failed)? {
+        window.unmaximize().map_err(failed)
+    } else {
+        window.maximize().map_err(failed)
+    }
+}
+
+/// Which shape the green light should draw.
+#[tauri::command]
+pub fn is_launcher_maximized(app: AppHandle) -> Result<bool> {
+    main_window(&app)?.is_maximized().map_err(failed)
+}
+
 /// Closes the launcher the same way the close button does, so downloads and
 /// a running game are cleaned up rather than orphaned.
 #[tauri::command]

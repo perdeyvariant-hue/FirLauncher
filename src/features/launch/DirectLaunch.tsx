@@ -134,7 +134,7 @@ export function DirectLaunch({ instanceId, ready, onOpenLauncher }: DirectLaunch
 
   return (
     <main className="ambient flex h-screen flex-col justify-between overflow-hidden p-5 text-text">
-      <div className="flex flex-col gap-1">
+      <div data-tauri-drag-region className="flex flex-col gap-1">
         <p className="text-sm font-medium">{instance?.name ?? t`Запуск сборки`}</p>
         <p className="text-2xs text-text-dim">
           {instance === null

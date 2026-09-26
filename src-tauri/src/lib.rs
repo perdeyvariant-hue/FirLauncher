@@ -178,6 +178,8 @@ pub fn run() {
             commands::window::hide_launcher,
             commands::window::minimize_launcher,
             commands::window::restore_launcher,
+            commands::window::toggle_maximize_launcher,
+            commands::window::is_launcher_maximized,
             commands::window::quit_launcher,
             commands::instances::list_resource_packs,
             commands::instances::list_shader_packs,

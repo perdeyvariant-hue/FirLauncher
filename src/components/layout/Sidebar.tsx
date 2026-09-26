@@ -33,7 +33,7 @@ export function Sidebar(): ReactElement {
     route.name === 'instance' || route.name === 'modpacks' ? 'instances' : route.name;
 
   return (
-    <nav className="glass specular z-20 m-2.5 flex w-[76px] shrink-0 flex-col rounded-2xl">
+    <nav className="glass specular z-20 mb-2.5 ml-2.5 mt-0.5 flex w-[76px] shrink-0 flex-col rounded-2xl">
       <div className="flex h-14 items-center justify-center text-accent">
         <Logo size={22} />
       </div>
