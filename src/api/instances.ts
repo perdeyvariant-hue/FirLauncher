@@ -66,6 +66,16 @@ export function duplicateInstance(id: string, newName: string): Promise<Instance
   }
   return ipc<Instance>('duplicate_instance', { id, newName });
 }
+/** Puts a different loader on the instance; it installs at the next launch. */
+export function setInstanceLoader(
+  id: string,
+  loader: ModLoader,
+  loaderVersion: string | null,
+): Promise<Instance> {
+  if (shouldMock()) return mocked<Instance>({ ...MOCK_INSTANCES[0], loader, loaderVersion } as Instance);
+  return ipc<Instance>('set_instance_loader', { id, loader, loaderVersion });
+}
+
 
 export function updateInstance(instance: Instance): Promise<Instance> {
   if (shouldMock()) return mocked(instance, 120);

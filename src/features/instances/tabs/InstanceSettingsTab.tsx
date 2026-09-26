@@ -8,10 +8,14 @@ import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
 import { Switch } from '@/components/ui/Switch';
+import * as instancesApi from '@/api/instances';
 import * as metaApi from '@/api/meta';
 import { useAsyncData } from '@/lib/useAsyncData';
 import type { JavaRuntime, SystemMemory } from '@/types/java';
-import type { Instance, InstanceJavaSettings } from '@/types/instance';
+import type { Instance, InstanceJavaSettings, ModLoader } from '@/types/instance';
+import { LOADER_LABELS } from '@/types/instance';
+import type { LoaderVersion } from '@/types/version';
+import { useToasts } from '@/store/useToasts';
 import { useInstances } from '@/store/useInstances';
 import { useSettings } from '@/store/useSettings';
 import { t } from '@/lib/i18n';
@@ -43,6 +47,99 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+const LOADERS: readonly ModLoader[] = ['vanilla', 'fabric', 'quilt', 'forge', 'neoforge'];
+const RECOMMENDED = '__recommended__';
+
+/**
+ * Putting a loader on an instance, or swapping it for another one. Nothing
+ * downloads here — the profile is installed at the next launch — so changing
+ * your mind costs nothing.
+ */
+function LoaderSection({ instance }: { instance: Instance }): ReactElement {
+  const adopt = useInstances((state) => state.adopt);
+  const fail = useToasts((state) => state.fail);
+  const notify = useToasts((state) => state.notify);
+  const [busy, setBusy] = useState(false);
+
+  const versions = useAsyncData<LoaderVersion[]>(
+    () =>
+      instance.loader === 'vanilla'
+        ? Promise.resolve([])
+        : metaApi.listLoaderVersions(instance.loader, instance.mcVersion),
+    [instance.loader, instance.mcVersion],
+  );
+
+  const apply = (loader: ModLoader, version: string | null): void => {
+    setBusy(true);
+    instancesApi
+      .setInstanceLoader(instance.id, loader, version)
+      .then((updated) => {
+        adopt(updated);
+        notify(
+          loader === 'vanilla'
+            ? t`Лоадер убран — сборка снова ванильная`
+            : t`${LOADER_LABELS[loader]} установится при следующем запуске`,
+          'success',
+        );
+      })
+      .catch((raw: unknown) => {
+        fail(raw);
+      })
+      .finally(() => {
+        setBusy(false);
+      });
+  };
+
+  const versionOptions: SelectOption<string>[] = [
+    { value: RECOMMENDED, label: t`Рекомендуемая` },
+    ...(versions.data ?? []).map((entry) => ({
+      value: entry.version,
+      label: entry.recommended
+        ? t`${entry.version} · рекомендуемая`
+        : entry.stable
+          ? entry.version
+          : t`${entry.version} · нестабильная`,
+    })),
+  ];
+
+  return (
+    <Section
+      title={t`Модлоадер`}
+      description={t`Ставится при следующем запуске. Моды остаются на месте, но под другим лоадером работать не будут.`}
+    >
+      <Select
+        label={t`Лоадер`}
+        value={instance.loader}
+        disabled={busy}
+        options={LOADERS.map((loader) => ({ value: loader, label: LOADER_LABELS[loader] }))}
+        onChange={(loader) => {
+          // A fresh loader starts on its recommended build.
+          apply(loader, null);
+        }}
+      />
+
+      {instance.loader === 'vanilla' ? (
+        <></>
+      ) : (
+        <Select
+          label={t`Версия лоадера`}
+          value={instance.loaderVersion ?? RECOMMENDED}
+          disabled={busy || versions.loading}
+          options={versionOptions}
+          onChange={(version) => {
+            apply(instance.loader, version === RECOMMENDED ? null : version);
+          }}
+          hint={
+            versions.error !== null
+              ? t`Список версий не загрузился — проверьте сеть.`
+              : t`Для Minecraft ${instance.mcVersion}.`
+          }
+        />
+      )}
+    </Section>
   );
 }
 
@@ -91,6 +188,8 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
 
   return (
     <div className="flex flex-col gap-3">
+      <LoaderSection instance={instance} />
+
       <Section
         title="Java"
         description={t`Пусто — лаунчер сам подберёт JDK: 8 для версий ≤1.16, 17 для 1.17–1.20.4, 21 для 1.20.5 и новее.`}

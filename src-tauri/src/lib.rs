@@ -152,6 +152,7 @@ pub fn run() {
             commands::instances::list_instances,
             commands::instances::create_instance,
             commands::instances::update_instance,
+            commands::instances::set_instance_loader,
             commands::instances::delete_instance,
             commands::instances::duplicate_instance,
             commands::instances::open_instance_folder,

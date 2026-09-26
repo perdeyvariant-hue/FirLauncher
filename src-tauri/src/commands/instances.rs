@@ -75,6 +75,37 @@ pub async fn update_instance(
     Ok(to_dto(&state, merged).await)
 }
 
+/// Puts a different loader on an instance, or takes one off. Nothing is
+/// downloaded here: the profile is installed at the next launch, the same as
+/// for a new instance.
+#[tauri::command]
+pub async fn set_instance_loader(
+    state: State<'_, AppState>,
+    id: String,
+    loader: instances::ModLoader,
+    loader_version: Option<String>,
+) -> Result<InstanceDto> {
+    if state.games.is_running(&id) {
+        return Err(LauncherError::new(
+            ErrorKind::Instance,
+            "Сначала остановите игру: лоадер меняется между запусками",
+        ));
+    }
+
+    let mut meta = instances::read_meta(&state.paths, &id).await?;
+    let version = loader_version.filter(|value| !value.trim().is_empty());
+    if meta.loader == loader && meta.loader_version == version {
+        return Ok(to_dto(&state, meta).await);
+    }
+
+    meta.loader = loader;
+    meta.loader_version = version;
+    // The profile belongs to the old loader; the next launch builds the new one.
+    meta.profile_id = None;
+    instances::write_meta(&state.paths, &meta).await?;
+    Ok(to_dto(&state, meta).await)
+}
+
 #[tauri::command]
 pub async fn delete_instance(state: State<'_, AppState>, id: String) -> Result<()> {
     if state.games.is_running(&id) {
