@@ -61,7 +61,7 @@ function TrafficLight({
       aria-label={label}
       onClick={onClick}
       className={cn(
-        'group/light h-3 w-3 rounded-pill p-[1px] transition-[filter,transform] duration-fast ease-spring',
+        'group/light h-4 w-4 rounded-pill p-[2px] transition-[filter,transform] duration-fast ease-spring',
         'shadow-[inset_0_0_0_0.5px_rgb(0_0_0/0.18)] hover:brightness-105 active:scale-90',
         COLOURS[kind],
         // Unfocused windows go grey on macOS; the group is on the bar.
@@ -76,8 +76,8 @@ function TrafficLight({
 }
 
 /**
- * The window's own title bar: no system frame, three lights on the left and
- * the rest of the strip draggable.
+ * The window's own title bar: no system frame, three lights on the right
+ * with close at the edge, and the rest of the strip draggable.
  */
 export function TitleBar(): ReactElement {
   const [maximized, setMaximized] = useState(false);
@@ -113,16 +113,8 @@ export function TitleBar(): ReactElement {
     <div
       data-tauri-drag-region
       data-blurred={blurred}
-      className="group/bar relative z-30 flex h-9 shrink-0 items-center gap-2 px-3.5"
+      className="group/bar relative z-30 flex h-10 shrink-0 items-center justify-end gap-2.5 px-4"
     >
-      <TrafficLight
-        kind="close"
-        label={t`Закрыть`}
-        maximized={maximized}
-        onClick={() => {
-          void windowApi.quitLauncher();
-        }}
-      />
       <TrafficLight
         kind="minimize"
         label={t`Свернуть`}
@@ -142,6 +134,14 @@ export function TitleBar(): ReactElement {
               document.documentElement.dataset['maximized'] = String(value);
             });
           });
+        }}
+      />
+      <TrafficLight
+        kind="close"
+        label={t`Закрыть`}
+        maximized={maximized}
+        onClick={() => {
+          void windowApi.quitLauncher();
         }}
       />
     </div>
