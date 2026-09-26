@@ -150,6 +150,12 @@ export function listInstalledMods(id: string): Promise<InstalledMod[]> {
   if (shouldMock()) return mocked([...MOCK_MODS]);
   return ipc<InstalledMod[]>('list_installed_mods', { id });
 }
+/** The picture a mod ships inside its jar, as a data URL. */
+export function modIcon(id: string, fileName: string): Promise<string | null> {
+  if (shouldMock()) return mocked<string | null>(null, 60);
+  return ipc<string | null>('mod_icon', { id, fileName });
+}
+
 
 export function setModEnabled(id: string, fileName: string, enabled: boolean): Promise<void> {
   if (shouldMock()) return mocked(undefined, 100);

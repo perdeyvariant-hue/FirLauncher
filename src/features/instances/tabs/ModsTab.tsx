@@ -21,6 +21,7 @@ import { UpdatesBar } from '@/features/mods/UpdatesBar';
 import { useContentUpdates } from '@/features/mods/useContentUpdates';
 import { formatBytes } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
+import { ModIcon } from '@/features/mods/ModIcon';
 import type { InstalledMod, Instance } from '@/types/instance';
 import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
@@ -220,6 +221,13 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   onChange={(value) => {
                     toggle(mod, value);
                   }}
+                />
+
+                <ModIcon
+                  instanceId={instance.id}
+                  fileName={mod.fileName}
+                  name={mod.name}
+                  className={cn(!isEnabled(mod) && 'opacity-40 grayscale')}
                 />
 
                 <button

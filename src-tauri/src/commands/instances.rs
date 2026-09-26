@@ -131,6 +131,17 @@ pub async fn set_mod_enabled(
     contents::set_mod_enabled(&state.paths, &id, &file_name, enabled).await
 }
 
+/// The mod's own icon, read out of its jar. Loaded per row, so a pack with
+/// three hundred mods does not ship three hundred pictures at once.
+#[tauri::command]
+pub async fn mod_icon(
+    state: State<'_, AppState>,
+    id: String,
+    file_name: String,
+) -> Result<Option<String>> {
+    contents::mod_icon(&state.paths, &id, &file_name).await
+}
+
 #[tauri::command]
 pub async fn remove_mod(
     state: State<'_, AppState>,

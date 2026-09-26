@@ -120,9 +120,100 @@ fn author_of(values: &[serde_json::Value]) -> Option<String> {
     }
 }
 
-/// Reads `fabric.mod.json` / `quilt.mod.json` out of a jar. Forge's
-/// `META-INF/mods.toml` needs a TOML parser and lands with the mod browser in
-/// stage 5; until then those mods fall back to their file name.
+/// The value of `key = "..."` on a TOML line, without a TOML parser: a few
+/// keys of one block are all `mods.toml` is read for. Trailing comments are
+/// common there (`displayName="JEI" #mandatory`) and must not come along.
+fn toml_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    let rest = line.trim().strip_prefix(key)?;
+    // `versionRange` must not answer for `version`.
+    if rest.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
+        return None;
+    }
+    let rest = rest.trim_start().strip_prefix('=')?.trim_start();
+    match rest.strip_prefix(['"', '\'']) {
+        // Quoted: the value ends at the closing quote, whatever follows it.
+        Some(inner) => {
+            let quote = rest.chars().next()?;
+            inner.split(quote).next()
+        }
+        // Bare: the value ends at a comment.
+        None => Some(rest.split('#').next()?.trim()),
+    }
+}
+
+/// `Implementation-Version` from the jar manifest, which is what Forge mods
+/// mean when they write `version="${file.jarVersion}"`.
+fn manifest_version(archive: &mut zip::ZipArchive<std::fs::File>) -> Option<String> {
+    let mut entry = archive.by_name("META-INF/MANIFEST.MF").ok()?;
+    let mut text = String::new();
+    std::io::Read::read_to_string(&mut entry, &mut text).ok()?;
+    text.lines()
+        .find_map(|line| line.trim().strip_prefix("Implementation-Version:"))
+        .map(|value| value.trim().to_owned())
+}
+
+/// Name, version and author out of Forge's or NeoForge's `mods.toml`: the
+/// first `[[mods]]` block describes the mod itself.
+fn read_toml_metadata(
+    archive: &mut zip::ZipArchive<std::fs::File>,
+) -> Option<(String, Option<String>, Option<String>)> {
+    let mut text = String::new();
+    for entry_name in ["META-INF/mods.toml", "META-INF/neoforge.mods.toml"] {
+        if let Ok(mut entry) = archive.by_name(entry_name) {
+            text.clear();
+            if std::io::Read::read_to_string(&mut entry, &mut text).is_ok() && !text.is_empty() {
+                break;
+            }
+        }
+    }
+    if text.is_empty() {
+        return None;
+    }
+
+    let mut name = None;
+    let mut version = None;
+    let mut author = None;
+    let mut inside = false;
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("[[") {
+            // The first block is the mod; a second one is another mod in the
+            // same jar and has nothing to add.
+            if inside {
+                break;
+            }
+            inside = trimmed.starts_with("[[mods]]");
+            continue;
+        }
+        if !inside {
+            continue;
+        }
+        if let Some(value) = toml_value(trimmed, "displayName") {
+            name = Some(value.to_owned());
+        } else if let Some(value) = toml_value(trimmed, "version") {
+            version = Some(value.to_owned());
+        } else if let Some(value) = toml_value(trimmed, "authors") {
+            author = Some(value.to_owned());
+        } else if name.is_none() {
+            if let Some(value) = toml_value(trimmed, "modId") {
+                name = Some(value.to_owned());
+            }
+        }
+    }
+
+    let name = name?;
+    // Forge substitutes this at build time; the jar keeps the real number.
+    let version = match version {
+        Some(value) if value.contains("${") => manifest_version(archive),
+        other => other,
+    };
+    let author = author.filter(|value| !value.is_empty());
+    Some((name, version, author))
+}
+
+/// Reads what a jar says about itself: `fabric.mod.json`, `quilt.mod.json`
+/// or Forge's and NeoForge's `mods.toml`. Only a jar that declares nothing
+/// falls back to its file name.
 fn read_jar_metadata(path: &Path) -> Option<(String, Option<String>, Option<String>)> {
     let file = std::fs::File::open(path).ok()?;
     let mut archive = zip::ZipArchive::new(file).ok()?;
@@ -131,23 +222,124 @@ fn read_jar_metadata(path: &Path) -> Option<(String, Option<String>, Option<Stri
         let Ok(entry) = archive.by_name(entry_name) else {
             continue;
         };
-        let parsed: serde_json::Value = serde_json::from_reader(entry).ok()?;
+        let Ok(parsed) = serde_json::from_reader::<_, serde_json::Value>(entry) else {
+            continue;
+        };
         // Quilt nests everything under `quilt_loader`.
         let root = parsed
             .get("quilt_loader")
             .and_then(|value| value.get("metadata"))
             .unwrap_or(&parsed);
-        let meta: FabricModJson = serde_json::from_value(root.clone()).ok()?;
+        let Ok(meta) = serde_json::from_value::<FabricModJson>(root.clone()) else {
+            continue;
+        };
         let version = parsed
             .get("quilt_loader")
             .and_then(|value| value.get("version"))
             .and_then(serde_json::Value::as_str)
             .map(str::to_owned)
             .or(meta.version);
-        let name = meta.name.or(meta.id)?;
-        return Some((name, version, author_of(&meta.authors)));
+        if let Some(name) = meta.name.or(meta.id) {
+            return Some((name, version, author_of(&meta.authors)));
+        }
+    }
+
+    read_toml_metadata(&mut archive)
+}
+
+/// The path inside the jar of the picture the mod ships as its logo.
+fn icon_path(archive: &mut zip::ZipArchive<std::fs::File>) -> Option<String> {
+    for entry_name in ["fabric.mod.json", "quilt.mod.json"] {
+        let Ok(entry) = archive.by_name(entry_name) else { continue };
+        let Ok(parsed) = serde_json::from_reader::<_, serde_json::Value>(entry) else { continue };
+        let root = parsed
+            .get("quilt_loader")
+            .and_then(|value| value.get("metadata"))
+            .unwrap_or(&parsed);
+        let icon = root.get("icon")?;
+        // Either a path, or a map of sizes to paths — take the largest.
+        if let Some(path) = icon.as_str() {
+            return Some(path.to_owned());
+        }
+        if let Some(sizes) = icon.as_object() {
+            let mut best: Option<(u32, &str)> = None;
+            for (size, path) in sizes {
+                let size = size.parse::<u32>().unwrap_or(0);
+                let Some(path) = path.as_str() else { continue };
+                if best.is_none_or(|(known, _)| size > known) {
+                    best = Some((size, path));
+                }
+            }
+            return best.map(|(_, path)| path.to_owned());
+        }
+    }
+
+    let mut text = String::new();
+    for entry_name in ["META-INF/mods.toml", "META-INF/neoforge.mods.toml"] {
+        if let Ok(mut entry) = archive.by_name(entry_name) {
+            text.clear();
+            let _ = std::io::Read::read_to_string(&mut entry, &mut text);
+        }
+        if let Some(path) = text.lines().find_map(|line| toml_value(line, "logoFile")) {
+            if !path.is_empty() {
+                return Some(path.to_owned());
+            }
+        }
+    }
+
+    // Plenty of Forge and NeoForge mods ship an icon without declaring it.
+    for guess in ["icon.png", "logo.png", "pack.png"] {
+        if archive.by_name(guess).is_ok() {
+            return Some(String::from(guess));
+        }
     }
     None
+}
+
+/// A mod file, rejecting anything that is not a plain name in `mods/`.
+fn mods_file(paths: &Paths, id: &str, file_name: &str) -> Result<PathBuf> {
+    let looks_like_a_path = file_name.is_empty()
+        || file_name.contains('/')
+        || file_name.contains('\\')
+        || file_name.contains(':')
+        || file_name == ".."
+        || file_name == ".";
+    if looks_like_a_path {
+        return Err(LauncherError::io(format!("Недопустимое имя файла: {file_name}")));
+    }
+    Ok(paths.instance_game_dir(id).join("mods").join(file_name))
+}
+
+/// The mod's own icon, as a data URL. Jars carry it next to their metadata,
+/// so this works offline and for mods the launcher did not install.
+pub async fn mod_icon(paths: &Paths, id: &str, file_name: &str) -> Result<Option<String>> {
+    /// Big enough for the 256×256 logos mods ship, small enough that a broken
+    /// jar cannot hand the interface a megabyte of nonsense.
+    const MAX_BYTES: u64 = 512 * 1024;
+
+    let path = mods_file(paths, id, file_name)?;
+    tokio::task::spawn_blocking(move || {
+        let Ok(file) = std::fs::File::open(&path) else { return None };
+        let mut archive = zip::ZipArchive::new(file).ok()?;
+        let inside = icon_path(&mut archive)?;
+        let mut entry = archive.by_name(inside.trim_start_matches('/')).ok()?;
+        if entry.size() > MAX_BYTES {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity(entry.size() as usize);
+        std::io::Read::read_to_end(&mut entry, &mut bytes).ok()?;
+        let mime = match bytes.as_slice() {
+            [0x89, b'P', b'N', b'G', ..] => "image/png",
+            [0xFF, 0xD8, 0xFF, ..] => "image/jpeg",
+            [b'G', b'I', b'F', ..] => "image/gif",
+            // Anything else is not a picture, whatever the metadata claimed.
+            _ => return None,
+        };
+        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
+        Some(format!("data:{mime};base64,{encoded}"))
+    })
+    .await
+    .map_err(|error| LauncherError::internal("Не удалось прочитать иконку мода").with_detail(error.to_string()))
 }
 
 /// Mod ids a jar declares: `fabric.mod.json` / `quilt.mod.json` ids and
@@ -293,7 +485,7 @@ pub async fn set_mod_enabled(
     enabled: bool,
 ) -> Result<()> {
     let dir = paths.instance_game_dir(id).join("mods");
-    let current = dir.join(file_name);
+    let current = mods_file(paths, id, file_name)?;
     let target = if enabled {
         dir.join(file_name.trim_end_matches(DISABLED_SUFFIX))
     } else if file_name.ends_with(DISABLED_SUFFIX) {
@@ -584,4 +776,50 @@ pub async fn remove_pack(
         index.save(paths, id, kind).await?;
     }
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_quoted_value_stops_at_its_closing_quote() {
+        // JEI writes its metadata exactly like this.
+        assert_eq!(
+            toml_value("displayName=\"Just Enough Items\" #mandatory", "displayName"),
+            Some("Just Enough Items")
+        );
+        assert_eq!(
+            toml_value("  version = \"15.62.0.216\"  # the version", "version"),
+            Some("15.62.0.216")
+        );
+        assert_eq!(toml_value("authors = 'mezz'", "authors"), Some("mezz"));
+    }
+
+    #[test]
+    fn a_longer_key_does_not_answer_for_a_shorter_one() {
+        // Forge files are full of versionRange lines; none of them is a version.
+        assert_eq!(toml_value("versionRange=\"[47.0,)\" #mandatory", "version"), None);
+        assert_eq!(toml_value("displayNameSuffix=\"beta\"", "displayName"), None);
+    }
+
+    #[test]
+    fn an_unquoted_value_stops_at_the_comment() {
+        assert_eq!(toml_value("modId=jei # the id", "modId"), Some("jei"));
+        assert_eq!(toml_value("nothing here", "modId"), None);
+    }
+
+    #[test]
+    fn a_file_name_that_is_a_path_is_refused() {
+        let paths = match Paths::resolve(Some("./test-data")) {
+            Ok(paths) => paths,
+            Err(error) => panic!("paths: {error:?}"),
+        };
+        assert!(mods_file(&paths, "i", "../../evil.jar").is_err());
+        assert!(mods_file(&paths, "i", "sub/dir.jar").is_err());
+        assert!(mods_file(&paths, "i", "C:evil.jar").is_err());
+        assert!(mods_file(&paths, "i", "sodium.jar").is_ok());
+        assert!(mods_file(&paths, "i", "sodium.jar.disabled").is_ok());
+    }
 }
