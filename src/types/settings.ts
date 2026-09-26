@@ -38,7 +38,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   wallpaperDim: 55,
   wallpaperBlur: 0,
   glassPanels: true,
-  windowTransparency: 20,
+  windowTransparency: 12,
   mascot: 'none',
   mascotGalleryId: 'wikipe-tan-classic',
   mascotCustomId: '',

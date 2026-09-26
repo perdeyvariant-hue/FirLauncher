@@ -15,7 +15,7 @@
 
 :root,
 :root[data-theme='dark'] {
-  --bg-rgb: 11 12 18;
+  --bg-rgb: 8 9 13;
   --surface-rgb: 20 21 27;
   --surface-2-rgb: 30 32 40;
   --border-rgb: 44 46 56;
@@ -41,22 +41,22 @@
       rgb(255 255 255 / 0.028) 42%,
       rgb(255 255 255 / 0.05)
     ),
-    rgb(14 15 21 / 0.58);
+    rgb(10 11 16 / 0.72);
   --glass-layer-strong: linear-gradient(
       to bottom,
       rgb(255 255 255 / 0.13),
       rgb(255 255 255 / 0.05) 42%,
       rgb(255 255 255 / 0.08)
     ),
-    rgb(14 15 21 / 0.6);
+    rgb(10 11 16 / 0.74);
   --glass-layer-quiet: linear-gradient(
       to bottom,
       rgb(255 255 255 / 0.07),
       rgb(255 255 255 / 0.025)
     ),
-    rgb(16 17 23 / 0.4);
+    rgb(12 13 19 / 0.52);
   /* The rim: a bright hairline on top, a dimmer one all round. */
-  --glass-rim: inset 0 1px 0 0 rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(255 255 255 / 0.055);
+  --glass-rim: inset 0 1px 0 0 rgb(255 255 255 / 0.11), inset 0 0 0 1px rgb(255 255 255 / 0.045);
   --glass-cast: 0 16px 40px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.3);
   --glass-cast-sm: 0 6px 18px rgb(0 0 0 / 0.35);
   /* What a translucent surface falls back to when glass is off. */
@@ -123,7 +123,7 @@
    * How opaque the page's own background is. Below 1 the desktop shows
    * through the window, blurred by the system (see tauri.conf.json).
    */
-  --window-alpha: 0.8;
+  --window-alpha: 0.88;
 
   /* Corner radius of panels; smaller shapes scale from it, pills ignore it. */
   --radius: 14px;

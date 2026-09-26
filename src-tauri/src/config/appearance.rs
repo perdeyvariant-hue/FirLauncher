@@ -82,7 +82,7 @@ impl Default for Appearance {
             wallpaper_dim: 55,
             wallpaper_blur: 0,
             glass_panels: true,
-            window_transparency: 20,
+            window_transparency: 12,
             mascot: Mascot::None,
             mascot_gallery_id: String::from(DEFAULT_GALLERY_ID),
             mascot_custom_id: String::new(),

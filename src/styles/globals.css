@@ -120,11 +120,11 @@
   .panel {
     background: linear-gradient(
         to bottom,
-        rgb(255 255 255 / 0.11),
-        rgb(255 255 255 / 0.05) 55%,
-        rgb(255 255 255 / 0.07)
+        rgb(255 255 255 / 0.07),
+        rgb(255 255 255 / 0.03) 55%,
+        rgb(255 255 255 / 0.045)
       ),
-      rgb(var(--bg-rgb) / 0.32);
+      rgb(var(--bg-rgb) / 0.6);
     box-shadow: var(--glass-rim), var(--glass-cast-sm);
     backdrop-filter: blur(16px) saturate(var(--glass-saturate));
   }
@@ -188,15 +188,15 @@
    */
   .ambient {
     background:
-      radial-gradient(90% 65% at 2% -12%, rgb(var(--accent-rgb) / 0.5), transparent 64%),
-      radial-gradient(80% 65% at 104% 108%, rgb(45 212 191 / 0.3), transparent 66%),
+      radial-gradient(90% 65% at 2% -12%, rgb(var(--accent-rgb) / 0.22), transparent 64%),
+      radial-gradient(80% 65% at 104% 108%, rgb(45 212 191 / 0.13), transparent 66%),
       /* The wash that carries the middle of the screen between the pools. */
         linear-gradient(
           132deg,
-          rgb(var(--accent-rgb) / 0.2),
-          rgb(var(--accent-dim-rgb) / 0.1) 42%,
+          rgb(var(--accent-rgb) / 0.08),
+          rgb(var(--accent-dim-rgb) / 0.05) 42%,
           transparent 62%,
-          rgb(45 212 191 / 0.12)
+          rgb(45 212 191 / 0.05)
         ),
       rgb(var(--bg-rgb) / var(--window-alpha));
   }
