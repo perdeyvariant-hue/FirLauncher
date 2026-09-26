@@ -234,6 +234,7 @@ async fn run_launch(
     account: crate::accounts::Account,
     server: Option<String>,
     presence: Arc<crate::presence::Presence>,
+    offline_api: Option<u16>,
 ) -> Result<()> {
     use crate::minecraft::{install, servers, session};
     use crate::tasks::Progress;
@@ -301,6 +302,7 @@ async fn run_launch(
         &settings,
         &installed,
         java_binary,
+        offline_api,
     )?;
     if let Some(server) = server.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         // Versions with Quick Play declare the argument in their profile.
@@ -372,6 +374,14 @@ pub async fn launch_instance(
         .cloned()
         .ok_or_else(|| LauncherError::new(ErrorKind::Auth, "Аккаунт не найден"))?;
 
+    // An offline account has no Mojang session, so the launcher answers the
+    // client's account questions itself; see `minecraft::offline_api`.
+    let offline_api = if account.kind == crate::accounts::AccountKind::Offline {
+        state.offline_api_port().await
+    } else {
+        None
+    };
+
     let task = state.tasks.start(
         TaskKind::InstallVersion,
         format!("{} · {}", meta.name, meta.mc_version),
@@ -401,6 +411,7 @@ pub async fn launch_instance(
             account,
             server,
             presence,
+            offline_api,
         )
         .await
         {

@@ -179,8 +179,18 @@ async fn main() -> Result<()> {
     let account = accounts::new_offline("SmokeTester")?;
 
     let game_session = firlauncher_lib::auth::GameSession::offline(&account);
-    let spec =
-        session::build_spec(&paths, &meta, &game_session, &settings, &installed, java_binary)?;
+    // The same stand-in the app starts for offline accounts.
+    let offline_api = firlauncher_lib::minecraft::offline_api::start().await.ok();
+    println!("Локальный сервис аккаунта: порт {offline_api:?}");
+    let spec = session::build_spec(
+        &paths,
+        &meta,
+        &game_session,
+        &settings,
+        &installed,
+        java_binary,
+        offline_api,
+    )?;
 
     println!("\nКоманда запуска:");
     println!("  {}", spec.java_binary.display());

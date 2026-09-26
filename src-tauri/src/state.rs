@@ -28,6 +28,9 @@ pub struct AppState {
     pub secrets: SecretStore,
     /// The Microsoft sign-in in progress, if any; only one at a time.
     login: Mutex<Option<CancellationToken>>,
+    /// Port of the local stand-in for the player-services API. Started on the
+    /// first offline launch and kept until the launcher exits.
+    offline_api: tokio::sync::OnceCell<u16>,
 }
 
 impl AppState {
@@ -42,6 +45,7 @@ impl AppState {
             presence: Arc::new(crate::presence::Presence::default()),
             secrets: SecretStore::keyring(),
             login: Mutex::new(None),
+            offline_api: tokio::sync::OnceCell::new(),
         })
     }
 
@@ -50,6 +54,16 @@ impl AppState {
     }
 
     /// Starts a sign-in, cancelling any previous one still waiting for a code.
+    /// The stand-in's port, starting it the first time an offline account
+    /// launches. A failure here only means the client asks Mojang as before.
+    pub async fn offline_api_port(&self) -> Option<u16> {
+        self.offline_api
+            .get_or_try_init(crate::minecraft::offline_api::start)
+            .await
+            .ok()
+            .copied()
+    }
+
     pub fn begin_login(&self) -> CancellationToken {
         let token = CancellationToken::new();
         if let Some(previous) = self.login.lock().replace(token.clone()) {

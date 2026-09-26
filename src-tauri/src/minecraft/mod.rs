@@ -8,6 +8,7 @@ pub mod install;
 pub mod launch;
 pub mod libraries;
 pub mod manifest;
+pub mod offline_api;
 pub mod rules;
 pub mod servers;
 pub mod session;

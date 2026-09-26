@@ -75,6 +75,9 @@ pub fn build_arguments(
     context: &args::LaunchContext,
     memory_mb: u32,
     extra_jvm_args: &str,
+    // The local stand-in's port, for offline accounts; `None` leaves the
+    // client talking to Mojang.
+    offline_api: Option<u16>,
 ) -> Result<Vec<String>> {
     let version = &installed.version;
     let main_class = version
@@ -84,6 +87,9 @@ pub fn build_arguments(
 
     let mut arguments = args::build_jvm_args(version, context);
     arguments.extend(args::memory_args(memory_mb));
+    if let Some(port) = offline_api {
+        arguments.extend(super::offline_api::jvm_arguments(port));
+    }
     // User flags go last so they can override anything above them.
     arguments.extend(args::split_user_args(extra_jvm_args));
     arguments.push(main_class);
@@ -111,6 +117,7 @@ pub fn build_spec(
     settings: &Settings,
     installed: &InstalledVersion,
     java_binary: std::path::PathBuf,
+    offline_api: Option<u16>,
 ) -> Result<LaunchSpec> {
     let game_dir = paths.instance_game_dir(&meta.id);
 
@@ -147,7 +154,10 @@ pub fn build_spec(
         .clone()
         .unwrap_or_else(|| settings.default_jvm_args.clone());
 
-    let mut arguments = build_arguments(installed, &context, memory_mb, &extra)?;
+    // The stand-in answers for an offline account only; a Microsoft session
+    // has a real token and must keep asking Mojang.
+    let offline_api = offline_api.filter(|_| session.offline);
+    let mut arguments = build_arguments(installed, &context, memory_mb, &extra, offline_api)?;
     if meta.java.window.is_some_and(|window| window.fullscreen) {
         arguments.push(String::from("--fullscreen"));
     }

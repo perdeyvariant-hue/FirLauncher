@@ -84,6 +84,9 @@ pub struct GameSession {
     pub access_token: String,
     pub xuid: String,
     pub user_type: String,
+    /// No Mojang session behind this one: the launcher answers the client's
+    /// account questions itself (see `minecraft::offline_api`).
+    pub offline: bool,
 }
 
 impl GameSession {
@@ -96,6 +99,7 @@ impl GameSession {
             access_token: String::from("0"),
             xuid: String::new(),
             user_type: String::from("legacy"),
+            offline: true,
         }
     }
 }
@@ -356,6 +360,7 @@ pub async fn session_for(
             access_token: cached.access_token,
             xuid: cached.xuid.unwrap_or_default(),
             user_type: String::from("msa"),
+            offline: false,
         });
     }
 
@@ -366,6 +371,7 @@ pub async fn session_for(
         access_token,
         xuid: xuid.unwrap_or_default(),
         user_type: String::from("msa"),
+        offline: false,
     })
 }
 
