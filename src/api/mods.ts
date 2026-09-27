@@ -282,3 +282,37 @@ export function applyOptimize(
   if (shouldMock()) return mocked(undefined, 900);
   return ipcUnit('apply_optimize', { instanceId, projectIds, memoryMb, jvmArgs });
 }
+
+/** One version's notes; Markdown or HTML depending on the provider. */
+export interface ChangelogEntry {
+  readonly versionNumber: string;
+  readonly publishedAt: string;
+  readonly text: string | null;
+}
+
+/** What every version newer than the installed one says about itself. */
+export function updateChangelogs(
+  instanceId: string,
+  kind: ProjectKind,
+  provider: ProviderId,
+  projectId: string,
+  installedVersionId: string | null,
+): Promise<ChangelogEntry[]> {
+  if (shouldMock()) {
+    return mocked<ChangelogEntry[]>([
+      {
+        versionNumber: '0.6.7',
+        publishedAt: '2026-09-20T10:00:00Z',
+        text: '- Fixed a crash when entering the Nether with shaders on\n- Chunks load **30% faster** on low-end GPUs',
+      },
+      { versionNumber: '0.6.6', publishedAt: '2026-09-02T10:00:00Z', text: null },
+    ]);
+  }
+  return ipc<ChangelogEntry[]>('update_changelogs', {
+    instanceId,
+    kind,
+    provider,
+    projectId,
+    installedVersionId,
+  });
+}

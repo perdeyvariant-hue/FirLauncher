@@ -586,6 +586,22 @@ impl ModProvider for CurseForge {
         })
     }
 
+    fn changelog<'a>(
+        &'a self,
+        project_id: &'a str,
+        version_id: &'a str,
+    ) -> BoxFuture<'a, Result<Option<String>>> {
+        Box::pin(async move {
+            let mod_id = parse_id(project_id, "проекта")?;
+            let file_id = parse_id(version_id, "файла")?;
+            let response: Envelope<String> = self
+                .http
+                .get(&format!("{API}/mods/{mod_id}/files/{file_id}/changelog"), &[])
+                .await?;
+            Ok(Some(response.data).filter(|text| !text.trim().is_empty()))
+        })
+    }
+
     fn project_names<'a>(
         &'a self,
         ids: &'a [String],

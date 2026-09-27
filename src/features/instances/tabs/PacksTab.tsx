@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ModIcon } from '@/features/mods/ModIcon';
+import { ChangelogDialog } from '@/features/mods/ChangelogDialog';
+import type { ChangelogTarget } from '@/features/mods/ChangelogDialog';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, History, Layers, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, History, Layers, Plus, ScrollText, Sparkles, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -57,6 +59,12 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
   );
   const fail = useToasts((state) => state.fail);
   const [browsing, setBrowsing] = useState(false);
+  // The "what's new" list open for one update, and how to apply it from there.
+  const [changelog, setChangelog] = useState<{
+    target: ChangelogTarget;
+    apply: () => void;
+  } | null>(null);
+
   // The installed file whose description is open.
   const [described, setDescribed] = useState<
     (ProjectTarget & { readonly name: string; readonly versionId: string | null }) | null
@@ -193,6 +201,30 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                   {formatBytes(pack.sizeBytes)}
                 </span>
 
+                {update !== undefined && source !== null && provider !== null && (
+                  <IconButton
+                    label={t`Что нового`}
+                    size="sm"
+                    icon={<ScrollText size={14} strokeWidth={1.5} />}
+                    onClick={() => {
+                      setChangelog({
+                        target: {
+                          instanceId: instance.id,
+                          kind: kind,
+                          provider,
+                          projectId: source.projectId,
+                          installedVersionId: source.versionId,
+                          name: pack.name,
+                          current: source.versionNumber,
+                          newest: update.latest.versionNumber,
+                        },
+                        apply: () => {
+                          void updates.apply([update]);
+                        },
+                      });
+                    }}
+                  />
+                )}
                 {update !== undefined && (
                   <IconButton
                     label={t`Обновить до ${update.latest.versionNumber}`}
@@ -241,6 +273,14 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
           })}
         </ul>
       )}
+
+      <ChangelogDialog
+        target={changelog?.target ?? null}
+        onClose={() => {
+          setChangelog(null);
+        }}
+        onUpdate={changelog?.apply}
+      />
 
       <ProjectDialog
         target={described}

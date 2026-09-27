@@ -353,3 +353,49 @@ mod tests {
         assert!(is_newer(&old, None), "an unknown current version can be updated");
     }
 }
+
+
+/// One version's notes, for the "what's new" list.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangelogEntry {
+    pub version_number: String,
+    pub published_at: String,
+    /// Markdown or HTML, as the provider gave it; `None` when the author
+    /// wrote nothing for this version.
+    pub text: Option<String>,
+}
+
+/// The notes of every version newer than the installed one that fits the
+/// instance, newest first — what an update actually brings, not just the
+/// last entry. Capped, since each version is one request to the provider.
+pub async fn changelogs_since(
+    provider: &dyn ModProvider,
+    project_id: &str,
+    installed_version_id: Option<&str>,
+    target: &Target,
+    limit: usize,
+) -> Result<Vec<ChangelogEntry>> {
+    let versions = provider.versions(project_id, target).await?;
+    let fitting: Vec<&ModVersion> = versions.iter().filter(|version| target.accepts(version)).collect();
+
+    // Versions come newest first; everything before the installed one is new.
+    let newer: Vec<&ModVersion> = match installed_version_id
+        .and_then(|id| fitting.iter().position(|version| version.version_id == id))
+    {
+        Some(index) => fitting[..index].to_vec(),
+        None => fitting.into_iter().take(1).collect(),
+    };
+
+    let mut entries = Vec::new();
+    for version in newer.into_iter().take(limit) {
+        // One missing changelog must not hide the rest.
+        let text = provider.changelog(project_id, &version.version_id).await.ok().flatten();
+        entries.push(ChangelogEntry {
+            version_number: version.version_number.clone(),
+            published_at: version.published_at.clone(),
+            text,
+        });
+    }
+    Ok(entries)
+}

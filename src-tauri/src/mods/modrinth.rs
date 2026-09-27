@@ -575,6 +575,21 @@ impl ModProvider for Modrinth {
         })
     }
 
+    fn changelog<'a>(
+        &'a self,
+        _project_id: &'a str,
+        version_id: &'a str,
+    ) -> BoxFuture<'a, Result<Option<String>>> {
+        Box::pin(async move {
+            #[derive(serde::Deserialize)]
+            struct WithChangelog {
+                changelog: Option<String>,
+            }
+            let version: WithChangelog = self.http.get(&format!("{API}/version/{version_id}"), &[]).await?;
+            Ok(version.changelog.filter(|text| !text.trim().is_empty()))
+        })
+    }
+
     fn project_names<'a>(
         &'a self,
         ids: &'a [String],

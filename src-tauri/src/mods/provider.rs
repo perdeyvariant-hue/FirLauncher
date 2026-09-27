@@ -62,6 +62,16 @@ pub trait ModProvider: Send + Sync {
         sha1s: &'a [String],
         target: &'a Target,
     ) -> BoxFuture<'a, Result<HashMap<String, ModVersion>>>;
+
+    /// What the author wrote about one version: Markdown on Modrinth, HTML
+    /// on CurseForge. `None` when there is nothing, which is common.
+    fn changelog<'a>(
+        &'a self,
+        _project_id: &'a str,
+        _version_id: &'a str,
+    ) -> BoxFuture<'a, Result<Option<String>>> {
+        Box::pin(async { Ok(None) })
+    }
 }
 
 /// Token bucket: `burst` requests at once, refilled at `per_second`.

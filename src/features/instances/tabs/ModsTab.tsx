@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ChangelogDialog } from '@/features/mods/ChangelogDialog';
+import type { ChangelogTarget } from '@/features/mods/ChangelogDialog';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, Gauge, History, ListChecks, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, Gauge, History, ListChecks, Package, Plus, ScrollText, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +43,12 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   const [optimizing, setOptimizing] = useState(false);
   const [search, setSearch] = useState('');
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  // The "what's new" list open for one update, and how to apply it from there.
+  const [changelog, setChangelog] = useState<{
+    target: ChangelogTarget;
+    apply: () => void;
+  } | null>(null);
+
   // The installed file whose description is open.
   const [described, setDescribed] = useState<
     (ProjectTarget & { readonly name: string; readonly versionId: string | null }) | null
@@ -443,6 +451,30 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   </p>
                 </button>
 
+                {update !== undefined && source !== null && provider !== null && (
+                  <IconButton
+                    label={t`Что нового`}
+                    size="sm"
+                    icon={<ScrollText size={14} strokeWidth={1.5} />}
+                    onClick={() => {
+                      setChangelog({
+                        target: {
+                          instanceId: instance.id,
+                          kind: 'mod',
+                          provider,
+                          projectId: source.projectId,
+                          installedVersionId: source.versionId,
+                          name: mod.name,
+                          current: source.versionNumber,
+                          newest: update.latest.versionNumber,
+                        },
+                        apply: () => {
+                          void updates.apply([update]);
+                        },
+                      });
+                    }}
+                  />
+                )}
                 {update !== undefined && (
                   <IconButton
                     label={t`Обновить до ${update.latest.versionNumber}`}
@@ -526,6 +558,14 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           if (pendingRemoval !== null) removeNow(pendingRemoval.mod);
           setPendingRemoval(null);
         }}
+      />
+
+      <ChangelogDialog
+        target={changelog?.target ?? null}
+        onClose={() => {
+          setChangelog(null);
+        }}
+        onUpdate={changelog?.apply}
       />
 
       <ProjectDialog

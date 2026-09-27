@@ -174,6 +174,21 @@ pub async fn check_updates(
     install::check_updates(&providers, &state.paths, &instance_id, kind, &target).await
 }
 
+/// What every version newer than the installed one says about itself.
+#[tauri::command]
+pub async fn update_changelogs(
+    state: State<'_, AppState>,
+    instance_id: String,
+    kind: ProjectKind,
+    provider: ProviderId,
+    project_id: String,
+    installed_version_id: Option<String>,
+) -> Result<Vec<install::ChangelogEntry>> {
+    let target = target_of(&state, &instance_id, kind).await?;
+    let provider = mods::provider(&state.client(), provider)?;
+    install::changelogs_since(provider.as_ref(), &project_id, installed_version_id.as_deref(), &target, 8).await
+}
+
 #[tauri::command]
 pub async fn apply_updates(
     state: State<'_, AppState>,
