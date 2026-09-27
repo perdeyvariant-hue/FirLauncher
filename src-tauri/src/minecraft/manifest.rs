@@ -62,7 +62,7 @@ fn manifest_cache(paths: &Paths) -> PathBuf {
     paths.meta().join("version_manifest_v2.json")
 }
 
-fn version_cache(paths: &Paths, id: &str) -> PathBuf {
+pub(crate) fn version_cache(paths: &Paths, id: &str) -> PathBuf {
     // Version ids come from Mojang and from loader installers; keep them from
     // escaping the cache directory.
     let safe: String = id

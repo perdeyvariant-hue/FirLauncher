@@ -57,3 +57,49 @@ export function saveSettings(settings: Settings): Promise<Settings> {
   if (shouldMock()) return mocked(settings, 60);
   return ipc<Settings>('save_settings', { settings });
 }
+
+export interface StorageUsage {
+  readonly instances: readonly { readonly id: string; readonly name: string; readonly bytes: number }[];
+  readonly libraries: number;
+  readonly assets: number;
+  readonly java: number;
+  readonly versions: number;
+  readonly total: number;
+}
+
+export interface CleanupPlan {
+  readonly files: number;
+  readonly bytes: number;
+  /** Why nothing can be removed safely right now, if that is the case. */
+  readonly blocked: string | null;
+}
+
+export function storageUsage(): Promise<StorageUsage> {
+  if (shouldMock()) {
+    return mocked<StorageUsage>(
+      {
+        instances: [
+          { id: 'inst-2', name: 'Fabric Perf', bytes: 812_000_000 },
+          { id: 'inst-1', name: 'Vanilla 1.21.4', bytes: 96_000_000 },
+        ],
+        libraries: 231_000_000,
+        assets: 1_310_000_000,
+        java: 423_000_000,
+        versions: 118_000_000,
+        total: 2_990_000_000,
+      },
+      400,
+    );
+  }
+  return ipc<StorageUsage>('storage_usage');
+}
+
+export function planStorageCleanup(): Promise<CleanupPlan> {
+  if (shouldMock()) return mocked<CleanupPlan>({ files: 18, bytes: 42_500_000, blocked: null }, 500);
+  return ipc<CleanupPlan>('plan_storage_cleanup');
+}
+
+export function cleanStorage(): Promise<CleanupPlan> {
+  if (shouldMock()) return mocked<CleanupPlan>({ files: 18, bytes: 42_500_000, blocked: null }, 700);
+  return ipc<CleanupPlan>('clean_storage');
+}

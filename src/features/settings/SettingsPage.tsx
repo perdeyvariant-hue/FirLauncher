@@ -16,6 +16,7 @@ import { useSettings } from '@/store/useSettings';
 import { useUI } from '@/store/useUI';
 import { useUpdater } from '@/store/useUpdater';
 import { t } from '@/lib/i18n';
+import { StorageSection } from './StorageSection';
 
 const REPO_URL = 'https://github.com/perdeyvariant-hue/FirLauncher';
 
@@ -212,6 +213,8 @@ export function SettingsPage(): ReactElement {
               />
             )}
           </Section>
+
+          <StorageSection />
 
           <Section
             title={t`О программе`}

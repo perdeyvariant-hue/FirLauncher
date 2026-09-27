@@ -25,6 +25,7 @@ pub mod paths;
 pub mod presence;
 pub mod shortcuts;
 pub mod state;
+pub mod storage;
 pub mod tasks;
 
 use serde::Serialize;
@@ -142,6 +143,9 @@ pub fn run() {
             commands::meta::list_minecraft_versions,
             commands::meta::list_java_runtimes,
             commands::meta::system_memory,
+            commands::meta::storage_usage,
+            commands::meta::plan_storage_cleanup,
+            commands::meta::clean_storage,
             commands::meta::list_loader_versions,
             commands::accounts::list_accounts,
             commands::accounts::add_offline_account,

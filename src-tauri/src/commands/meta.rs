@@ -40,3 +40,28 @@ pub async fn list_loader_versions(
 ) -> Result<Vec<LoaderVersion>> {
     loaders::list_versions(&state.client(), loader, &mc_version).await
 }
+
+/// How much each part of the data folder takes.
+#[tauri::command]
+pub async fn storage_usage(state: State<'_, AppState>) -> Result<crate::storage::StorageUsage> {
+    crate::storage::usage(&state.paths).await
+}
+
+/// What a cleanup would remove, without removing anything.
+#[tauri::command]
+pub async fn plan_storage_cleanup(state: State<'_, AppState>) -> Result<crate::storage::CleanupPlan> {
+    crate::storage::plan_cleanup(&state.paths).await
+}
+
+/// Removes libraries and client jars no instance refers to.
+#[tauri::command]
+pub async fn clean_storage(state: State<'_, AppState>) -> Result<crate::storage::CleanupPlan> {
+    if state.games.any_running() {
+        return Err(crate::error::LauncherError::new(
+            crate::error::ErrorKind::Instance,
+            "Сначала закройте игру: пока она запущена, её файлы заняты",
+        ));
+    }
+    let (files, bytes) = crate::storage::clean(&state.paths).await?;
+    Ok(crate::storage::CleanupPlan { files, bytes, blocked: None })
+}

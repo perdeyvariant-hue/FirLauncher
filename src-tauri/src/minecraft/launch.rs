@@ -78,6 +78,11 @@ impl GameRegistry {
         self.running.lock().contains_key(instance_id)
     }
 
+    /// Whether any game at all is running; shared files are in use then.
+    pub fn any_running(&self) -> bool {
+        !self.running.lock().is_empty()
+    }
+
     fn insert(&self, instance_id: String, entry: Running) {
         self.running.lock().insert(instance_id, entry);
     }
