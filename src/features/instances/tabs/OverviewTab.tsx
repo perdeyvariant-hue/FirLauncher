@@ -7,6 +7,7 @@ import type { Instance } from '@/types/instance';
 import { LOADER_LABELS } from '@/types/instance';
 import { useToasts } from '@/store/useToasts';
 import { ModpackCard } from '../ModpackCard';
+import { SnapshotsPanel } from '../SnapshotsPanel';
 import { t } from '@/lib/i18n';
 
 function Stat({
@@ -68,6 +69,8 @@ export function OverviewTab({ instance }: { instance: Instance }): ReactElement 
       </div>
 
       <ModpackCard instance={instance} />
+
+      <SnapshotsPanel instance={instance} />
 
       <div className="panel flex flex-col gap-3 p-4">
         <div>

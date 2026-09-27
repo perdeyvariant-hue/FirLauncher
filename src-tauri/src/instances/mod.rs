@@ -1,6 +1,7 @@
 //! Instance metadata and the operations behind the instance grid.
 
 pub mod contents;
+pub mod snapshots;
 pub mod worlds;
 
 use std::collections::BTreeMap;

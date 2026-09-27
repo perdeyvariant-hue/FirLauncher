@@ -288,3 +288,61 @@ export async function pickWorldArchive(): Promise<string | null> {
   const picked = await open({ multiple: false, filters: [{ name: t`Мир Minecraft`, extensions: ['zip'] }] });
   return typeof picked === 'string' ? picked : null;
 }
+
+export interface InstanceSnapshot {
+  readonly id: string;
+  readonly createdAt: string;
+  readonly reason: string;
+  readonly automatic: boolean;
+  readonly mcVersion: string;
+  readonly loader: ModLoader;
+  readonly loaderVersion: string | null;
+  readonly mods: number;
+  readonly bytes: number;
+}
+
+export function listSnapshots(id: string): Promise<InstanceSnapshot[]> {
+  if (shouldMock()) {
+    return mocked<InstanceSnapshot[]>([
+      {
+        id: '20260926-181200-000',
+        createdAt: '2026-09-26T18:12:00Z',
+        reason: 'Перед обновлением',
+        automatic: true,
+        mcVersion: '1.21.1',
+        loader: 'fabric',
+        loaderVersion: '0.16.9',
+        mods: 42,
+        bytes: 186_000_000,
+      },
+      {
+        id: '20260920-101500-000',
+        createdAt: '2026-09-20T10:15:00Z',
+        reason: 'Рабочая версия',
+        automatic: false,
+        mcVersion: '1.21.1',
+        loader: 'fabric',
+        loaderVersion: '0.16.5',
+        mods: 38,
+        bytes: 171_000_000,
+      },
+    ]);
+  }
+  return ipc<InstanceSnapshot[]>('list_snapshots', { id });
+}
+
+export function takeSnapshot(id: string, reason: string, automatic = false): Promise<InstanceSnapshot> {
+  if (shouldMock()) return Promise.reject(new Error(t`Доступно только в приложении`));
+  return ipc<InstanceSnapshot>('take_snapshot', { id, reason, automatic });
+}
+
+/** Resolves with the instance as the snapshot left it. */
+export function restoreSnapshot(id: string, snapshotId: string): Promise<Instance> {
+  if (shouldMock()) return Promise.reject(new Error(t`Доступно только в приложении`));
+  return ipc<Instance>('restore_snapshot', { id, snapshotId });
+}
+
+export function deleteSnapshot(id: string, snapshotId: string): Promise<void> {
+  if (shouldMock()) return mocked(undefined, 100);
+  return ipcUnit('delete_snapshot', { id, snapshotId });
+}

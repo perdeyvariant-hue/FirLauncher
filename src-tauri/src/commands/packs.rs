@@ -143,6 +143,8 @@ pub async fn update_modpack(state: State<'_, AppState>, id: String) -> Result<pa
         let settings = state.settings();
         let client = state.client();
         let modrinth = mods::provider(&client, ProviderId::Modrinth)?;
+        task.set_stage(String::from("Снимок сборки"));
+        instances::snapshots::take_before(&state.paths, &meta.id, "Перед обновлением модпака").await;
         if settings.backup_worlds_before_updates {
             task.set_stage(String::from("Резервная копия миров"));
             instances::worlds::backup_all(&state.paths, &meta.id).await?;

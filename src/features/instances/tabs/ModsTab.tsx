@@ -103,6 +103,8 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   /** Switches every picked mod on or off, one file at a time. */
   const bulkToggle = async (enabled: boolean): Promise<void> => {
     setBulkBusy(true);
+    // Several mods at once is hard to undo by hand; a snapshot makes it one click.
+    await instancesApi.takeSnapshot(instance.id, 'Перед удалением модов', true).catch(() => undefined);
     let failed = 0;
     for (const mod of pickedMods()) {
       if (mod.enabled === enabled) continue;

@@ -205,6 +205,8 @@ pub async fn apply_updates(
         _ => format!("Обновление: {} файлов", updates.len()),
     };
     let task = state.tasks.start(TaskKind::InstallMod, title, Some(instance_id.clone()));
+    task.set_stage(String::from("Снимок сборки"));
+    crate::instances::snapshots::take_before(&state.paths, &instance_id, "Перед обновлением").await;
     if state.settings().backup_worlds_before_updates {
         task.set_stage(String::from("Резервная копия миров"));
         crate::instances::worlds::backup_all(&state.paths, &instance_id).await?;

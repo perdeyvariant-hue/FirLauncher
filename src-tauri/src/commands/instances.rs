@@ -98,6 +98,7 @@ pub async fn set_instance_loader(
         return Ok(to_dto(&state, meta).await);
     }
 
+    instances::snapshots::take_before(&state.paths, &id, "Перед сменой лоадера").await;
     meta.loader = loader;
     meta.loader_version = version;
     // The profile belongs to the old loader; the next launch builds the new one.
@@ -114,7 +115,9 @@ pub async fn delete_instance(state: State<'_, AppState>, id: String) -> Result<(
             "Сначала остановите игру",
         ));
     }
-    instances::delete(&state.paths, &id).await
+    instances::delete(&state.paths, &id).await?;
+    instances::snapshots::delete_all(&state.paths, &id).await;
+    Ok(())
 }
 
 #[tauri::command]
@@ -593,4 +596,37 @@ pub fn take_startup_launch() -> Option<String> {
     }
     let args: Vec<String> = std::env::args().collect();
     crate::shortcuts::launch_target(&args)
+}
+
+#[tauri::command]
+pub async fn list_snapshots(state: State<'_, AppState>, id: String) -> Result<Vec<instances::snapshots::Snapshot>> {
+    instances::snapshots::list(&state.paths, &id).await
+}
+
+#[tauri::command]
+pub async fn take_snapshot(
+    state: State<'_, AppState>,
+    id: String,
+    reason: String,
+    automatic: bool,
+) -> Result<instances::snapshots::Snapshot> {
+    instances::snapshots::take(&state.paths, &id, &reason, automatic).await
+}
+
+#[tauri::command]
+pub async fn restore_snapshot(state: State<'_, AppState>, id: String, snapshot_id: String) -> Result<InstanceDto> {
+    if state.games.is_running(&id) {
+        return Err(LauncherError::new(
+            ErrorKind::Instance,
+            "Сначала остановите игру: пока она запущена, моды и настройки заняты",
+        ));
+    }
+    instances::snapshots::restore(&state.paths, &id, &snapshot_id).await?;
+    let meta = instances::read_meta(&state.paths, &id).await?;
+    Ok(to_dto(&state, meta).await)
+}
+
+#[tauri::command]
+pub async fn delete_snapshot(state: State<'_, AppState>, id: String, snapshot_id: String) -> Result<()> {
+    instances::snapshots::delete(&state.paths, &id, &snapshot_id).await
 }
