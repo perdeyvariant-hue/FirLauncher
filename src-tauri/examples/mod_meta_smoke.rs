@@ -31,6 +31,10 @@ async fn main() -> Result<()> {
             }
         );
         println!("     файл: {}", entry.file_name);
+        let dependents = contents::mod_dependents(&paths, &instance, &entry.file_name).await?;
+        if !dependents.is_empty() {
+            println!("     без него не запустятся: {}", dependents.join(", "));
+        }
     }
     Ok(())
 }

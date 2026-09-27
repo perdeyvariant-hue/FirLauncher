@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBlock } from '@/components/ui/ErrorBlock';
 import { IconButton } from '@/components/ui/IconButton';
@@ -73,6 +74,34 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   const isEnabled = (mod: InstalledMod): boolean => overrides[mod.fileName] ?? mod.enabled;
   const anyPending = updates.updates.size > 0;
 
+  const notify = useToasts((state) => state.notify);
+  /** A removal waiting on the question "others need this — delete anyway?". */
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    mod: InstalledMod;
+    dependents: string[];
+  } | null>(null);
+
+  const removeNow = (mod: InstalledMod): void => {
+    void instancesApi
+      .removeMod(instance.id, mod.fileName)
+      .then(() => {
+        updates.forget(mod.fileName);
+        reload();
+      })
+      .catch((raw: unknown) => fail(raw));
+  };
+
+  // Deleting something others depend on asks first; everything else goes at once.
+  const requestRemove = (mod: InstalledMod): void => {
+    void instancesApi
+      .modDependents(instance.id, mod.fileName)
+      .catch(() => [] as string[])
+      .then((dependents) => {
+        if (dependents.length === 0) removeNow(mod);
+        else setPendingRemoval({ mod, dependents });
+      });
+  };
+
   const toggle = (mod: InstalledMod, enabled: boolean): void => {
     setOverrides((current) => ({ ...current, [mod.fileName]: enabled }));
     instancesApi
@@ -85,6 +114,16 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           : `${mod.fileName}.disabled`;
         updates.rename(mod.fileName, renamed);
         reload();
+        if (!enabled) {
+          void instancesApi
+            .modDependents(instance.id, renamed)
+            .then((dependents) => {
+              if (dependents.length > 0) {
+                notify(t`Без «${mod.name}» не запустятся: ${dependents.join(', ')}`, 'error');
+              }
+            })
+            .catch(() => undefined);
+        }
       })
       .catch((raw: unknown) => {
         setOverrides((current) => ({ ...current, [mod.fileName]: !enabled }));
@@ -300,13 +339,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                   size="sm"
                   icon={<Trash2 size={14} strokeWidth={1.5} />}
                   onClick={() => {
-                    void instancesApi
-                      .removeMod(instance.id, mod.fileName)
-                      .then(() => {
-                        updates.forget(mod.fileName);
-                        reload();
-                      })
-                      .catch((raw: unknown) => fail(raw));
+                    requestRemove(mod);
                   }}
                 />
               </li>
@@ -314,6 +347,25 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        destructive
+        title={pendingRemoval === null ? '' : t`Удалить «${pendingRemoval.mod.name}»?`}
+        description={
+          pendingRemoval === null
+            ? ''
+            : t`Без него не запустятся: ${pendingRemoval.dependents.join(', ')}. Их можно удалить следом или вернуть этот мод из браузера модов.`
+        }
+        confirmLabel={t`Удалить всё равно`}
+        onCancel={() => {
+          setPendingRemoval(null);
+        }}
+        onConfirm={() => {
+          if (pendingRemoval !== null) removeNow(pendingRemoval.mod);
+          setPendingRemoval(null);
+        }}
+      />
 
       <ProjectDialog
         target={described}

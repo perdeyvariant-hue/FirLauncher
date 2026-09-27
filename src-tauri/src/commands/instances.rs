@@ -184,6 +184,16 @@ pub async fn pack_icon(
     contents::pack_icon(&state.paths, &id, kind, &file_name).await
 }
 
+/// The mods that would stop loading without this one.
+#[tauri::command]
+pub async fn mod_dependents(
+    state: State<'_, AppState>,
+    id: String,
+    file_name: String,
+) -> Result<Vec<String>> {
+    contents::mod_dependents(&state.paths, &id, &file_name).await
+}
+
 #[tauri::command]
 pub async fn remove_mod(
     state: State<'_, AppState>,

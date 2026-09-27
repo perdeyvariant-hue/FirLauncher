@@ -624,6 +624,220 @@ fn read_pack_mcmeta(path: &Path) -> (Option<String>, Option<i64>) {
     (description, format)
 }
 
+/// Ids that belong to the game or the loader, not to a mod anyone can remove.
+const PLATFORM_IDS: [&str; 9] = [
+    "minecraft",
+    "java",
+    "fabricloader",
+    "fabric-loader",
+    "quilt_loader",
+    "forge",
+    "neoforge",
+    "mixinextras",
+    "",
+];
+
+/// Old mods still say "fabric" for Fabric API.
+fn canonical_id(id: &str) -> String {
+    let id = id.trim().to_ascii_lowercase();
+    if id == "fabric" { String::from("fabric-api") } else { id }
+}
+
+/// What a jar declares: the ids it provides (its own, `provides`, and the
+/// ids of jars nested inside it) and the ids it requires.
+#[derive(Debug, Default)]
+struct JarLinks {
+    provides: Vec<String>,
+    requires: Vec<String>,
+}
+
+fn string_or_id(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(id) => Some(id.clone()),
+        serde_json::Value::Object(map) => map.get("id").and_then(serde_json::Value::as_str).map(str::to_owned),
+        _ => None,
+    }
+}
+
+/// Fabric and Quilt metadata, from bytes so nested jars can be read too.
+fn json_links(parsed: &serde_json::Value, links: &mut JarLinks) {
+    let quilt = parsed.get("quilt_loader");
+    let root = quilt.unwrap_or(parsed);
+
+    if let Some(id) = root.get("id").and_then(serde_json::Value::as_str) {
+        links.provides.push(canonical_id(id));
+    }
+    if let Some(list) = root.get("provides").and_then(serde_json::Value::as_array) {
+        links.provides.extend(list.iter().filter_map(string_or_id).map(|id| canonical_id(&id)));
+    }
+
+    match root.get("depends") {
+        // Fabric: { "id": "version range", ... }
+        Some(serde_json::Value::Object(map)) => {
+            links.requires.extend(map.keys().map(|id| canonical_id(id)));
+        }
+        // Quilt: [ "id" | { "id": ..., "optional": bool } ]
+        Some(serde_json::Value::Array(list)) => {
+            for entry in list {
+                let optional = entry.get("optional").and_then(serde_json::Value::as_bool).unwrap_or(false);
+                if let (Some(id), false) = (string_or_id(entry), optional) {
+                    links.requires.push(canonical_id(&id));
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// `[[dependencies.x]]` blocks of a `mods.toml` that are mandatory: Forge
+/// writes `mandatory=true`, NeoForge `type="required"`.
+fn toml_requires(text: &str, links: &mut JarLinks) {
+    let mut current: Option<(String, bool)> = None;
+    let flush = |block: Option<(String, bool)>, links: &mut JarLinks| {
+        if let Some((id, true)) = block {
+            links.requires.push(canonical_id(&id));
+        }
+    };
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with("[[") {
+            flush(current.take(), links);
+            if line.starts_with("[[dependencies") {
+                current = Some((String::new(), false));
+            }
+            continue;
+        }
+        let Some((id, required)) = current.as_mut() else { continue };
+        if let Some(value) = toml_value(line, "modId") {
+            *id = value.to_owned();
+        } else if let Some(value) = toml_value(line, "mandatory") {
+            *required = value == "true";
+        } else if let Some(value) = toml_value(line, "type") {
+            *required = value.eq_ignore_ascii_case("required");
+        }
+    }
+    flush(current.take(), links);
+}
+
+fn read_links_from<R: std::io::Read + std::io::Seek>(archive: &mut zip::ZipArchive<R>, depth: u8) -> JarLinks {
+    let mut links = JarLinks::default();
+
+    let mut nested = Vec::new();
+    for entry_name in ["fabric.mod.json", "quilt.mod.json"] {
+        let Ok(entry) = archive.by_name(entry_name) else { continue };
+        let Ok(parsed) = serde_json::from_reader::<_, serde_json::Value>(entry) else { continue };
+        json_links(&parsed, &mut links);
+        // Jar-in-jar: Fabric API is dozens of modules, and mods depend on them.
+        let jars = parsed
+            .get("jars")
+            .or_else(|| parsed.get("quilt_loader").and_then(|loader| loader.get("jars")));
+        if let Some(list) = jars.and_then(serde_json::Value::as_array) {
+            nested.extend(list.iter().filter_map(|jar| {
+                jar.get("file").and_then(serde_json::Value::as_str).map(str::to_owned).or_else(|| jar.as_str().map(str::to_owned))
+            }));
+        }
+    }
+
+    for entry_name in ["META-INF/mods.toml", "META-INF/neoforge.mods.toml"] {
+        let Ok(mut entry) = archive.by_name(entry_name) else { continue };
+        let mut text = String::new();
+        if std::io::Read::read_to_string(&mut entry, &mut text).is_err() {
+            continue;
+        }
+        let mut inside_mods = false;
+        for line in text.lines() {
+            let line = line.trim();
+            if line.starts_with("[[") {
+                inside_mods = line.starts_with("[[mods]]");
+                continue;
+            }
+            if inside_mods {
+                if let Some(id) = toml_value(line, "modId") {
+                    links.provides.push(canonical_id(id));
+                }
+            }
+        }
+        toml_requires(&text, &mut links);
+    }
+
+    // One level of nesting is all real mods use; more would only cost time.
+    if depth == 0 {
+        for inner in nested {
+            let Ok(mut entry) = archive.by_name(&inner) else { continue };
+            let mut bytes = Vec::new();
+            if std::io::Read::read_to_end(&mut entry, &mut bytes).is_err() {
+                continue;
+            }
+            let Ok(mut inner_archive) = zip::ZipArchive::new(std::io::Cursor::new(bytes)) else { continue };
+            let inner_links = read_links_from(&mut inner_archive, 1);
+            // A nested module is part of what the outer jar provides; what the
+            // module itself needs is the outer jar's business, not ours.
+            links.provides.extend(inner_links.provides);
+        }
+    }
+
+    links.provides.retain(|id| !PLATFORM_IDS.contains(&id.as_str()));
+    links.requires.retain(|id| !PLATFORM_IDS.contains(&id.as_str()));
+    links
+}
+
+fn read_links(path: &Path) -> JarLinks {
+    let Ok(file) = std::fs::File::open(path) else { return JarLinks::default() };
+    let Ok(mut archive) = zip::ZipArchive::new(file) else { return JarLinks::default() };
+    read_links_from(&mut archive, 0)
+}
+
+/// The mods that would stop loading if `file_name` went away: enabled mods
+/// that require an id only this jar provides. Names are the mods' own, so
+/// the warning reads the way the list does.
+pub async fn mod_dependents(paths: &Paths, id: &str, file_name: &str) -> Result<Vec<String>> {
+    let target = mods_file(paths, id, file_name)?;
+    let dir = paths.instance_game_dir(id).join("mods");
+    let file_name = file_name.to_owned();
+
+    tokio::task::spawn_blocking(move || {
+        let target_links = read_links(&target);
+        if target_links.provides.is_empty() {
+            return Vec::new();
+        }
+
+        let mut still_provided = std::collections::HashSet::new();
+        let mut others = Vec::new();
+        let Ok(entries) = std::fs::read_dir(&dir) else { return Vec::new() };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            // A switched-off mod needs nothing and provides nothing.
+            if name == file_name || !name.to_ascii_lowercase().ends_with(".jar") {
+                continue;
+            }
+            let path = entry.path();
+            let links = read_links(&path);
+            still_provided.extend(links.provides.iter().cloned());
+            others.push((path, name, links.requires));
+        }
+
+        let orphaned: std::collections::HashSet<&String> = target_links
+            .provides
+            .iter()
+            .filter(|provided| !still_provided.contains(*provided))
+            .collect();
+        if orphaned.is_empty() {
+            return Vec::new();
+        }
+
+        let mut names: Vec<String> = others
+            .into_iter()
+            .filter(|(_, _, requires)| requires.iter().any(|needed| orphaned.contains(needed)))
+            .map(|(path, name, _)| read_jar_metadata(&path).map_or(name, |(display, _, _)| display))
+            .collect();
+        names.sort_by_key(|name| name.to_lowercase());
+        names.dedup();
+        names
+    })
+    .await
+    .map_err(|error| LauncherError::internal("Не удалось проверить зависимости").with_detail(error.to_string()))
+}
+
 /// The picture a resource or shader pack carries: `pack.png` at its root,
 /// in a zip or in an unpacked folder. Shader packs rarely have one; they get
 /// the initials, same as a mod without an icon.
@@ -905,6 +1119,104 @@ mod tests {
         let icon = pack_icon(&paths, "t", ProjectKind::ResourcePack, "Faithful.zip").await;
         let _ = std::fs::remove_dir_all(&dir);
         assert!(matches!(icon, Ok(Some(ref url)) if url.starts_with("data:image/png;base64,")), "{icon:?}");
+    }
+
+    fn write_jar(path: &Path, entries: &[(&str, Vec<u8>)]) {
+        use std::io::Write;
+        let file = match std::fs::File::create(path) {
+            Ok(file) => file,
+            Err(error) => panic!("create {}: {error:?}", path.display()),
+        };
+        let mut zip = zip::ZipWriter::new(file);
+        for (name, bytes) in entries {
+            if let Err(error) = zip.start_file(*name, zip::write::SimpleFileOptions::default()) {
+                panic!("zip: {error:?}");
+            }
+            if let Err(error) = zip.write_all(bytes) {
+                panic!("zip write: {error:?}");
+            }
+        }
+        if let Err(error) = zip.finish() {
+            panic!("zip finish: {error:?}");
+        }
+    }
+
+    fn nested_jar(id: &str) -> Vec<u8> {
+        use std::io::Write;
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        let body = format!(r#"{{"id":"{id}"}}"#);
+        if zip.start_file("fabric.mod.json", zip::write::SimpleFileOptions::default()).is_err()
+            || zip.write_all(body.as_bytes()).is_err()
+        {
+            panic!("nested zip");
+        }
+        match zip.finish() {
+            Ok(cursor) => cursor.into_inner(),
+            Err(error) => panic!("nested finish: {error:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn removing_a_library_names_the_mods_that_need_it() {
+        let dir = std::env::temp_dir().join(format!("fir-deps-{}", uuid::Uuid::new_v4()));
+        let paths = match Paths::resolve(Some(&dir.to_string_lossy())) {
+            Ok(paths) => paths,
+            Err(error) => panic!("paths: {error:?}"),
+        };
+        let mods = paths.instance_game_dir("t").join("mods");
+        if let Err(error) = std::fs::create_dir_all(&mods) {
+            panic!("mkdir: {error:?}");
+        }
+
+        write_jar(&mods.join("lib.jar"), &[("fabric.mod.json", br#"{"id":"lib","name":"Lib"}"#.to_vec())]);
+        write_jar(
+            &mods.join("user.jar"),
+            &[("fabric.mod.json", br#"{"id":"user","name":"Needs Lib","depends":{"lib":"*","minecraft":"1.21"}}"#.to_vec())],
+        );
+        // A switched-off mod needs nothing.
+        write_jar(
+            &mods.join("off.jar.disabled"),
+            &[("fabric.mod.json", br#"{"id":"off","name":"Off","depends":{"lib":"*"}}"#.to_vec())],
+        );
+
+        let named = mod_dependents(&paths, "t", "lib.jar").await;
+        assert!(matches!(&named, Ok(list) if list == &vec![String::from("Needs Lib")]), "{named:?}");
+
+        // Another jar bundling the same module keeps the dependency satisfied.
+        write_jar(
+            &mods.join("bundler.jar"),
+            &[
+                ("fabric.mod.json", br#"{"id":"bundler","jars":[{"file":"META-INF/jars/lib.jar"}]}"#.to_vec()),
+                ("META-INF/jars/lib.jar", nested_jar("lib")),
+            ],
+        );
+        let named = mod_dependents(&paths, "t", "lib.jar").await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(matches!(&named, Ok(list) if list.is_empty()), "{named:?}");
+    }
+
+    #[test]
+    fn forge_and_neoforge_mandatory_dependencies_are_read() {
+        let toml = r#"
+[[mods]]
+modId="thing"
+[[dependencies.thing]]
+    modId="forge"
+    mandatory=true
+[[dependencies.thing]]
+    modId="jei" #the one that matters
+    mandatory=true
+[[dependencies.thing]]
+    modId="optionalmod"
+    mandatory=false
+[[dependencies.thing]]
+    modId="geckolib"
+    type="required"
+"#;
+        let mut links = JarLinks::default();
+        toml_requires(toml, &mut links);
+        links.requires.retain(|id| !PLATFORM_IDS.contains(&id.as_str()));
+        assert_eq!(links.requires, vec![String::from("jei"), String::from("geckolib")]);
     }
 
     #[test]

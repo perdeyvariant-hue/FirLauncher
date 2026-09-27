@@ -182,6 +182,12 @@ export function setModEnabled(id: string, fileName: string, enabled: boolean): P
   return ipcUnit('set_mod_enabled', { id, fileName, enabled });
 }
 
+/** Names of the mods that would stop loading without this one. */
+export function modDependents(id: string, fileName: string): Promise<string[]> {
+  if (shouldMock()) return mocked<string[]>(fileName.includes('fabric-api') ? ['Sodium', 'Iris'] : [], 80);
+  return ipc<string[]>('mod_dependents', { id, fileName });
+}
+
 export function removeMod(id: string, fileName: string): Promise<void> {
   if (shouldMock()) return mocked(undefined, 100);
   return ipcUnit('remove_mod', { id, fileName });

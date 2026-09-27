@@ -163,6 +163,7 @@ pub fn run() {
             commands::instances::remove_mod,
             commands::instances::mod_icon,
             commands::instances::pack_icon,
+            commands::instances::mod_dependents,
             commands::instances::list_worlds,
             commands::instances::list_world_backups,
             commands::instances::backup_world,
