@@ -342,9 +342,7 @@ fn version_number(display_name: &str, game_versions: &[String]) -> String {
     trimmed
         .split(|c: char| c.is_whitespace() || c == '-' || c == '_')
         .map(|token| token.trim_matches(|c: char| matches!(c, '[' | ']' | '(' | ')' | ',')))
-        .filter(|token| looks_like_a_version(token))
-        .filter(|token| !game_versions.iter().any(|mc| mc == token))
-        .last()
+        .rfind(|token| looks_like_a_version(token) && !game_versions.iter().any(|mc| mc == token))
         .map_or_else(|| trimmed.to_owned(), str::to_owned)
 }
 
