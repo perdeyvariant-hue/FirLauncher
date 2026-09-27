@@ -1,7 +1,7 @@
 {
   "name": "firlauncher",
   "private": true,
-  "version": "0.3.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "FirLauncher — minimal, modern Minecraft instance launcher",
   "scripts": {
