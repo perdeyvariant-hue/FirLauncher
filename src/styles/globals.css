@@ -97,6 +97,8 @@
   .glass-sheet,
   .glass-quiet {
     position: relative;
+    /* Rounded by default; a rounded-* utility still wins (utilities come after). */
+    border-radius: var(--radius);
     background: var(--glass-layer);
     box-shadow: var(--glass-rim), var(--glass-cast);
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -118,6 +120,8 @@
    * the same rim so it belongs to the same world.
    */
   .panel {
+    /* Rounded by default, as the flat panel was; rounded-* overrides it. */
+    border-radius: var(--radius);
     background: linear-gradient(
         to bottom,
         rgb(255 255 255 / 0.07),
