@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, Gauge, History, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, Gauge, History, ListChecks, Package, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -75,6 +75,72 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   const anyPending = updates.updates.size > 0;
 
   const notify = useToasts((state) => state.notify);
+
+  // Picking several mods at once: a checkbox per row and a bar of actions.
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [pendingBulk, setPendingBulk] = useState<{
+    mods: InstalledMod[];
+    dependents: string[];
+  } | null>(null);
+
+  const stopPicking = (): void => {
+    setPicking(false);
+    setPicked(new Set());
+  };
+
+  const pickedMods = (): InstalledMod[] => (data ?? []).filter((mod) => picked.has(mod.fileName));
+
+  /** Switches every picked mod on or off, one file at a time. */
+  const bulkToggle = async (enabled: boolean): Promise<void> => {
+    setBulkBusy(true);
+    let failed = 0;
+    for (const mod of pickedMods()) {
+      if (mod.enabled === enabled) continue;
+      try {
+        await instancesApi.setModEnabled(instance.id, mod.fileName, enabled);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    // File names changed (.jar <-> .jar.disabled), so the picks are stale.
+    stopPicking();
+    reload();
+    if (failed > 0) notify(t`Не удалось переключить модов: ${String(failed)}`, 'error');
+  };
+
+  /** Asks first, naming what else would break that is not going too. */
+  const requestBulkRemove = async (): Promise<void> => {
+    const mods = pickedMods();
+    if (mods.length === 0) return;
+    setBulkBusy(true);
+    const going = new Set(mods.map((mod) => mod.name));
+    const lists = await Promise.all(
+      mods.map((mod) => instancesApi.modDependents(instance.id, mod.fileName).catch(() => [] as string[])),
+    );
+    setBulkBusy(false);
+    const dependents = [...new Set(lists.flat())].filter((name) => !going.has(name)).sort();
+    setPendingBulk({ mods, dependents });
+  };
+
+  const bulkRemove = async (mods: InstalledMod[]): Promise<void> => {
+    setBulkBusy(true);
+    let failed = 0;
+    for (const mod of mods) {
+      try {
+        await instancesApi.removeMod(instance.id, mod.fileName);
+        updates.forget(mod.fileName);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    stopPicking();
+    reload();
+    if (failed > 0) notify(t`Не удалось удалить модов: ${String(failed)}`, 'error');
+  };
   /** A removal waiting on the question "others need this — delete anyway?". */
   const [pendingRemoval, setPendingRemoval] = useState<{
     mod: InstalledMod;
@@ -162,7 +228,63 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
         <UpdatesBar state={updates} canCheck={!vanilla && mods.length > 0} />
 
+        {picking ? (
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="text-xs text-text-dim">{t`Выбрано: ${String(picked.size)}`}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkBusy}
+              onClick={() => {
+                setPicked(
+                  picked.size === filtered.length ? new Set() : new Set(filtered.map((mod) => mod.fileName)),
+                );
+              }}
+            >
+              {picked.size === filtered.length ? t`Снять все` : t`Выбрать все`}</Button>
+            <Button
+              size="sm"
+              disabled={picked.size === 0 || bulkBusy}
+              onClick={() => {
+                void bulkToggle(true);
+              }}
+            >
+              {t`Включить`}</Button>
+            <Button
+              size="sm"
+              disabled={picked.size === 0 || bulkBusy}
+              onClick={() => {
+                void bulkToggle(false);
+              }}
+            >
+              {t`Выключить`}</Button>
+            <Button
+              size="sm"
+              variant="danger"
+              loading={bulkBusy}
+              disabled={picked.size === 0}
+              icon={<Trash2 size={13} strokeWidth={1.5} />}
+              onClick={() => {
+                void requestBulkRemove();
+              }}
+            >
+              {t`Удалить`}</Button>
+            <Button size="sm" variant="primary" disabled={bulkBusy} onClick={stopPicking}>
+              {t`Готово`}</Button>
+          </div>
+        ) : (
         <div className="ml-auto flex items-center gap-2">
+          {mods.length > 1 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<ListChecks size={14} strokeWidth={1.5} />}
+              onClick={() => {
+                setPicking(true);
+              }}
+            >
+              {t`Выбрать`}</Button>
+          )}
           {vanilla && (
             <span className="text-2xs text-text-dim">{t`Моды работают только со сборками с лоадером`}</span>
           )}
@@ -186,6 +308,7 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           >
             {t`Добавить моды`}</Button>
         </div>
+        )}
       </div>
 
       <OptimizeDialog
@@ -241,7 +364,22 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
                 key={mod.fileName}
                 className="panel flex items-center gap-3 p-3 transition-[border-color] duration-fast ease-out hover:border-text-dim/35"
               >
-                {anyPending &&
+                {picking && (
+                  <Checkbox
+                    label={t`Выбрать ${mod.name}`}
+                    checked={picked.has(mod.fileName)}
+                    onChange={(on) => {
+                      setPicked((current) => {
+                        const next = new Set(current);
+                        if (on) next.add(mod.fileName);
+                        else next.delete(mod.fileName);
+                        return next;
+                      });
+                    }}
+                  />
+                )}
+                {!picking &&
+                  anyPending &&
                   (update === undefined ? (
                     <span className="w-4 shrink-0" />
                   ) : (
@@ -347,6 +485,29 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingBulk !== null}
+        destructive
+        busy={bulkBusy}
+        title={pendingBulk === null ? '' : t`Удалить модов: ${String(pendingBulk.mods.length)}?`}
+        description={
+          pendingBulk === null
+            ? ''
+            : pendingBulk.dependents.length > 0
+              ? t`Без них не запустятся: ${pendingBulk.dependents.join(', ')}.`
+              : t`Файлы удалятся из папки mods этой сборки.`
+        }
+        confirmLabel={t`Удалить`}
+        onCancel={() => {
+          setPendingBulk(null);
+        }}
+        onConfirm={() => {
+          const mods = pendingBulk?.mods ?? [];
+          setPendingBulk(null);
+          void bulkRemove(mods);
+        }}
+      />
 
       <ConfirmDialog
         open={pendingRemoval !== null}
