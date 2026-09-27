@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Boxes, ChevronDown, Plus, SearchX } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -86,6 +86,14 @@ export function InstancesPage(): ReactElement {
   const fail = useToasts((state) => state.fail);
 
   const [createOpen, setCreateOpen] = useState(false);
+  // The command palette asks for the dialog through the store.
+  const createRequest = useUI((state) => state.createRequest);
+  const seenRequest = useRef(createRequest);
+  useEffect(() => {
+    if (createRequest === seenRequest.current) return;
+    seenRequest.current = createRequest;
+    setCreateOpen(true);
+  }, [createRequest]);
   const [importOpen, setImportOpen] = useState(false);
   const openExport = usePacks((state) => state.openExport);
   const navigate = useUI((state) => state.navigate);

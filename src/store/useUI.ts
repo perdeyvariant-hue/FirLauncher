@@ -15,6 +15,12 @@ interface UIState {
   back: () => void;
   toggleTaskbar: () => void;
   setTaskbarExpanded: (value: boolean) => void;
+  /**
+   * Bumped to ask the instances page for its "new instance" dialog from
+   * elsewhere (the command palette); the page watches it.
+   */
+  createRequest: number;
+  requestCreate: () => void;
 }
 
 export const useUI = create<UIState>()((set, get) => ({
@@ -22,6 +28,7 @@ export const useUI = create<UIState>()((set, get) => ({
   history: [],
   taskbarExpanded: false,
   contentRevision: 0,
+  createRequest: 0,
 
   bumpContent: () => {
     set((state) => ({ contentRevision: state.contentRevision + 1 }));
@@ -55,5 +62,10 @@ export const useUI = create<UIState>()((set, get) => ({
 
   setTaskbarExpanded: (value) => {
     set({ taskbarExpanded: value });
+  },
+
+  requestCreate: () => {
+    get().navigate({ name: 'instances' });
+    set((state) => ({ createRequest: state.createRequest + 1 }));
   },
 }));
