@@ -14,14 +14,22 @@ const cache = new Map<string, string | null>();
 export interface ModIconProps {
   instanceId: string;
   fileName: string;
+  /** Mods read their jar's declared logo; packs read `pack.png`. */
+  kind?: 'mod' | 'resourcepack' | 'shader';
   /** Shown as initials until an icon turns up, and if none does. */
   name: string;
   className?: string;
 }
 
 /** The picture a mod ships inside its jar, read on demand. */
-export function ModIcon({ instanceId, fileName, name, className }: ModIconProps): ReactElement {
-  const key = `${instanceId}/${fileName}`;
+export function ModIcon({
+  instanceId,
+  fileName,
+  kind = 'mod',
+  name,
+  className,
+}: ModIconProps): ReactElement {
+  const key = `${instanceId}/${kind}/${fileName}`;
   const [url, setUrl] = useState<string | null>(() => cache.get(key) ?? null);
 
   useEffect(() => {
@@ -31,8 +39,11 @@ export function ModIcon({ instanceId, fileName, name, className }: ModIconProps)
       return;
     }
     let alive = true;
-    void instancesApi
-      .modIcon(instanceId, fileName)
+    const load =
+      kind === 'mod'
+        ? instancesApi.modIcon(instanceId, fileName)
+        : instancesApi.packIcon(instanceId, kind, fileName);
+    void load
       .then((value) => {
         cache.set(key, value);
         if (alive) setUrl(value);
@@ -44,7 +55,7 @@ export function ModIcon({ instanceId, fileName, name, className }: ModIconProps)
     return () => {
       alive = false;
     };
-  }, [key, instanceId, fileName]);
+  }, [key, instanceId, fileName, kind]);
 
   const shape = cn('h-9 w-9 shrink-0 rounded-lg', className);
 

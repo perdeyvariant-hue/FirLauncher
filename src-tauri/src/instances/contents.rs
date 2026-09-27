@@ -296,8 +296,37 @@ fn icon_path(archive: &mut zip::ZipArchive<std::fs::File>) -> Option<String> {
     None
 }
 
-/// A mod file, rejecting anything that is not a plain name in `mods/`.
-fn mods_file(paths: &Paths, id: &str, file_name: &str) -> Result<PathBuf> {
+/// Big enough for the 256x256 logos mods and packs ship, small enough that a
+/// broken file cannot hand the interface a megabyte of nonsense.
+const MAX_ICON_BYTES: u64 = 512 * 1024;
+
+/// A picture as a data URL, or `None` if the bytes are not a picture at all,
+/// whatever the metadata claimed.
+fn image_data_url(bytes: &[u8]) -> Option<String> {
+    let mime = match bytes {
+        [0x89, b'P', b'N', b'G', ..] => "image/png",
+        [0xFF, 0xD8, 0xFF, ..] => "image/jpeg",
+        [b'G', b'I', b'F', ..] => "image/gif",
+        _ => return None,
+    };
+    let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes);
+    Some(format!("data:{mime};base64,{encoded}"))
+}
+
+/// Reads one entry of a zip, refusing anything too big to be an icon.
+fn zip_image(archive: &mut zip::ZipArchive<std::fs::File>, inside: &str) -> Option<String> {
+    let mut entry = archive.by_name(inside.trim_start_matches('/')).ok()?;
+    if entry.size() > MAX_ICON_BYTES {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(usize::try_from(entry.size()).unwrap_or(0));
+    std::io::Read::read_to_end(&mut entry, &mut bytes).ok()?;
+    image_data_url(&bytes)
+}
+
+/// A file in one of the content folders, rejecting anything that is not a
+/// plain name inside it.
+fn content_file(paths: &Paths, id: &str, folder: &str, file_name: &str) -> Result<PathBuf> {
     let looks_like_a_path = file_name.is_empty()
         || file_name.contains('/')
         || file_name.contains('\\')
@@ -307,36 +336,23 @@ fn mods_file(paths: &Paths, id: &str, file_name: &str) -> Result<PathBuf> {
     if looks_like_a_path {
         return Err(LauncherError::io(format!("Недопустимое имя файла: {file_name}")));
     }
-    Ok(paths.instance_game_dir(id).join("mods").join(file_name))
+    Ok(paths.instance_game_dir(id).join(folder).join(file_name))
+}
+
+/// A mod file, rejecting anything that is not a plain name in `mods/`.
+fn mods_file(paths: &Paths, id: &str, file_name: &str) -> Result<PathBuf> {
+    content_file(paths, id, "mods", file_name)
 }
 
 /// The mod's own icon, as a data URL. Jars carry it next to their metadata,
 /// so this works offline and for mods the launcher did not install.
 pub async fn mod_icon(paths: &Paths, id: &str, file_name: &str) -> Result<Option<String>> {
-    /// Big enough for the 256×256 logos mods ship, small enough that a broken
-    /// jar cannot hand the interface a megabyte of nonsense.
-    const MAX_BYTES: u64 = 512 * 1024;
-
     let path = mods_file(paths, id, file_name)?;
     tokio::task::spawn_blocking(move || {
         let Ok(file) = std::fs::File::open(&path) else { return None };
         let mut archive = zip::ZipArchive::new(file).ok()?;
         let inside = icon_path(&mut archive)?;
-        let mut entry = archive.by_name(inside.trim_start_matches('/')).ok()?;
-        if entry.size() > MAX_BYTES {
-            return None;
-        }
-        let mut bytes = Vec::with_capacity(entry.size() as usize);
-        std::io::Read::read_to_end(&mut entry, &mut bytes).ok()?;
-        let mime = match bytes.as_slice() {
-            [0x89, b'P', b'N', b'G', ..] => "image/png",
-            [0xFF, 0xD8, 0xFF, ..] => "image/jpeg",
-            [b'G', b'I', b'F', ..] => "image/gif",
-            // Anything else is not a picture, whatever the metadata claimed.
-            _ => return None,
-        };
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
-        Some(format!("data:{mime};base64,{encoded}"))
+        zip_image(&mut archive, &inside)
     })
     .await
     .map_err(|error| LauncherError::internal("Не удалось прочитать иконку мода").with_detail(error.to_string()))
@@ -608,6 +624,42 @@ fn read_pack_mcmeta(path: &Path) -> (Option<String>, Option<i64>) {
     (description, format)
 }
 
+/// The picture a resource or shader pack carries: `pack.png` at its root,
+/// in a zip or in an unpacked folder. Shader packs rarely have one; they get
+/// the initials, same as a mod without an icon.
+pub async fn pack_icon(
+    paths: &Paths,
+    id: &str,
+    kind: ProjectKind,
+    file_name: &str,
+) -> Result<Option<String>> {
+    const NAMES: [&str; 3] = ["pack.png", "icon.png", "logo.png"];
+
+    let path = content_file(paths, id, kind.folder(), file_name)?;
+    tokio::task::spawn_blocking(move || {
+        if path.is_dir() {
+            for name in NAMES {
+                let candidate = path.join(name);
+                let Ok(meta) = std::fs::metadata(&candidate) else { continue };
+                if meta.len() > MAX_ICON_BYTES {
+                    continue;
+                }
+                if let Some(url) = std::fs::read(&candidate).ok().and_then(|bytes| image_data_url(&bytes)) {
+                    return Some(url);
+                }
+            }
+            return None;
+        }
+        let file = std::fs::File::open(&path).ok()?;
+        let mut archive = zip::ZipArchive::new(file).ok()?;
+        NAMES.iter().find_map(|name| zip_image(&mut archive, name))
+    })
+    .await
+    .map_err(|error| {
+        LauncherError::internal("Не удалось прочитать картинку пака").with_detail(error.to_string())
+    })
+}
+
 pub async fn list_resource_packs(paths: &Paths, id: &str) -> Result<Vec<ResourcePackEntry>> {
     list_packs(paths, id, ProjectKind::ResourcePack).await
 }
@@ -808,6 +860,51 @@ mod tests {
     fn an_unquoted_value_stops_at_the_comment() {
         assert_eq!(toml_value("modId=jei # the id", "modId"), Some("jei"));
         assert_eq!(toml_value("nothing here", "modId"), None);
+    }
+
+    #[test]
+    fn only_real_pictures_become_data_urls() {
+        let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+        assert!(image_data_url(&png).is_some_and(|url| url.starts_with("data:image/png;base64,")));
+        assert!(image_data_url(b"<html>not a picture</html>").is_none());
+        assert!(image_data_url(&[]).is_none());
+    }
+
+    #[tokio::test]
+    async fn a_resource_pack_shows_its_pack_png() {
+        use std::io::Write;
+
+        let dir = std::env::temp_dir().join(format!("fir-pack-icon-{}", uuid::Uuid::new_v4()));
+        let paths = match Paths::resolve(Some(&dir.to_string_lossy())) {
+            Ok(paths) => paths,
+            Err(error) => panic!("paths: {error:?}"),
+        };
+        let packs = paths.instance_game_dir("t").join("resourcepacks");
+        if let Err(error) = std::fs::create_dir_all(&packs) {
+            panic!("mkdir: {error:?}");
+        }
+
+        // A zip with a pack.png at its root, the way every resource pack ships.
+        let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
+        let file = match std::fs::File::create(packs.join("Faithful.zip")) {
+            Ok(file) => file,
+            Err(error) => panic!("create: {error:?}"),
+        };
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        if let Err(error) = zip.start_file("pack.png", options) {
+            panic!("zip: {error:?}");
+        }
+        if let Err(error) = zip.write_all(&png) {
+            panic!("zip write: {error:?}");
+        }
+        if let Err(error) = zip.finish() {
+            panic!("zip finish: {error:?}");
+        }
+
+        let icon = pack_icon(&paths, "t", ProjectKind::ResourcePack, "Faithful.zip").await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(matches!(icon, Ok(Some(ref url)) if url.starts_with("data:image/png;base64,")), "{icon:?}");
     }
 
     #[test]

@@ -173,6 +173,17 @@ pub async fn mod_icon(
     contents::mod_icon(&state.paths, &id, &file_name).await
 }
 
+/// The picture a resource or shader pack carries, read out of the pack.
+#[tauri::command]
+pub async fn pack_icon(
+    state: State<'_, AppState>,
+    id: String,
+    kind: crate::mods::ProjectKind,
+    file_name: String,
+) -> Result<Option<String>> {
+    contents::pack_icon(&state.paths, &id, kind, &file_name).await
+}
+
 #[tauri::command]
 pub async fn remove_mod(
     state: State<'_, AppState>,

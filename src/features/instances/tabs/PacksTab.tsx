@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ModIcon } from '@/features/mods/ModIcon';
 import type { ReactElement } from 'react';
 import { ArrowUpCircle, History, Layers, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -147,9 +148,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
                     />
                   ))}
 
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
-                  <Icon size={16} strokeWidth={1.5} />
-                </span>
+                <ModIcon instanceId={instance.id} fileName={pack.fileName} kind={kind} name={pack.name} />
                 <button
                   type="button"
                   disabled={source === null || provider === null}
