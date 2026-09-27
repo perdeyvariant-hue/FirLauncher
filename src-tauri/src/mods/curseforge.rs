@@ -324,6 +324,30 @@ fn parse_loader(tag: &str) -> Option<ModLoader> {
     }
 }
 
+/// The version number inside a CurseForge display name.
+///
+/// CurseForge has no separate version field, so authors write whatever they
+/// like: "19.57.0.448 for Fabric 1.21.1", "[1.21.1] Fabric API 0.116.17",
+/// or just the file name. The number is the last version-shaped token that is
+/// not one of the Minecraft versions the file is for. Without one, the whole
+/// name is still better than nothing.
+fn version_number(display_name: &str, game_versions: &[String]) -> String {
+    let trimmed = display_name
+        .trim()
+        .trim_end_matches(".jar")
+        .trim_end_matches(".zip");
+    let looks_like_a_version = |token: &str| {
+        token.chars().next().is_some_and(|c| c.is_ascii_digit()) && token.contains('.')
+    };
+    trimmed
+        .split(|c: char| c.is_whitespace() || c == '-' || c == '_')
+        .map(|token| token.trim_matches(|c: char| matches!(c, '[' | ']' | '(' | ')' | ',')))
+        .filter(|token| looks_like_a_version(token))
+        .filter(|token| !game_versions.iter().any(|mc| mc == token))
+        .last()
+        .map_or_else(|| trimmed.to_owned(), str::to_owned)
+}
+
 impl File {
     fn into_mod_version(self) -> ModVersion {
         let sha1 = self
@@ -345,8 +369,8 @@ impl File {
             provider: ProviderId::CurseForge,
             project_id: self.mod_id.to_string(),
             version_id: self.id.to_string(),
-            name: self.display_name.clone(),
-            version_number: self.display_name,
+            version_number: version_number(&self.display_name, &game_versions),
+            name: self.display_name,
             file_name: self.file_name,
             size_bytes: self.file_length,
             sha1,
@@ -607,6 +631,22 @@ impl ModProvider for CurseForge {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_version_number_comes_out_of_the_display_name() {
+        let mc = |list: &[&str]| list.iter().map(|v| (*v).to_owned()).collect::<Vec<_>>();
+        // The shapes seen in the wild on CurseForge.
+        assert_eq!(version_number("19.57.0.448 for Fabric 1.21.1", &mc(&["1.21.1"])), "19.57.0.448");
+        assert_eq!(
+            version_number("[1.21.1] Fabric API 0.116.17+1.21.1", &mc(&["1.21.1"])),
+            "0.116.17+1.21.1"
+        );
+        assert_eq!(version_number("MezzConfig 0.6.3 for Fabric 1.21.1", &mc(&["1.21.1"])), "0.6.3");
+        assert_eq!(version_number("jei-1.20.1-forge-15.62.0.216.jar", &mc(&["1.20.1"])), "15.62.0.216");
+        assert_eq!(version_number("Sodium 0.6.13", &mc(&["1.21.1"])), "0.6.13");
+        // Nothing version-shaped at all: keep the name rather than invent one.
+        assert_eq!(version_number("Final release", &mc(&["1.21.1"])), "Final release");
+    }
 
     #[test]
     fn a_mod_becomes_a_description_page() -> std::result::Result<(), serde_json::Error> {
