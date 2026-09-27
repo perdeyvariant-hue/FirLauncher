@@ -27,6 +27,7 @@ import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
 import { t } from '@/lib/i18n';
+import { ContentCount } from '../ContentCount';
 
 export type PackKind = 'resourcepack' | 'shader';
 
@@ -113,6 +114,7 @@ export function PacksTab({ instance, kind }: { instance: Instance; kind: PackKin
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <UpdatesBar state={updates} canCheck={packs.length > 0} />
+        <ContentCount total={packs.length} />
         <div className="ml-auto">{addButton}</div>
       </div>
       <p className="text-2xs text-text-dim">

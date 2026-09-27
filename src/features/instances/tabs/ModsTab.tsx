@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChangelogDialog } from '@/features/mods/ChangelogDialog';
 import type { ChangelogTarget } from '@/features/mods/ChangelogDialog';
 import type { ReactElement } from 'react';
-import { ArrowUpCircle, Gauge, History, ListChecks, Package, Plus, ScrollText, Search, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, History, ListChecks, Package, Plus, ScrollText, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -16,7 +16,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Switch } from '@/components/ui/Switch';
 import * as instancesApi from '@/api/instances';
 import { ContentBrowser } from '@/features/mods/ContentBrowser';
-import { OptimizeDialog } from '@/features/mods/OptimizeDialog';
 import { ProjectDialog } from '@/features/mods/ProjectDialog';
 import type { ProjectTarget } from '@/features/mods/ProjectDialog';
 import { useContentInstaller } from '@/features/mods/useContentInstaller';
@@ -25,6 +24,7 @@ import { useContentUpdates } from '@/features/mods/useContentUpdates';
 import { formatBytes } from '@/lib/format';
 import { useAsyncData } from '@/lib/useAsyncData';
 import { ModIcon } from '@/features/mods/ModIcon';
+import { ContentCount } from '../ContentCount';
 import type { InstalledMod, Instance } from '@/types/instance';
 import { isProviderId, providerLabel } from '@/types/mod';
 import { useToasts } from '@/store/useToasts';
@@ -40,7 +40,6 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
   const fail = useToasts((state) => state.fail);
 
   const [browsing, setBrowsing] = useState(false);
-  const [optimizing, setOptimizing] = useState(false);
   const [search, setSearch] = useState('');
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   // The "what's new" list open for one update, and how to apply it from there.
@@ -238,6 +237,8 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
 
         <UpdatesBar state={updates} canCheck={!vanilla && mods.length > 0} />
 
+        <ContentCount total={mods.length} disabled={mods.filter((mod) => !mod.enabled).length} />
+
         {picking ? (
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <span className="text-xs text-text-dim">{t`Выбрано: ${String(picked.size)}`}</span>
@@ -299,15 +300,6 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
             <span className="text-2xs text-text-dim">{t`Моды работают только со сборками с лоадером`}</span>
           )}
           <Button
-            size="sm"
-            disabled={vanilla}
-            icon={<Gauge size={14} strokeWidth={1.5} />}
-            onClick={() => {
-              setOptimizing(true);
-            }}
-          >
-            {t`Оптимизировать`}</Button>
-          <Button
             variant="primary"
             size="sm"
             disabled={vanilla}
@@ -320,15 +312,6 @@ export function ModsTab({ instance }: { instance: Instance }): ReactElement {
         </div>
         )}
       </div>
-
-      <OptimizeDialog
-        instance={instance}
-        open={optimizing}
-        onClose={() => {
-          setOptimizing(false);
-        }}
-        onDone={reload}
-      />
 
       {loading ? (
         <div className="flex flex-col gap-2">

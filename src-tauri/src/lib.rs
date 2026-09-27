@@ -208,8 +208,6 @@ pub fn run() {
             commands::mods::check_updates,
             commands::mods::update_changelogs,
             commands::mods::apply_updates,
-            commands::mods::optimize_plan,
-            commands::mods::apply_optimize,
             commands::mods::remove_content,
             commands::packs::import_pack,
             commands::packs::install_modpack,

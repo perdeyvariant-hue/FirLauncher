@@ -8,7 +8,6 @@ pub mod curseforge;
 pub mod index;
 pub mod install;
 pub mod modrinth;
-pub mod optimize;
 pub mod provider;
 pub mod resolve;
 

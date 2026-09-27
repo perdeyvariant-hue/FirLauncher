@@ -367,9 +367,6 @@ cargo run --example packs_smoke --manifest-path src-tauri/Cargo.toml -- ./smoke-
   окно прячется, по `game://exit` лаунчер закрывается — а если игра вылетела, возвращается во
   весь рост с разбором вылета. Окном распоряжаются команды `commands/window.rs`; они же включают
   настройку «Сворачивать лаунчер при запуске игры» для обычного запуска.
-- **«Оптимизировать»** (вкладка «Моды») — проверенные моды производительности под версию и лоадер
-  (Sodium/Embeddium, Lithium, FerriteCore, ModernFix, EntityCulling, ImmediatelyFast, Dynamic FPS),
-  память по числу модов и флаги G1 для клиента.
 - **Discord.** Пока идёт игра, в статусе Discord видно «Играет в <сборка> · Minecraft 1.21.1
   Fabric». Нужен ID приложения Discord: вшивается при сборке из `FIRLAUNCHER_DISCORD_APP_ID` или
   вводится в настройках.
@@ -513,7 +510,6 @@ src-tauri/                бэкенд
   examples/crash_smoke.rs    разбор реального лога вылета
   examples/modpack_update_smoke.rs  обновление модпака с сохранением правок
   examples/servers_smoke.rs  пинг серверов
-  examples/optimize_smoke.rs моды «Оптимизировать» для каждого лоадера
   examples/shortcut_smoke.rs ярлык сборки
   examples/packs_smoke.rs    импорт и экспорт сборок, установка модпака
 ```
