@@ -21,19 +21,19 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
     <div
       role="status"
       className={cn(
-        'glass-sheet pointer-events-auto w-[360px] animate-glass-in',
-        'overflow-hidden rounded-xl border',
-        toast.tone === 'error' ? 'border-danger/35' : 'border-border',
+        'glass-sheet pointer-events-auto w-[320px] animate-sheet-in overflow-hidden rounded-[18px]',
+        'shadow-[inset_0_0_0_1px_var(--glass-border),0_16px_40px_rgb(0_0_0/0.4)]',
+        toast.tone === 'error' && 'shadow-[inset_0_0_0_1px_rgb(var(--danger-rgb)/0.4),0_16px_40px_rgb(0_0_0/0.4)]',
       )}
     >
-      <div className="flex items-start gap-2.5 p-3">
+      <div className="flex items-start gap-2.5 py-3 pl-4 pr-2.5">
         <span
           className={cn(
             'mt-px shrink-0',
             toast.tone === 'error'
               ? 'text-danger'
               : toast.tone === 'success'
-                ? 'text-accent'
+                ? 'text-success'
                 : 'text-text-dim',
           )}
         >
@@ -41,7 +41,7 @@ function ToastRow({ toast }: { toast: Toast }): ReactElement {
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-xs leading-relaxed text-text">{toast.title}</p>
+          <p className="text-[13.5px] font-semibold leading-snug text-text">{toast.title}</p>
 
           {toast.detail !== null && (
             <>
@@ -97,7 +97,7 @@ export function ToastHost(): ReactElement {
   const toasts = useToasts((state) => state.toasts);
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[60] flex flex-col items-end gap-2">
+    <div className="pointer-events-none fixed right-[18px] top-[52px] z-[60] flex flex-col items-end gap-2">
       {toasts.map((toast) => (
         <ToastRow key={toast.id} toast={toast} />
       ))}

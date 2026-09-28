@@ -43,6 +43,8 @@ pub struct InstanceUsage {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageUsage {
+    /// The data folder itself, for showing where all of this lives.
+    pub root: String,
     /// Largest first.
     pub instances: Vec<InstanceUsage>,
     pub libraries: u64,
@@ -153,7 +155,8 @@ pub async fn usage(paths: &Paths) -> Result<StorageUsage> {
         let java = dir_size(&paths.java());
         let versions = dir_size(&paths.versions());
         let total = instances.iter().map(|item| item.bytes).sum::<u64>() + libraries + assets + java + versions;
-        StorageUsage { instances, libraries, assets, java, versions, total }
+        let root = paths.root().display().to_string();
+        StorageUsage { root, instances, libraries, assets, java, versions, total }
     })
     .await
     .map_err(|error| LauncherError::internal("Не удалось посчитать место").with_detail(error.to_string()))

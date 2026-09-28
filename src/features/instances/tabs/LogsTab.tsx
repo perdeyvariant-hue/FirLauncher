@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { ArrowDownToLine, Copy, Search, Share2, Stethoscope, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { Segmented } from '@/components/ui/Segmented';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ErrorBlock } from '@/components/ui/ErrorBlock';
@@ -125,25 +126,7 @@ export function LogsTab({ instance }: { instance: Instance }): ReactElement {
           />
         </div>
 
-        <div role="radiogroup" className="flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
-          {LEVELS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={option.value === level}
-              onClick={() => {
-                setLevel(option.value);
-              }}
-              className={cn(
-                'h-7 rounded-md px-2.5 text-2xs font-medium transition-colors duration-fast ease-out',
-                option.value === level ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <Segmented label={t`Уровень`} value={level} options={LEVELS} onChange={setLevel} />
 
         <Switch checked={autoScroll} onChange={setAutoScroll} label={t`Автопрокрутка`} />
 

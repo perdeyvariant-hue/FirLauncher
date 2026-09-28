@@ -139,6 +139,7 @@ async fn main() -> Result<()> {
         group: None,
         favorite: false,
         java: InstanceJava::default(),
+        color: None,
     },
     };
 

@@ -6,7 +6,6 @@ import { cn } from '@/lib/cn';
 export interface ContextMenuItem {
   readonly id: string;
   readonly label: string;
-  readonly icon?: ReactNode;
   readonly tone?: 'default' | 'danger';
   readonly disabled?: boolean;
   readonly separatorBefore?: boolean;
@@ -17,6 +16,8 @@ export interface ContextMenuProps {
   items: readonly ContextMenuItem[];
   children: ReactNode;
   className?: string;
+  /** A quiet heading naming what the menu acts on. */
+  title?: string;
 }
 
 interface Anchor {
@@ -24,11 +25,11 @@ interface Anchor {
   readonly y: number;
 }
 
-const MENU_WIDTH = 190;
+const MENU_WIDTH = 220;
 const EDGE_PADDING = 8;
 
 /** Wraps a target and opens a menu at the cursor on right-click. */
-export function ContextMenu({ items, children, className }: ContextMenuProps): ReactElement {
+export function ContextMenu({ items, children, className, title }: ContextMenuProps): ReactElement {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<Anchor | null>(null);
@@ -92,12 +93,18 @@ export function ContextMenu({ items, children, className }: ContextMenuProps): R
               visibility: position === null ? 'hidden' : 'visible',
             }}
             className={cn(
-              'glass-sheet fixed z-50 animate-glass-in overflow-hidden rounded-xl p-1',
+              'glass-sheet fixed z-50 origin-top-left animate-sheet-in overflow-hidden rounded-lg p-1.5',
+              'shadow-[inset_0_0_0_1px_var(--glass-border),0_20px_50px_rgb(0_0_0/0.45)]',
             )}
           >
+            {title !== undefined && (
+              <p className="truncate px-2.5 pb-2 pt-1.5 text-[11.5px] font-semibold text-text-faint">
+                {title}
+              </p>
+            )}
             {items.map((item) => (
               <div key={item.id}>
-                {item.separatorBefore === true && <div className="my-1 h-px bg-border" />}
+                {item.separatorBefore === true && <div className="my-0.5 h-px bg-[var(--sep)]" />}
                 <button
                   type="button"
                   role="menuitem"
@@ -107,15 +114,14 @@ export function ContextMenu({ items, children, className }: ContextMenuProps): R
                     item.onSelect();
                   }}
                   className={cn(
-                    'flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-xs',
+                    'flex h-8 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-[13px]',
                     'transition-colors duration-fast ease-out',
                     'disabled:pointer-events-none disabled:opacity-40',
                     item.tone === 'danger'
                       ? 'text-danger hover:bg-danger/10'
-                      : 'text-text hover:bg-[rgb(var(--text-rgb)/0.09)]',
+                      : 'text-text hover:bg-[var(--hover)]',
                   )}
                 >
-                  <span className="text-text-dim">{item.icon}</span>
                   {item.label}
                 </button>
               </div>

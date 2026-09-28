@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import type { ReactElement } from 'react';
-import { Check, RotateCw, Trash2, UserPlus, Users } from 'lucide-react';
-import { cn } from '@/lib/cn';
+import type { CSSProperties, ReactElement } from 'react';
+import { Plus, Trash2, Users } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconButton } from '@/components/ui/IconButton';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Page } from '@/components/layout/PageHeader';
 import { formatRelativeDate } from '@/lib/format';
 import { useAccounts } from '@/store/useAccounts';
 import { AddAccountDialog } from './AddAccountDialog';
 import { LoginDialog } from './LoginDialog';
-import { t } from '@/lib/i18n';
+import { plural, t } from '@/lib/i18n';
 
 export function AccountsPage(): ReactElement {
   const accounts = useAccounts((state) => state.accounts);
@@ -31,134 +30,136 @@ export function AccountsPage(): ReactElement {
   const removeTarget = accounts.find((account) => account.id === pendingRemove) ?? null;
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="hairline-b flex h-14 shrink-0 items-center px-6">
-        <h1 className="text-sm font-semibold text-text">{t`Аккаунты`}</h1>
-        <div className="ml-auto">
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<UserPlus size={14} strokeWidth={1.5} />}
-            onClick={() => {
-              setAddOpen(true);
-            }}
-          >
-            {t`Добавить`}</Button>
+    <Page
+      title={t`Аккаунты`}
+      subtitle={
+        accounts.length === 0
+          ? undefined
+          : plural(accounts.length, ['аккаунт', 'аккаунта', 'аккаунтов'], ['account', 'accounts'])
+      }
+      actions={
+        <Button
+          iridescent
+          icon={<Plus size={15} strokeWidth={2.2} />}
+          onClick={() => {
+            setAddOpen(true);
+          }}
+        >
+          {t`Добавить`}
+        </Button>
+      }
+    >
+      {loading ? (
+        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3.5">
+          {Array.from({ length: 2 }, (_, index) => (
+            <Skeleton key={index} className="h-[140px]" />
+          ))}
         </div>
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-y-auto p-6">
-        {loading ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 2 }, (_, index) => (
-              <Skeleton key={index} className="h-[68px]" />
-            ))}
-          </div>
-        ) : accounts.length === 0 ? (
-          <EmptyState
-            icon={<Users size={20} strokeWidth={1.5} />}
-            title={t`Аккаунтов нет`}
-            description={t`Войдите через Microsoft, чтобы играть на серверах, или создайте оффлайн-аккаунт для одиночной игры.`}
-            action={
-              <Button
-                variant="primary"
-                icon={<UserPlus size={15} strokeWidth={1.5} />}
-                onClick={() => {
-                  setAddOpen(true);
-                }}
+      ) : accounts.length === 0 ? (
+        <EmptyState
+          icon={<Users />}
+          title={t`Аккаунтов нет`}
+          description={t`Войдите через Microsoft, чтобы играть на серверах, или создайте оффлайн-аккаунт для одиночной игры.`}
+          action={
+            <Button
+              variant="primary"
+              onClick={() => {
+                setAddOpen(true);
+              }}
+            >
+              {t`Добавить аккаунт`}
+            </Button>
+          }
+        />
+      ) : (
+        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3.5">
+          {accounts.map((account, index) => {
+            const active = account.id === activeId;
+            const microsoft = account.kind === 'microsoft';
+            return (
+              <div
+                key={account.id}
+                className="glass stagger flex flex-col gap-4 rounded-xl p-[18px]"
+                style={{ '--i': index } as CSSProperties}
               >
-                {t`Добавить аккаунт`}</Button>
-            }
-          />
-        ) : (
-          <ul className="flex max-w-[720px] flex-col gap-2">
-            {accounts.map((account) => {
-              const active = account.id === activeId;
-              return (
-                <li
-                  key={account.id}
-                  className={cn(
-                    'panel flex items-center gap-3 rounded-xl p-3',
-                    'transition-[border-color] duration-fast ease-out',
-                    active ? 'border-accent/45' : 'border-border hover:border-text-dim/35',
-                  )}
-                >
-                  <Avatar
-                    name={account.username}
-                    src={account.avatarUrl}
-                    size={40}
-                  />
-
+                <div className="flex items-center gap-3.5">
+                  <Avatar name={account.username} src={account.avatarUrl} size={56} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm text-text">{account.username}</p>
+                    <div className="flex items-center gap-2 text-base font-semibold text-text">
+                      <span className="truncate">{account.username}</span>
                       {active && <Badge tone="accent">{t`Активный`}</Badge>}
                       {account.expired && <Badge tone="danger">{t`Сессия истекла`}</Badge>}
                     </div>
-                    <p className="mt-0.5 truncate text-2xs text-text-dim">
-                      {account.kind === 'microsoft' ? 'Microsoft' : t`Оффлайн`} {t` · добавлен`}{' '}
-                      {formatRelativeDate(account.addedAt)}
+                    <p className="mt-1 truncate text-[12.5px] text-text-dim">
+                      {microsoft ? 'Microsoft' : t`Оффлайн`}
+                      {t` · добавлен`} {formatRelativeDate(account.addedAt)}
                     </p>
                   </div>
+                </div>
 
+                <div className="flex gap-2">
                   {!active && (
                     <Button
+                      variant="primary"
                       size="sm"
-                      icon={<Check size={13} strokeWidth={1.5} />}
+                      className="flex-1"
                       onClick={() => {
                         setActive(account.id);
                       }}
                     >
-                      {t`Сделать активным`}</Button>
+                      {t`Сделать активным`}
+                    </Button>
                   )}
-
-                  {account.kind === 'microsoft' && account.expired && (
+                  {microsoft && account.expired && (
                     <Button
-                      size="sm"
                       variant="primary"
+                      size="sm"
+                      className="flex-1"
                       onClick={() => {
                         setMsaOpen(true);
                       }}
                     >
-                      {t`Войти заново`}</Button>
+                      {t`Войти заново`}
+                    </Button>
                   )}
-
-                  {account.kind === 'microsoft' && !account.expired && (
-                    <IconButton
-                      label={t`Обновить вход и скин`}
+                  {microsoft && !account.expired && (
+                    <Button
                       size="sm"
-                      disabled={refreshing === account.id}
-                      icon={
-                        <RotateCw
-                          size={14}
-                          strokeWidth={1.5}
-                          className={cn(refreshing === account.id && 'animate-spin-slow')}
-                        />
-                      }
+                      className="flex-1"
+                      title={t`Обновить вход и скин`}
+                      loading={refreshing === account.id}
                       onClick={() => {
                         setRefreshing(account.id);
                         void refresh(account.id).finally(() => {
                           setRefreshing(null);
                         });
                       }}
-                    />
+                    >
+                      {t`Обновить`}
+                    </Button>
                   )}
-
-                  <IconButton
-                    label={t`Удалить аккаунт`}
-                    tone="danger"
-                    size="sm"
-                    icon={<Trash2 size={14} strokeWidth={1.5} />}
+                  {!microsoft && active && (
+                    <p className="flex h-8 flex-1 items-center text-xs text-text-faint">
+                      {t`Одиночная игра и серверы без проверки лицензии`}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    aria-label={t`Удалить аккаунт`}
+                    title={t`Удалить аккаунт`}
                     onClick={() => {
                       setPendingRemove(account.id);
                     }}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-danger shadow-rim transition-colors duration-fast hover:bg-danger/[0.12]"
+                  >
+                    <Trash2 size={14} strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <AddAccountDialog
         open={addOpen}
@@ -192,6 +193,6 @@ export function AccountsPage(): ReactElement {
           setPendingRemove(null);
         }}
       />
-    </div>
+    </Page>
   );
 }

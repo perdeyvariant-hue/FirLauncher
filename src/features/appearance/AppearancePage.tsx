@@ -1,41 +1,27 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
-import {
-  AlertTriangle,
-  Ban,
-  Check,
-  ExternalLink,
-  ImagePlus,
-  Pipette,
-  RotateCcw,
-  Trash2,
-  User,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, ExternalLink, ImagePlus, Pipette, RotateCcw, Trash2, User, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
-import { Section } from '@/components/ui/Section';
+import { Segmented } from '@/components/ui/Segmented';
 import { Slider } from '@/components/ui/Slider';
 import { Switch } from '@/components/ui/Switch';
-import { accentPalette, contrastRatio, luminance, parseHex, toChannels } from '@/lib/color';
+import { Page } from '@/components/layout/PageHeader';
+import { accentPalette, contrastRatio, parseHex, toHex } from '@/lib/color';
 import { resolveTheme } from '@/lib/appearance';
 import { openExternal } from '@/api/system';
 import { activeAccountOf, useAccounts } from '@/store/useAccounts';
 import { useAppearanceImages } from '@/store/useAppearanceImages';
 import { useSettings } from '@/store/useSettings';
-import type { Appearance, MascotKind, ThemeMode, WallpaperKind } from '@/types/settings';
-import { DEFAULT_APPEARANCE } from '@/types/settings';
-import {
-  DotsWallpaper,
-  ForestWallpaper,
-  MistWallpaper,
-} from './art';
+import type { Appearance, ThemeMode, WallpaperKind } from '@/types/settings';
+import { DEFAULT_APPEARANCE, RADIUS_MAX } from '@/types/settings';
+import { DotsWallpaper, ForestWallpaper, MistWallpaper } from './art';
 import { GALLERY, LICENSE_URLS, galleryImageUrl, galleryMascot } from './gallery';
 import { languageSetting, setLanguage, t } from '@/lib/i18n';
 
 const ACCENTS: readonly { readonly hex: string; readonly name: string }[] = [
-  { hex: '#8B5CF6', name: t`Фиолетовый` },
-  { hex: '#3B82F6', name: t`Синий` },
+  { hex: '#A855F7', name: t`Фиолетовый` },
+  { hex: '#6366F1', name: t`Индиго` },
   { hex: '#0EA5E9', name: t`Голубой` },
   { hex: '#14B8A6', name: t`Бирюзовый` },
   { hex: '#22C55E', name: t`Зелёный` },
@@ -49,51 +35,20 @@ const ACCENTS: readonly { readonly hex: string; readonly name: string }[] = [
 interface Preset {
   readonly name: string;
   readonly accent: string;
+  readonly theme: 'dark' | 'light';
   readonly wallpaper: WallpaperKind;
-  readonly mascot: MascotKind;
-  readonly galleryId?: string;
 }
 
-/** One-click looks; they touch colour, wallpaper and mascot only. */
+/** One-click looks: colour, light or dark, and the wallpaper. */
 const PRESETS: readonly Preset[] = [
-  { name: t`Фиолетовая ночь`, accent: '#8B5CF6', wallpaper: 'mist', mascot: 'none' },
-  {
-    name: t`Хвойный лес`,
-    accent: '#22C55E',
-    wallpaper: 'forest',
-    mascot: 'gallery',
-    galleryId: 'wikipe-tan-casual',
-  },
-  { name: t`Океан`, accent: '#0EA5E9', wallpaper: 'mist', mascot: 'none' },
-  {
-    name: t`Хеллоуин`,
-    accent: '#F97316',
-    wallpaper: 'forest',
-    mascot: 'gallery',
-    galleryId: 'wikipe-tan-halloween',
-  },
-  {
-    name: t`Сакура`,
-    accent: '#EC4899',
-    wallpaper: 'dots',
-    mascot: 'gallery',
-    galleryId: 'wikipe-tan-dress',
-  },
-  {
-    name: t`Википе-тан`,
-    accent: '#60A5FA',
-    wallpaper: 'mist',
-    mascot: 'gallery',
-    galleryId: 'wikipe-tan-classic',
-  },
-  {
-    name: t`Космос`,
-    accent: '#6366F1',
-    wallpaper: 'dots',
-    mascot: 'gallery',
-    galleryId: 'wikipe-tan-astronaut',
-  },
-  { name: t`Монохром`, accent: '#A1A1AA', wallpaper: 'none', mascot: 'none' },
+  { name: t`Фиолетовая ночь`, accent: '#A855F7', theme: 'dark', wallpaper: 'none' },
+  { name: t`Хвойный лес`, accent: '#22C55E', theme: 'dark', wallpaper: 'forest' },
+  { name: t`Океан`, accent: '#0EA5E9', theme: 'dark', wallpaper: 'mist' },
+  { name: t`Хеллоуин`, accent: '#F97316', theme: 'dark', wallpaper: 'dots' },
+  { name: t`Сакура`, accent: '#EC4899', theme: 'light', wallpaper: 'mist' },
+  { name: t`Космос`, accent: '#6366F1', theme: 'dark', wallpaper: 'dots' },
+  { name: t`Монохром`, accent: '#A1A1AA', theme: 'dark', wallpaper: 'none' },
+  { name: t`Мятный лёд`, accent: '#14B8A6', theme: 'light', wallpaper: 'none' },
 ];
 
 const THEMES: readonly { readonly value: ThemeMode; readonly label: string }[] = [
@@ -101,178 +56,6 @@ const THEMES: readonly { readonly value: ThemeMode; readonly label: string }[] =
   { value: 'light', label: t`Светлая` },
   { value: 'system', label: t`Как в системе` },
 ];
-
-/**
- * CSS variables that recolour whatever is inside — used to preview a preset
- * in its own accent without touching the rest of the page.
- */
-function accentScope(hex: string, theme: 'dark' | 'light'): CSSProperties {
-  const base = parseHex(hex);
-  if (base === null) return {};
-  const palette = accentPalette(base, theme);
-  return {
-    '--accent-rgb': toChannels(palette.accent),
-    '--accent-hover-rgb': toChannels(palette.hover),
-    '--accent-dim-rgb': toChannels(palette.dim),
-  } as CSSProperties;
-}
-
-/** A tick that stays visible on both pale and deep swatches. */
-function checkColor(hex: string): string {
-  const color = parseHex(hex);
-  return color !== null && luminance(color) > 0.36 ? '#18181B' : '#FFFFFF';
-}
-
-function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: readonly { readonly value: T; readonly label: string }[];
-  onChange: (value: T) => void;
-}): ReactElement {
-  return (
-    <div role="radiogroup" className="flex w-fit rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="radio"
-          aria-checked={option.value === value}
-          onClick={() => {
-            onChange(option.value);
-          }}
-          className={cn(
-            'h-7 rounded-md px-3 text-xs font-medium transition-colors duration-fast ease-out',
-            option.value === value ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** A selectable card with a live preview on top and a caption below. */
-function Tile({
-  selected,
-  label,
-  onSelect,
-  children,
-  previewStyle,
-}: {
-  selected: boolean;
-  label: string;
-  onSelect: () => void;
-  children: ReactNode;
-  previewStyle?: CSSProperties;
-}): ReactElement {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      onClick={onSelect}
-      className={cn(
-        'group flex flex-col overflow-hidden rounded-lg border text-left',
-        'transition-colors duration-fast ease-out',
-        selected ? 'border-accent' : 'border-border hover:border-text-dim',
-      )}
-    >
-      <div className="relative h-20 overflow-hidden bg-bg" style={previewStyle}>
-        {children}
-      </div>
-      <div className="flex items-center gap-1.5 border-t border-border bg-[rgb(var(--bg-rgb)/0.55)] px-2.5 py-1.5">
-        <span className={cn('truncate text-2xs font-medium', selected ? 'text-accent' : 'text-text')}>
-          {label}
-        </span>
-        {selected && <Check size={12} strokeWidth={2} className="ml-auto shrink-0 text-accent" />}
-      </div>
-    </button>
-  );
-}
-
-function Centered({ children }: { children: ReactNode }): ReactElement {
-  return <div className="flex h-full items-center justify-center text-text-dim">{children}</div>;
-}
-
-function MascotPreview({
-  kind,
-  custom,
-  figure,
-  galleryId = 'wikipe-tan-classic',
-}: {
-  kind: MascotKind;
-  custom: string | null;
-  figure: string | null;
-  galleryId?: string;
-}): ReactElement {
-  switch (kind) {
-    case 'gallery': {
-      const entry = galleryMascot(galleryId) ?? GALLERY[0];
-      return (
-        <Centered>
-          {entry !== undefined && (
-            <img src={galleryImageUrl(entry)} alt="" className="h-16 w-auto object-contain" />
-          )}
-        </Centered>
-      );
-    }
-    case 'none':
-      return (
-        <Centered>
-          <Ban size={18} strokeWidth={1.5} />
-        </Centered>
-      );
-    case 'skin':
-      return (
-        <Centered>
-          {figure === null ? (
-            <User size={20} strokeWidth={1.5} />
-          ) : (
-            <img src={figure} alt="" className="pixelated h-16 w-auto" />
-          )}
-        </Centered>
-      );
-    case 'custom':
-      return (
-        <Centered>
-          {custom === null ? (
-            <ImagePlus size={20} strokeWidth={1.5} />
-          ) : (
-            <img src={custom} alt="" className="h-16 w-auto object-contain" />
-          )}
-        </Centered>
-      );
-  }
-}
-
-function WallpaperPreview({ kind, custom }: { kind: WallpaperKind; custom: string | null }): ReactElement {
-  switch (kind) {
-    case 'none':
-      return (
-        <Centered>
-          <Ban size={18} strokeWidth={1.5} />
-        </Centered>
-      );
-    case 'mist':
-      return <MistWallpaper />;
-    case 'dots':
-      return <DotsWallpaper />;
-    case 'forest':
-      return <ForestWallpaper />;
-    case 'custom':
-      return custom === null ? (
-        <Centered>
-          <ImagePlus size={20} strokeWidth={1.5} />
-        </Centered>
-      ) : (
-        <img src={custom} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      );
-  }
-}
 
 const WALLPAPERS: readonly { readonly kind: WallpaperKind; readonly label: string }[] = [
   { kind: 'none', label: t`Без обоев` },
@@ -282,10 +65,94 @@ const WALLPAPERS: readonly { readonly kind: WallpaperKind; readonly label: strin
   { kind: 'custom', label: t`Своё изображение` },
 ];
 
-const MASCOTS: readonly { readonly kind: MascotKind; readonly label: string }[] = [
+type MascotChoice = 'none' | 'skin' | 'gallery' | 'custom';
+
+const MASCOT_CHOICES: readonly { readonly kind: MascotChoice; readonly label: string }[] = [
   { kind: 'none', label: t`Без талисмана` },
   { kind: 'skin', label: t`Мой скин` },
+  { kind: 'gallery', label: t`Из галереи` },
+  { kind: 'custom', label: t`Мои картинки` },
 ];
+
+/** The browser's colour picker that samples anywhere on screen. */
+interface EyeDropperApi {
+  open: () => Promise<{ sRGBHex: string }>;
+}
+type EyeDropperConstructor = new () => EyeDropperApi;
+
+function channels(hex: string, theme: 'dark' | 'light'): { a: string; b: string; c: string } {
+  const base = parseHex(hex);
+  if (base === null) return { a: hex, b: hex, c: hex };
+  const palette = accentPalette(base, theme);
+  return { a: toHex(palette.accent), b: toHex(palette.second), c: toHex(palette.third) };
+}
+
+/** A tiny launcher drawn in the preset's colours: rail, bar and two cards. */
+function PresetPreview({ preset }: { preset: Preset }): ReactElement {
+  const dark = preset.theme === 'dark';
+  const { a, b, c } = channels(preset.accent, preset.theme);
+  const pane = dark ? 'rgb(255 255 255 / 0.14)' : 'rgb(255 255 255 / 0.6)';
+  const scope = {
+    '--accent-rgb': (() => {
+      const rgb = parseHex(a);
+      return rgb === null ? undefined : `${String(rgb.r)} ${String(rgb.g)} ${String(rgb.b)}`;
+    })(),
+    '--text-dim-rgb': dark ? '178 173 192' : '96 92 108',
+    background: [
+      `radial-gradient(circle at 20% 25%, ${a}, transparent 55%)`,
+      `radial-gradient(circle at 85% 30%, ${b}, transparent 50%)`,
+      `radial-gradient(circle at 60% 110%, ${c}, transparent 55%)`,
+      dark ? '#120f1c' : '#f1eef8',
+    ].join(', '),
+  } as CSSProperties;
+  const box = (style: CSSProperties): ReactElement => (
+    <div
+      className="absolute rounded-[8px] border border-white/30"
+      style={{ background: pane, ...style }}
+    />
+  );
+  return (
+    <div className="relative aspect-video overflow-hidden" style={{ ...scope, borderRadius: 'calc(var(--radius) - 8px)' }}>
+      {preset.wallpaper === 'mist' && <MistWallpaper />}
+      {preset.wallpaper === 'dots' && <DotsWallpaper />}
+      {preset.wallpaper === 'forest' && <ForestWallpaper />}
+      {box({ left: '8%', top: '14%', bottom: '14%', width: '12%' })}
+      {box({ left: '25%', right: '8%', top: '14%', height: '26%' })}
+      {box({ left: '25%', width: '31%', top: '48%', bottom: '14%' })}
+      {box({ right: '8%', width: '31%', top: '48%', bottom: '14%' })}
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: ReactNode }): ReactElement {
+  return (
+    <section className="glass rounded-xl p-[18px]">
+      <h2 className="mb-3 text-[15px] font-semibold tracking-[-0.01em] text-text">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Label({ children, className }: { children: ReactNode; className?: string }): ReactElement {
+  return <p className={cn('mb-2 text-[13px] text-text-dim', className)}>{children}</p>;
+}
+
+function WallpaperPreview({ kind, custom }: { kind: WallpaperKind; custom: string | null }): ReactElement | null {
+  switch (kind) {
+    case 'none':
+      return null;
+    case 'mist':
+      return <MistWallpaper />;
+    case 'dots':
+      return <DotsWallpaper />;
+    case 'forest':
+      return <ForestWallpaper />;
+    case 'custom':
+      return custom === null ? null : (
+        <img src={custom} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      );
+  }
+}
 
 /** A picture button in the mascot grids, optionally removable. */
 function PictureChoice({
@@ -310,9 +177,11 @@ function PictureChoice({
         title={label}
         onClick={onSelect}
         className={cn(
-          'flex h-24 w-full items-end justify-center overflow-hidden rounded-lg border bg-bg pt-1',
-          'transition-colors duration-fast ease-out',
-          selected ? 'border-accent bg-accent/10' : 'border-border hover:border-text-dim',
+          'flex h-20 w-full items-end justify-center overflow-hidden rounded-[12px] bg-[var(--chip)] pt-1',
+          'transition-shadow duration-fast',
+          selected
+            ? 'shadow-[inset_0_0_0_1.5px_rgb(var(--accent-rgb)),0_0_0_3px_rgb(var(--accent-rgb)/0.25)]'
+            : 'shadow-rim hover:bg-[var(--hover)]',
         )}
       >
         <img src={src} alt={label} loading="lazy" className="h-full w-auto object-contain" />
@@ -323,11 +192,7 @@ function PictureChoice({
           aria-label={t`Удалить: ${label}`}
           title={t`Удалить`}
           onClick={onRemove}
-          className={cn(
-            'absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md',
-            'bg-surface/90 text-text-dim opacity-0 transition-opacity duration-fast ease-out',
-            'hover:text-danger focus-visible:opacity-100 group-hover:opacity-100',
-          )}
+          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-[var(--sheet)] text-text-dim opacity-0 transition-opacity duration-fast hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
         >
           <X size={13} strokeWidth={1.75} />
         </button>
@@ -351,19 +216,33 @@ export function AppearancePage(): ReactElement {
   const account = useAccounts(activeAccountOf);
 
   const theme = resolveTheme(themeMode);
-  const selectedGallery =
-    appearance.mascot === 'gallery' ? galleryMascot(appearance.mascotGalleryId) : undefined;
   const set = (next: Partial<Appearance>): void => {
     patchAppearance(next);
   };
 
   const accent = appearance.accent.toUpperCase();
+  const [hexDraft, setHexDraft] = useState(accent);
+  useEffect(() => {
+    setHexDraft(accent);
+  }, [accent]);
+  const colorInput = useRef<HTMLInputElement>(null);
+  const [demo, setDemo] = useState(62);
+  const [demoOn, setDemoOn] = useState(true);
+
   const lowContrast = useMemo(() => {
     const color = parseHex(accent);
     if (color === null) return false;
-    const background = theme === 'dark' ? { r: 10, g: 10, b: 11 } : { r: 255, g: 255, b: 255 };
+    const background = theme === 'dark' ? { r: 14, g: 11, b: 22 } : { r: 244, g: 241, b: 250 };
     return contrastRatio(color, background) < 2.2;
   }, [accent, theme]);
+
+  const [mascotTab, setMascotTab] = useState<MascotChoice>(
+    appearance.mascot === 'custom' || appearance.mascot === 'gallery' || appearance.mascot === 'skin'
+      ? appearance.mascot
+      : 'none',
+  );
+  const selectedGallery =
+    appearance.mascot === 'gallery' ? galleryMascot(appearance.mascotGalleryId) : undefined;
 
   const pickWallpaper = async (): Promise<void> => {
     if (await chooseWallpaper()) set({ wallpaper: 'custom' });
@@ -378,78 +257,92 @@ export function AppearancePage(): ReactElement {
     }
     void removeMascot(id);
   };
+  const chooseMascot = (kind: MascotChoice): void => {
+    setMascotTab(kind);
+    if (kind === 'none' || kind === 'skin') set({ mascot: kind });
+    else if (kind === 'gallery') set({ mascot: 'gallery' });
+    else if (mascots.length > 0) {
+      const keep = mascots.some((mascot) => mascot.id === appearance.mascotCustomId);
+      set({ mascot: 'custom', ...(keep ? {} : { mascotCustomId: mascots[0]?.id ?? '' }) });
+    }
+  };
+
+  const eyedrop = async (): Promise<void> => {
+    const Dropper = (window as unknown as { EyeDropper?: EyeDropperConstructor }).EyeDropper;
+    if (Dropper === undefined) {
+      colorInput.current?.click();
+      return;
+    }
+    try {
+      const picked = await new Dropper().open();
+      set({ accent: picked.sRGBHex.toUpperCase() });
+    } catch {
+      // Escape pressed: nothing chosen.
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="hairline-b flex h-14 shrink-0 items-center gap-3 px-6">
-        <h1 className="text-sm font-semibold text-text">{t`Оформление`}</h1>
-        <div className="ml-auto">
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<RotateCcw size={13} strokeWidth={1.5} />}
-            onClick={() => {
-              void patch({ appearance: DEFAULT_APPEARANCE });
-            }}
-          >
-            {t`Сбросить всё`}</Button>
-        </div>
-      </header>
+    <Page
+      title={t`Оформление`}
+      subtitle={t`изменения применяются сразу`}
+      actions={
+        <Button
+          variant="glass"
+          icon={<RotateCcw size={15} strokeWidth={1.8} />}
+          onClick={() => {
+            void patch({ theme: 'dark', appearance: DEFAULT_APPEARANCE });
+          }}
+        >
+          {t`Сбросить всё`}
+        </Button>
+      }
+    >
+      <p className="mb-3 mt-2 text-xs font-bold uppercase tracking-[0.06em] text-text-dim">{t`Темы`}</p>
+      <div role="radiogroup" className="grid grid-cols-4 gap-3.5">
+        {PRESETS.map((preset, index) => {
+          const selected =
+            preset.accent === accent &&
+            preset.wallpaper === appearance.wallpaper &&
+            preset.theme === theme;
+          const { a } = channels(preset.accent, preset.theme);
+          return (
+            <button
+              key={preset.name}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => {
+                void patch({
+                  theme: preset.theme,
+                  appearance: { ...appearance, accent: preset.accent, wallpaper: preset.wallpaper },
+                });
+              }}
+              className="glass stagger rounded-xl p-2 pb-3 text-left transition-shadow duration-slow"
+              style={
+                {
+                  '--i': index,
+                  ...(selected ? { boxShadow: `0 0 0 2px ${a}, 0 10px 30px -8px ${a}` } : {}),
+                } as CSSProperties
+              }
+            >
+              <PresetPreview preset={preset} />
+              <span className="flex items-center justify-between gap-1.5 px-1 pt-2.5">
+                <span className="truncate text-[13px] font-semibold text-text">{preset.name}</span>
+                <span className="shrink-0 text-[11px] text-text-faint">
+                  {preset.theme === 'dark' ? t`Тёмная` : t`Светлая`}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-6">
-        <div className="flex max-w-[820px] flex-col gap-3">
-          <Section title={t`Готовые темы`} description={t`Цвет, обои и талисман одним нажатием.`}>
-            <div role="radiogroup" className="grid grid-cols-4 gap-2">
-              {PRESETS.map((preset) => {
-                const selected =
-                  preset.accent === accent &&
-                  preset.wallpaper === appearance.wallpaper &&
-                  preset.mascot === appearance.mascot &&
-                  (preset.galleryId === undefined ||
-                    preset.galleryId === appearance.mascotGalleryId);
-                return (
-                  <Tile
-                    key={preset.name}
-                    label={preset.name}
-                    selected={selected}
-                    previewStyle={accentScope(preset.accent, theme)}
-                    onSelect={() => {
-                      set({
-                        accent: preset.accent,
-                        wallpaper: preset.wallpaper,
-                        mascot: preset.mascot,
-                        ...(preset.galleryId === undefined
-                          ? {}
-                          : { mascotGalleryId: preset.galleryId }),
-                      });
-                    }}
-                  >
-                    <WallpaperPreview kind={preset.wallpaper} custom={null} />
-                    {preset.wallpaper === 'none' && (
-                      <div className="absolute inset-0 bg-bg" />
-                    )}
-                    <div className="absolute left-2.5 top-2.5 flex flex-col gap-1">
-                      <span className="h-1.5 w-12 rounded-full bg-accent" />
-                      <span className="h-1.5 w-8 rounded-full bg-text-dim/40" />
-                    </div>
-                    {preset.mascot !== 'none' && (
-                      <div className="absolute bottom-1 right-2">
-                        <MascotPreview
-                          kind={preset.mascot}
-                          custom={null}
-                          figure={null}
-                          galleryId={preset.galleryId}
-                        />
-                      </div>
-                    )}
-                  </Tile>
-                );
-              })}
-            </div>
-          </Section>
-
-          <Section title={t`Тема и цвет`}>
+      <div className="mt-[22px] grid grid-cols-2 items-start gap-3.5">
+        <div className="flex flex-col gap-3.5">
+          <Card title={t`Режим`}>
             <Segmented
+              fullWidth
+              label={t`Режим`}
               value={themeMode}
               options={THEMES}
               onChange={(value) => {
@@ -457,326 +350,108 @@ export function AppearancePage(): ReactElement {
               }}
             />
 
-            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={t`Цвет акцента`}>
-              {ACCENTS.map((swatch) => (
-                <button
-                  key={swatch.hex}
-                  type="button"
-                  role="radio"
-                  aria-checked={swatch.hex === accent}
-                  title={swatch.name}
-                  onClick={() => {
-                    set({ accent: swatch.hex });
-                  }}
-                  className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full ring-offset-2 ring-offset-surface',
-                    'transition-transform duration-fast ease-out hover:scale-110',
-                    swatch.hex === accent && 'ring-2 ring-text',
-                  )}
-                  style={{ backgroundColor: swatch.hex }}
-                >
-                  {swatch.hex === accent && (
-                    <Check size={14} strokeWidth={2.5} style={{ color: checkColor(swatch.hex) }} />
-                  )}
-                </button>
-              ))}
+            <h2 className="mb-3 mt-5 text-[15px] font-semibold tracking-[-0.01em] text-text">
+              {t`Акцентный цвет`}
+            </h2>
+            <div role="radiogroup" aria-label={t`Цвет акцента`} className="flex flex-wrap gap-2.5">
+              {ACCENTS.map((swatch) => {
+                const on = swatch.hex === accent;
+                return (
+                  <button
+                    key={swatch.hex}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    title={swatch.name}
+                    onClick={() => {
+                      set({ accent: swatch.hex });
+                    }}
+                    className="h-7 w-7 rounded-full transition-[box-shadow,transform] duration-fast hover:scale-110"
+                    style={{
+                      background: swatch.hex,
+                      boxShadow: on
+                        ? `0 0 0 2px rgb(var(--bg-rgb)), 0 0 0 4px ${swatch.hex}, inset 0 1px 0 rgb(255 255 255 / 0.5)`
+                        : 'inset 0 1px 0 rgb(255 255 255 / 0.45), inset 0 0 0 1px rgb(255 255 255 / 0.18)',
+                    }}
+                  />
+                );
+              })}
+            </div>
 
-              <label
-                title={t`Свой цвет`}
-                className={cn(
-                  'relative flex h-8 cursor-pointer items-center gap-2 rounded-full border border-border px-2.5',
-                  'text-2xs text-text-dim transition-colors duration-fast ease-out hover:border-text-dim',
-                  !ACCENTS.some((swatch) => swatch.hex === accent) && 'border-accent text-text',
-                )}
+            <div className="relative mt-3.5 flex gap-2">
+              <input
+                value={hexDraft}
+                spellCheck={false}
+                aria-label={t`Свой цвет акцента`}
+                onChange={(event) => {
+                  let value = event.target.value.toUpperCase();
+                  if (!value.startsWith('#')) value = `#${value}`;
+                  value = value.slice(0, 7);
+                  setHexDraft(value);
+                  if (/^#[0-9A-F]{6}$/.test(value)) set({ accent: value });
+                }}
+                className="field h-[34px] min-w-0 flex-1 rounded-[12px] px-3 font-mono text-[13px] font-medium text-text outline-none focus:shadow-[inset_0_0_0_1px_var(--glass-border),0_0_0_3px_rgb(var(--accent-rgb)/0.35)]"
+              />
+              <Button
+                size="sm"
+                className="h-[34px] rounded-[12px]"
+                icon={<Pipette size={14} strokeWidth={1.8} />}
+                onClick={() => {
+                  void eyedrop();
+                }}
               >
-                <span className="h-4 w-4 rounded-full" style={{ backgroundColor: accent }} />
-                <Pipette size={13} strokeWidth={1.5} />
-                <span className="font-mono">{accent}</span>
-                <input
-                  type="color"
-                  value={accent.toLowerCase()}
-                  onChange={(event) => {
-                    set({ accent: event.target.value.toUpperCase() });
-                  }}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                  aria-label={t`Свой цвет акцента`}
-                />
-              </label>
+                {t`Пипетка`}
+              </Button>
+              <input
+                ref={colorInput}
+                type="color"
+                tabIndex={-1}
+                aria-hidden
+                value={accent.toLowerCase()}
+                onChange={(event) => {
+                  set({ accent: event.target.value.toUpperCase() });
+                }}
+                className="pointer-events-none absolute bottom-0 right-0 h-px w-px opacity-0"
+              />
             </div>
 
             {lowContrast && (
-              <p className="flex items-center gap-2 text-2xs text-danger">
-                <AlertTriangle size={13} strokeWidth={1.5} />
-                {t`Этот цвет плохо виден на `}{theme === 'dark' ? t`тёмном` : t`светлом`} {t` фоне.`}</p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="primary">
-                {t`Так выглядит кнопка`}</Button>
-              <span className="text-xs text-accent">{t`и ссылка`}</span>
-              <span className="h-1.5 w-24 overflow-hidden rounded-full bg-[rgb(var(--text-rgb)/0.07)]">
-                <span className="block h-full w-2/3 rounded-full bg-accent" />
-              </span>
-            </div>
-          </Section>
-
-          <Section
-            title={t`Обои`}
-            description={t`Рисуются за содержимым страниц. Свои картинки хранятся в папке данных лаунчера.`}
-          >
-            <div role="radiogroup" className="grid grid-cols-5 gap-2">
-              {WALLPAPERS.map((option) => (
-                <Tile
-                  key={option.kind}
-                  label={option.label}
-                  selected={appearance.wallpaper === option.kind}
-                  onSelect={() => {
-                    if (option.kind === 'custom' && wallpaperImage === null) void pickWallpaper();
-                    else set({ wallpaper: option.kind });
-                  }}
-                >
-                  <WallpaperPreview kind={option.kind} custom={wallpaperImage} />
-                </Tile>
-              ))}
-            </div>
-
-            {appearance.wallpaper === 'custom' && wallpaperImage !== null && (
-              <>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    icon={<ImagePlus size={13} strokeWidth={1.5} />}
-                    onClick={() => {
-                      void pickWallpaper();
-                    }}
-                  >
-                    {t`Заменить`}</Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    icon={<Trash2 size={13} strokeWidth={1.5} />}
-                    onClick={() => {
-                      set({ wallpaper: 'none' });
-                      void clearWallpaper();
-                    }}
-                  >
-                    {t`Убрать`}</Button>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Slider
-                    label={t`Затемнение`}
-                    value={appearance.wallpaperDim}
-                    min={0}
-                    max={90}
-                    step={5}
-                    valueLabel={`${String(appearance.wallpaperDim)}%`}
-                    onChange={(value) => {
-                      set({ wallpaperDim: value });
-                    }}
-                  />
-                  <Slider
-                    label={t`Размытие`}
-                    value={appearance.wallpaperBlur}
-                    min={0}
-                    max={24}
-                    step={1}
-                    valueLabel={`${String(appearance.wallpaperBlur)} px`}
-                    onChange={(value) => {
-                      set({ wallpaperBlur: value });
-                    }}
-                  />
-                </div>
-              </>
-            )}
-
-            <Switch
-              checked={appearance.glassPanels}
-              onChange={(value) => {
-                set({ glassPanels: value });
-              }}
-              label={t`Стеклянные панели`}
-              description={t`Панели пропускают сквозь себя фон и размывают его. Выключите, если текст читается тяжело.`}
-            />
-
-            <Slider
-              label={t`Прозрачность окна`}
-              value={appearance.windowTransparency}
-              min={0}
-              max={45}
-              step={5}
-              valueLabel={
-                appearance.windowTransparency === 0
-                  ? t`выключена`
-                  : `${String(appearance.windowTransparency)}%`
-              }
-              onChange={(value) => {
-                set({ windowTransparency: value });
-              }}
-            />
-            <p className="-mt-2 text-2xs leading-relaxed text-text-dim">
-              {t`Сквозь лаунчер видно рабочий стол. Система размывает то, что за окном.`}</p>
-          </Section>
-
-          <Section
-            title={t`Талисман в углу`}
-            description={t`Сидит в углу за содержимым и не мешает нажимать на кнопки.`}
-          >
-            <div role="radiogroup" className="grid grid-cols-6 gap-2">
-              {MASCOTS.map((option) => (
-                <Tile
-                  key={option.kind}
-                  label={option.label}
-                  selected={appearance.mascot === option.kind}
-                  onSelect={() => {
-                    set({ mascot: option.kind });
-                  }}
-                >
-                  <MascotPreview kind={option.kind} custom={null} figure={figure} />
-                </Tile>
-              ))}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="text-2xs font-medium text-text-dim">
-                {t`Аниме · картинки со свободной лицензией CC BY-SA с Wikimedia Commons`}</p>
-              <div role="radiogroup" className="grid grid-cols-9 gap-2">
-                {GALLERY.map((entry) => (
-                  <PictureChoice
-                    key={entry.id}
-                    src={galleryImageUrl(entry)}
-                    label={entry.name}
-                    selected={appearance.mascot === 'gallery' && appearance.mascotGalleryId === entry.id}
-                    onSelect={() => {
-                      set({ mascot: 'gallery', mascotGalleryId: entry.id });
-                    }}
-                  />
-                ))}
-              </div>
-              {selectedGallery !== undefined && (
-                <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs text-text-dim">
-                  <span className="text-text">{selectedGallery.name}</span>
-                  <span>{t`· автор: `}{selectedGallery.author} ·</span>
-                  <button
-                    type="button"
-                    className="text-accent underline-offset-2 hover:underline"
-                    onClick={() => {
-                      void openExternal(LICENSE_URLS[selectedGallery.license]);
-                    }}
-                  >
-                    {selectedGallery.license}
-                  </button>
-                  <span>·</span>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 text-accent underline-offset-2 hover:underline"
-                    onClick={() => {
-                      void openExternal(selectedGallery.source);
-                    }}
-                  >
-                    {t`оригинал на Wikimedia Commons`}<ExternalLink size={11} strokeWidth={1.5} />
-                  </button>
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="text-2xs font-medium text-text-dim">
-                {t`Мои картинки · хранятся только на этом компьютере`}</p>
-              <div role="radiogroup" className="grid grid-cols-9 gap-2">
-                {mascots.map((mascot, index) => (
-                  <PictureChoice
-                    key={mascot.id}
-                    src={mascot.url}
-                    label={t`Картинка ${String(index + 1)}`}
-                    selected={appearance.mascot === 'custom' && appearance.mascotCustomId === mascot.id}
-                    onSelect={() => {
-                      set({ mascot: 'custom', mascotCustomId: mascot.id });
-                    }}
-                    onRemove={() => {
-                      dropMascot(mascot.id);
-                    }}
-                  />
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    void pickMascot();
-                  }}
-                  className={cn(
-                    'flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed',
-                    'border-border text-2xs text-text-dim transition-colors duration-fast ease-out',
-                    'hover:border-accent hover:text-accent',
-                  )}
-                >
-                  <ImagePlus size={18} strokeWidth={1.5} />
-                  {t`Добавить`}</button>
-              </div>
-            </div>
-
-            {appearance.mascot === 'skin' && (account === null || account.skinUrl === null) && (
-              <p className="text-2xs text-text-dim">
-                {account === null
-                  ? t`Добавьте аккаунт Microsoft — у оффлайн-аккаунтов скина нет.`
-                  : t`У этого аккаунта нет скина (оффлайн-аккаунты его не имеют) — угол останется пустым.`}
+              <p className="mt-2.5 flex items-center gap-2 text-xs text-danger">
+                <AlertTriangle size={13} strokeWidth={1.8} />
+                {theme === 'dark'
+                  ? t`Этот цвет плохо виден на тёмном фоне.`
+                  : t`Этот цвет плохо виден на светлом фоне.`}
               </p>
             )}
 
-            {appearance.mascot !== 'none' && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Slider
-                    label={t`Размер`}
-                    value={appearance.mascotSize}
-                    min={64}
-                    max={320}
-                    step={8}
-                    valueLabel={`${String(appearance.mascotSize)} px`}
-                    onChange={(value) => {
-                      set({ mascotSize: value });
-                    }}
-                  />
-                  <Slider
-                    label={t`Непрозрачность`}
-                    value={appearance.mascotOpacity}
-                    min={10}
-                    max={100}
-                    step={5}
-                    valueLabel={`${String(appearance.mascotOpacity)}%`}
-                    onChange={(value) => {
-                      set({ mascotOpacity: value });
-                    }}
-                  />
-                </div>
-                <Segmented
-                  value={appearance.mascotSide}
-                  options={[
-                    { value: 'left', label: t`Слева` },
-                    { value: 'right', label: t`Справа` },
-                  ]}
-                  onChange={(value) => {
-                    set({ mascotSide: value });
-                  }}
-                />
-              </>
-            )}
-          </Section>
-
-          <Section title={t`Интерфейс`}>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-text-dim">{t`Язык`}</span>
-              <Segmented
-                value={languageSetting()}
-                options={[
-                  { value: 'ru', label: 'Русский' },
-                  { value: 'en', label: 'English' },
-                  { value: 'system', label: t`Как в системе` },
-                ]}
-                onChange={(value) => {
-                  setLanguage(value);
-                }}
-              />
+            <div className="mt-[18px] rounded-[14px] bg-[var(--chip)] p-3.5">
+              <p className="mb-2 text-[11.5px] text-text-faint">{t`Предпросмотр элементов`}</p>
+              <Slider value={demo} min={0} max={100} onChange={setDemo} />
+              <div className="mt-2.5 flex items-center gap-2.5">
+                <Switch checked={demoOn} onChange={setDemoOn} />
+                <Button variant="primary" size="sm">
+                  {t`Кнопка`}
+                </Button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+          </Card>
+
+          <Card title={t`Интерфейс`}>
+            <Label>{t`Язык`}</Label>
+            <Segmented
+              fullWidth
+              label={t`Язык`}
+              value={languageSetting()}
+              options={[
+                { value: 'ru', label: 'Русский' },
+                { value: 'en', label: 'English' },
+                { value: 'system', label: t`Как в системе` },
+              ]}
+              onChange={(value) => {
+                setLanguage(value);
+              }}
+            />
+            <div className="mt-4 flex flex-col gap-3">
               <Slider
                 label={t`Масштаб`}
                 value={appearance.uiScale}
@@ -792,7 +467,7 @@ export function AppearancePage(): ReactElement {
                 label={t`Скругление углов`}
                 value={appearance.radius}
                 min={0}
-                max={16}
+                max={RADIUS_MAX}
                 step={1}
                 valueLabel={appearance.radius === 0 ? t`острые` : `${String(appearance.radius)} px`}
                 onChange={(value) => {
@@ -800,17 +475,303 @@ export function AppearancePage(): ReactElement {
                 }}
               />
             </div>
-            <Switch
-              checked={appearance.reduceMotion}
-              onChange={(value) => {
-                set({ reduceMotion: value });
-              }}
-              label={t`Меньше анимаций`}
-              description={t`Отключает плавные переходы и появление элементов.`}
-            />
-          </Section>
+            <div className="mt-3.5">
+              <Switch
+                checked={appearance.reduceMotion}
+                onChange={(value) => {
+                  set({ reduceMotion: value });
+                }}
+                label={t`Меньше движения`}
+                description={t`Отключает пружины, наклон карточек и фоновую анимацию`}
+              />
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-3.5">
+          <Card title={t`Фон и стекло`}>
+            <div role="radiogroup" className="grid grid-cols-5 gap-2">
+              {WALLPAPERS.map((option) => {
+                const selected = appearance.wallpaper === option.kind;
+                return (
+                  <button
+                    key={option.kind}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                      if (option.kind === 'custom' && wallpaperImage === null) void pickWallpaper();
+                      else set({ wallpaper: option.kind });
+                    }}
+                    className="flex flex-col gap-1.5 text-center text-[11px] text-text-dim"
+                  >
+                    <span
+                      className={cn(
+                        'relative block aspect-square overflow-hidden rounded-[12px] transition-shadow duration-fast',
+                        theme === 'dark' ? 'bg-[#15121f]' : 'bg-[#f3f0f9]',
+                        option.kind === 'custom' &&
+                          wallpaperImage === null &&
+                          '[background:repeating-linear-gradient(135deg,var(--chip)_0_6px,transparent_6px_12px)]',
+                      )}
+                      style={{
+                        boxShadow: selected
+                          ? 'inset 0 0 0 1.5px rgb(var(--accent-rgb)), 0 0 0 3px rgb(var(--accent-rgb) / 0.25)'
+                          : 'inset 0 0 0 1px var(--glass-border)',
+                      }}
+                    >
+                      <WallpaperPreview kind={option.kind} custom={wallpaperImage} />
+                      {option.kind === 'custom' && wallpaperImage === null && (
+                        <ImagePlus
+                          size={18}
+                          strokeWidth={1.6}
+                          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                        />
+                      )}
+                    </span>
+                    <span className="leading-tight">{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {appearance.wallpaper === 'custom' && wallpaperImage !== null && (
+              <div className="mt-3.5 flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    icon={<ImagePlus size={13} strokeWidth={1.6} />}
+                    onClick={() => {
+                      void pickWallpaper();
+                    }}
+                  >
+                    {t`Заменить`}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={<Trash2 size={13} strokeWidth={1.6} />}
+                    onClick={() => {
+                      set({ wallpaper: 'none' });
+                      void clearWallpaper();
+                    }}
+                  >
+                    {t`Убрать`}
+                  </Button>
+                </div>
+                <Slider
+                  label={t`Затемнение`}
+                  value={appearance.wallpaperDim}
+                  min={0}
+                  max={90}
+                  step={5}
+                  valueLabel={`${String(appearance.wallpaperDim)}%`}
+                  onChange={(value) => {
+                    set({ wallpaperDim: value });
+                  }}
+                />
+                <Slider
+                  label={t`Размытие`}
+                  value={appearance.wallpaperBlur}
+                  min={0}
+                  max={24}
+                  step={1}
+                  valueLabel={`${String(appearance.wallpaperBlur)} px`}
+                  onChange={(value) => {
+                    set({ wallpaperBlur: value });
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="mt-[18px]">
+              <Switch
+                checked={appearance.glassPanels}
+                onChange={(value) => {
+                  set({ glassPanels: value });
+                }}
+                label={t`Эффект стекла`}
+              />
+            </div>
+            <div className="mt-3.5">
+              <Slider
+                label={t`Прозрачность окна`}
+                value={appearance.windowTransparency}
+                min={0}
+                max={45}
+                step={5}
+                valueLabel={
+                  appearance.windowTransparency === 0
+                    ? t`выключена`
+                    : `${String(appearance.windowTransparency)}%`
+                }
+                onChange={(value) => {
+                  set({ windowTransparency: value });
+                }}
+              />
+            </div>
+          </Card>
+
+          <Card title={t`Талисман`}>
+            <div role="radiogroup" className="grid grid-cols-2 gap-2">
+              {MASCOT_CHOICES.map((choice) => {
+                const selected = mascotTab === choice.kind;
+                return (
+                  <button
+                    key={choice.kind}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                      chooseMascot(choice.kind);
+                    }}
+                    className="h-[38px] rounded-[12px] bg-[var(--chip)] text-[12.5px] font-medium text-text transition-shadow duration-fast"
+                    style={{
+                      boxShadow: selected
+                        ? 'inset 0 0 0 1.5px rgb(var(--accent-rgb)), 0 0 0 3px rgb(var(--accent-rgb) / 0.25)'
+                        : 'inset 0 0 0 1px var(--glass-border)',
+                    }}
+                  >
+                    {choice.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {mascotTab === 'skin' && (
+              <div className="mt-3 flex items-center gap-3 text-xs text-text-faint">
+                <span className="grid h-20 w-14 shrink-0 place-items-center rounded-[12px] bg-[var(--chip)]">
+                  {figure === null ? (
+                    <User size={20} strokeWidth={1.5} />
+                  ) : (
+                    <img src={figure} alt="" className="pixelated h-[72px] w-auto" />
+                  )}
+                </span>
+                {account === null || account.skinUrl === null
+                  ? t`У оффлайн-аккаунтов скина нет — угол останется пустым. Войдите через Microsoft.`
+                  : t`Скин активного аккаунта во весь рост.`}
+              </div>
+            )}
+
+            {mascotTab === 'gallery' && (
+              <div className="mt-3">
+                <div role="radiogroup" className="grid grid-cols-5 gap-2">
+                  {GALLERY.map((entry) => (
+                    <PictureChoice
+                      key={entry.id}
+                      src={galleryImageUrl(entry)}
+                      label={entry.name}
+                      selected={appearance.mascot === 'gallery' && appearance.mascotGalleryId === entry.id}
+                      onSelect={() => {
+                        set({ mascot: 'gallery', mascotGalleryId: entry.id });
+                      }}
+                    />
+                  ))}
+                </div>
+                {selectedGallery !== undefined && (
+                  <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-text-faint">
+                    <span className="text-text-dim">{selectedGallery.name}</span>
+                    <span>{t`· автор: `}{selectedGallery.author} ·</span>
+                    <button
+                      type="button"
+                      className="text-accent underline-offset-2 hover:underline"
+                      onClick={() => {
+                        void openExternal(LICENSE_URLS[selectedGallery.license]);
+                      }}
+                    >
+                      {selectedGallery.license}
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-accent underline-offset-2 hover:underline"
+                      onClick={() => {
+                        void openExternal(selectedGallery.source);
+                      }}
+                    >
+                      {t`оригинал на Wikimedia Commons`}
+                      <ExternalLink size={11} strokeWidth={1.5} />
+                    </button>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {mascotTab === 'custom' && (
+              <div className="mt-3">
+                <div role="radiogroup" className="grid grid-cols-5 gap-2">
+                  {mascots.map((mascot, index) => (
+                    <PictureChoice
+                      key={mascot.id}
+                      src={mascot.url}
+                      label={t`Картинка ${String(index + 1)}`}
+                      selected={appearance.mascot === 'custom' && appearance.mascotCustomId === mascot.id}
+                      onSelect={() => {
+                        set({ mascot: 'custom', mascotCustomId: mascot.id });
+                      }}
+                      onRemove={() => {
+                        dropMascot(mascot.id);
+                      }}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void pickMascot();
+                    }}
+                    className="flex h-20 flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-[var(--glass-border)] text-[11px] text-text-dim transition-colors duration-fast hover:border-accent hover:text-accent"
+                  >
+                    <ImagePlus size={18} strokeWidth={1.5} />
+                    {t`Добавить`}
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-text-faint">{t`Хранятся только на этом компьютере.`}</p>
+              </div>
+            )}
+
+            {mascotTab !== 'none' && (
+              <div className="mt-4 flex flex-col gap-3">
+                <Slider
+                  label={t`Размер`}
+                  value={appearance.mascotSize}
+                  min={64}
+                  max={320}
+                  step={8}
+                  valueLabel={`${String(appearance.mascotSize)} px`}
+                  onChange={(value) => {
+                    set({ mascotSize: value });
+                  }}
+                />
+                <Slider
+                  label={t`Непрозрачность`}
+                  value={appearance.mascotOpacity}
+                  min={10}
+                  max={100}
+                  step={5}
+                  valueLabel={`${String(appearance.mascotOpacity)}%`}
+                  onChange={(value) => {
+                    set({ mascotOpacity: value });
+                  }}
+                />
+                <div>
+                  <Label>{t`Положение`}</Label>
+                  <Segmented
+                    fullWidth
+                    label={t`Положение`}
+                    value={appearance.mascotSide}
+                    options={[
+                      { value: 'left', label: t`Слева` },
+                      { value: 'right', label: t`Справа` },
+                    ]}
+                    onChange={(value) => {
+                      set({ mascotSide: value });
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

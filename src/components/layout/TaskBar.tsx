@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/Progress';
 import { formatBytes, formatSpeed } from '@/lib/format';
 import type { Task } from '@/types/task';
 import { activeTasks, overallProgress, useTasks } from '@/store/useTasks';
+import { useLaunch } from '@/store/useLaunch';
 import { useUI } from '@/store/useUI';
 import { t } from '@/lib/i18n';
 
@@ -50,7 +51,13 @@ function TaskRow({ task }: { task: Task }): ReactElement {
 
 /** Global bottom panel: everything currently downloading or installing. */
 export function TaskBar(): ReactElement | null {
-  const tasks = useTasks((state) => state.tasks);
+  const allTasks = useTasks((state) => state.tasks);
+  // The launch card in the corner already shows its own preparation.
+  const launching = useLaunch((state) => (state.visible ? state.instanceId : null));
+  const tasks = useMemo(
+    () => (launching === null ? allTasks : allTasks.filter((task) => task.instanceId !== launching)),
+    [allTasks, launching],
+  );
   const active = useMemo(() => activeTasks(tasks), [tasks]);
   const overall = useMemo(() => overallProgress(tasks), [tasks]);
   const expanded = useUI((state) => state.taskbarExpanded);
@@ -62,15 +69,15 @@ export function TaskBar(): ReactElement | null {
     active.length === 1 ? (active[0]?.title ?? '') : t`Активных задач: ${String(active.length)}`;
 
   return (
-    <div className="glass z-20 mx-2.5 mb-2.5 shrink-0 overflow-hidden rounded-2xl">
+    <div className="glass z-20 mb-3.5 ml-2 mr-4 shrink-0 animate-sheet-in overflow-hidden rounded-[22px]">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={expanded}
-        className="flex h-11 w-full items-center gap-3 px-4 text-left transition-colors duration-fast ease-out hover:bg-[rgb(var(--text-rgb)/0.06)]"
+        className="flex h-12 w-full items-center gap-3 px-[18px] text-left transition-colors duration-fast ease-out hover:bg-[var(--hover)]"
       >
         <Loader2 size={14} strokeWidth={1.5} className="shrink-0 animate-spin-slow text-accent" />
-        <span className="shrink-0 truncate text-xs text-text">{headline}</span>
+        <span className="shrink-0 truncate text-[13px] font-semibold text-text">{headline}</span>
         <Progress value={overall} size="xs" className="mx-1 max-w-[280px] flex-1" />
         <span className="ml-auto shrink-0 font-mono text-2xs tabular-nums text-text-dim">
           {overall === null ? '—' : `${String(Math.round(overall * 100))}%`}

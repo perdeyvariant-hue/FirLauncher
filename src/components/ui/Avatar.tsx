@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { cn } from '@/lib/cn';
 import { initialsOf } from '@/lib/format';
+import { artGradient, artIndexOf } from '@/lib/art';
 
 export interface AvatarProps {
   name: string;
@@ -14,16 +15,8 @@ export interface AvatarProps {
   className?: string;
 }
 
-/** Deterministic hue so two accounts never look alike without a skin. */
-function hueOf(name: string): number {
-  let hash = 0;
-  for (let i = 0; i < name.length; i += 1) {
-    hash = (hash * 31 + name.charCodeAt(i)) % 360;
-  }
-  return hash;
-}
-
 export function Avatar({ name, src, size = 32, className }: AvatarProps): ReactElement {
+  const radius = Math.round(size * 0.27);
   if (src !== null) {
     return (
       <img
@@ -31,27 +24,27 @@ export function Avatar({ name, src, size = 32, className }: AvatarProps): ReactE
         alt={name}
         width={size}
         height={size}
-        className={cn('shrink-0 rounded-md', className)}
+        className={cn('shrink-0', className)}
         // An 8x8 head scaled up must stay crisp, not blurred.
-        style={{ imageRendering: 'pixelated' }}
+        style={{ imageRendering: 'pixelated', borderRadius: radius }}
       />
     );
   }
 
-  const hue = hueOf(name);
   return (
     <span
       aria-hidden
       className={cn(
-        'flex shrink-0 select-none items-center justify-center rounded-md font-medium',
+        'flex shrink-0 select-none items-center justify-center font-mono font-bold text-white',
+        'shadow-[inset_0_-4px_0_rgb(0_0_0/0.18),inset_0_1px_0_rgb(255_255_255/0.35)]',
         className,
       )}
       style={{
         width: size,
         height: size,
-        fontSize: Math.round(size * 0.38),
-        background: `hsl(${String(hue)} 18% 22%)`,
-        color: `hsl(${String(hue)} 45% 78%)`,
+        borderRadius: radius,
+        fontSize: Math.round(size * 0.32),
+        background: artGradient(artIndexOf(name)),
       }}
     >
       {initialsOf(name)}

@@ -87,6 +87,10 @@ pub struct InstanceMeta {
     pub favorite: bool,
     #[serde(default)]
     pub java: InstanceJava,
+    /// Which cover gradient to draw behind the initials; `None` lets the id
+    /// decide. Only the interface reads it.
+    #[serde(default)]
+    pub color: Option<u8>,
 }
 
 impl InstanceMeta {
@@ -229,6 +233,8 @@ pub struct CreateInstanceInput {
     pub loader: ModLoader,
     pub loader_version: Option<String>,
     pub icon_path: Option<String>,
+    #[serde(default)]
+    pub color: Option<u8>,
 }
 
 pub async fn create(paths: &Paths, input: CreateInstanceInput) -> Result<InstanceMeta> {
@@ -261,6 +267,7 @@ pub async fn create(paths: &Paths, input: CreateInstanceInput) -> Result<Instanc
         group: None,
         favorite: false,
         java: InstanceJava::default(),
+        color: input.color,
     };
 
     write_meta(paths, &meta).await?;
@@ -432,6 +439,7 @@ mod tests {
                 loader: ModLoader::Vanilla,
                 loader_version: None,
                 icon_path: None,
+                color: None,
             },
         )
         .await
@@ -461,6 +469,7 @@ mod tests {
                 loader: ModLoader::Vanilla,
                 loader_version: None,
                 icon_path: None,
+                color: None,
             },
         )
         .await

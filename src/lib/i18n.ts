@@ -123,3 +123,24 @@ export function translate(message: string): string {
   }
   return message;
 }
+
+/**
+ * "1 сборка / 3 сборки / 9 сборок", or "1 instance / 9 instances". The
+ * number is included.
+ */
+export function plural(
+  count: number,
+  ru: readonly [one: string, few: string, many: string],
+  en: readonly [one: string, other: string],
+): string {
+  if (language !== 'ru') return `${String(count)} ${count === 1 ? en[0] : en[1]}`;
+  const last = count % 10;
+  const lastTwo = count % 100;
+  const form =
+    last === 1 && lastTwo !== 11
+      ? ru[0]
+      : last >= 2 && last <= 4 && (lastTwo < 10 || lastTwo >= 20)
+        ? ru[1]
+        : ru[2];
+  return `${String(count)} ${form}`;
+}

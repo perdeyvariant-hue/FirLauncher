@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { ArrowLeft, PackageSearch, Search } from 'lucide-react';
-import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBlock } from '@/components/ui/ErrorBlock';
-import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
+import { Segmented } from '@/components/ui/Segmented';
 import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -166,35 +165,31 @@ export function ModpacksPage(): ReactElement {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="hairline-b flex h-14 shrink-0 items-center gap-2 px-6">
-        <IconButton label={t`Назад`} icon={<ArrowLeft size={16} strokeWidth={1.5} />} onClick={back} />
-        <h1 className="text-sm font-semibold text-text">{t`Модпаки`}</h1>
-        <span className="text-xs text-text-dim">{t`каждый ставится отдельной сборкой`}</span>
+      <header className="flex shrink-0 items-center gap-3.5 pb-2 pl-2 pr-4 pt-1.5">
+        <button
+          type="button"
+          aria-label={t`Назад`}
+          title={t`Назад`}
+          onClick={back}
+          className="glass grid h-9 w-9 shrink-0 place-items-center rounded-full text-text-dim transition-[color,transform] duration-fast hover:text-text active:scale-90"
+        >
+          <ArrowLeft size={16} strokeWidth={2} />
+        </button>
+        <h1 className="text-[34px] font-bold leading-[1.1] tracking-[-0.025em] text-text">{t`Модпаки`}</h1>
+        <span className="pt-1 text-sm font-medium text-text-dim">{t`каждый ставится отдельной сборкой`}</span>
 
         {providers.length > 1 && (
-          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
-            {providers.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={id === provider}
-                onClick={() => {
-                  setProvider(id);
-                }}
-                className={cn(
-                  'h-7 rounded-md px-3 text-xs font-medium transition-colors duration-fast ease-out',
-                  id === provider ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
-                )}
-              >
-                {PROVIDER_LABELS[id]}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            className="ml-auto"
+            label={t`Источник`}
+            value={provider}
+            options={providers.map((id) => ({ value: id, label: PROVIDER_LABELS[id] }))}
+            onChange={setProvider}
+          />
         )}
       </header>
 
-      <div className="flex items-center gap-2 px-6 py-3">
+      <div className="flex items-center gap-2 pb-3 pl-5 pr-7 pt-2">
         <div className="min-w-0 flex-1">
           <Input
             placeholder={t`Поиск модпаков на ${PROVIDER_LABELS[provider]}`}
@@ -211,7 +206,7 @@ export function ModpacksPage(): ReactElement {
         <Select compact className="w-[190px]" value={sort} options={SORT_OPTIONS} onChange={setSort} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-6 pl-5 pr-7">
         {error !== null ? (
           <ErrorBlock
             error={error}

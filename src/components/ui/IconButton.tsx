@@ -30,8 +30,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         tone === 'danger'
           ? 'text-text-dim hover:bg-danger/12 hover:text-danger'
           : active
-            ? 'bg-accent/18 text-accent shadow-rim'
-            : 'text-text-dim hover:bg-[rgb(var(--text-rgb)/0.08)] hover:text-text',
+            ? 'bg-accent/20 text-text shadow-rim'
+            : 'text-text-dim hover:bg-[var(--hover)] hover:text-text',
         className,
       )}
       {...rest}

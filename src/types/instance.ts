@@ -50,6 +50,8 @@ export interface Instance {
   readonly favorite: boolean;
   readonly java: InstanceJavaSettings;
   readonly status: InstanceStatus;
+  /** Cover gradient index (see lib/art.ts); null lets the id decide. */
+  readonly color: number | null;
 }
 
 export interface InstalledMod {

@@ -6,105 +6,126 @@
  * `rgb(var(--x-rgb) / <alpha-value>)`, which is what makes `bg-accent/10`
  * work with themeable variables; hand-written CSS uses the plain `--x`.
  *
- * Dark is the default. The light theme only redefines the neutral ramp — the
- * purple accent stays put so "accent = interactive" holds in both themes.
+ * The neutrals lean violet: the window is a tinted dark (or a tinted white)
+ * that the accent pools bloom through, not a flat grey.
  *
- * The accent trio, `--on-accent-rgb` and `--radius` are overridden inline on
- * <html> when the user personalises the launcher (see lib/appearance.ts).
+ * The accent trio (accent, accent-2, accent-3), `--on-accent-rgb` and
+ * `--radius` are overridden inline on <html> when the user personalises the
+ * launcher (see lib/appearance.ts). accent-2 and accent-3 are the accent's
+ * neighbours on the colour wheel: gradients run between them.
  */
 
 :root,
 :root[data-theme='dark'] {
-  --bg-rgb: 8 9 13;
-  --surface-rgb: 20 21 27;
-  --surface-2-rgb: 30 32 40;
-  --border-rgb: 44 46 56;
-  --text-rgb: 244 244 245;
-  --text-dim-rgb: 141 143 156;
-  --accent-rgb: 139 92 246;
-  --accent-hover-rgb: 167 139 250;
-  --accent-dim-rgb: 109 40 217;
-  --danger-rgb: 239 68 68;
+  --bg-rgb: 14 11 22;
+  --surface-rgb: 30 26 42;
+  --surface-2-rgb: 38 34 52;
+  --border-rgb: 58 54 72;
+  --text-rgb: 246 243 255;
+  --text-dim-rgb: 178 173 192;
+  --text-faint-rgb: 128 123 142;
+  --accent-rgb: 168 85 247;
+  --accent-2-rgb: 99 102 241;
+  --accent-3-rgb: 236 72 153;
+  --accent-hover-rgb: 192 132 252;
+  --accent-dim-rgb: 126 34 206;
+  --danger-rgb: 248 113 113;
+  --success-rgb: 74 222 128;
   --on-accent-rgb: 255 255 255;
 
-  --overlay: rgb(6 7 10 / 0.5);
-  --shadow-panel: 0 18px 48px rgb(0 0 0 / 0.55);
+  --overlay: rgb(5 3 10 / 0.35);
 
   /*
-   * Glass. Dark glass is a dark scrim with a light sheen laid over it: the
-   * scrim keeps text readable whatever is behind, the sheen is the light
-   * sitting on the surface.
+   * Glass: light lying on a surface. A white sheen, brighter at the top, over
+   * whatever is behind; a hairline rim; a soft shadow under it.
    */
-  --glass-layer: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.08),
-      rgb(255 255 255 / 0.028) 42%,
-      rgb(255 255 255 / 0.05)
-    ),
-    rgb(10 11 16 / 0.72);
-  --glass-layer-strong: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.13),
-      rgb(255 255 255 / 0.05) 42%,
-      rgb(255 255 255 / 0.08)
-    ),
-    rgb(10 11 16 / 0.74);
-  --glass-layer-quiet: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.07),
-      rgb(255 255 255 / 0.025)
-    ),
-    rgb(12 13 19 / 0.52);
-  /* The rim: a bright hairline on top, a dimmer one all round. */
-  --glass-rim: inset 0 1px 0 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(255 255 255 / 0.05);
-  --glass-cast: 0 16px 40px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.3);
-  --glass-cast-sm: 0 6px 18px rgb(0 0 0 / 0.35);
-  /* What a translucent surface falls back to when glass is off. */
-  --glass-solid: rgb(var(--surface-rgb));
-  --glass-solid-quiet: rgb(var(--surface-2-rgb));
+  --glass: linear-gradient(180deg, rgb(255 255 255 / 0.168), rgb(255 255 255 / 0.098));
+  --glass-border: rgb(255 255 255 / 0.16);
+  --glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 10px 30px rgb(0 0 0 / 0.28);
+  --glass-blur: blur(30px) saturate(180%);
+  /* What opens on top of everything: menus, dialogs, toasts. */
+  --sheet: rgb(30 26 42 / 0.8);
+  --sheet-blur: blur(40px) saturate(180%);
+  --sheet-shadow: 0 20px 50px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.15);
+  /* Small fills inside glass. */
+  --field: rgb(0 0 0 / 0.22);
+  --chip: rgb(255 255 255 / 0.08);
+  --track: rgb(255 255 255 / 0.14);
+  --hover: rgb(255 255 255 / 0.08);
+  --sep: rgb(255 255 255 / 0.07);
+  /* The raised thumb of a segmented control and the rail's highlight. */
+  --seg: linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.1));
+  --seg-border: rgb(255 255 255 / 0.18);
+  /* How strongly the accent pools show behind everything. */
+  --mesh-opacity: 0.9;
+  --window-edge: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
 :root[data-theme='light'] {
-  --bg-rgb: 246 246 249;
+  --bg-rgb: 244 241 250;
   --surface-rgb: 255 255 255;
-  --surface-2-rgb: 240 240 245;
-  --border-rgb: 224 224 232;
-  --text-rgb: 24 24 27;
-  --text-dim-rgb: 110 110 122;
-  --accent-rgb: 124 58 237;
-  --accent-hover-rgb: 109 40 217;
-  --accent-dim-rgb: 167 139 250;
+  --surface-2-rgb: 250 248 255;
+  --border-rgb: 224 220 234;
+  --text-rgb: 22 19 31;
+  --text-dim-rgb: 96 92 108;
+  --text-faint-rgb: 137 134 148;
+  --accent-rgb: 147 51 234;
+  --accent-2-rgb: 79 70 229;
+  --accent-3-rgb: 219 39 119;
+  --accent-hover-rgb: 126 34 206;
+  --accent-dim-rgb: 192 132 252;
   --danger-rgb: 220 38 38;
+  --success-rgb: 22 163 74;
   --on-accent-rgb: 255 255 255;
 
-  --overlay: rgb(24 24 27 / 0.22);
-  --shadow-panel: 0 18px 48px rgb(24 24 27 / 0.16);
+  --overlay: rgb(22 19 31 / 0.18);
 
-  /* Light glass is frosted white: the sheen is stronger, the scrim lighter. */
-  --glass-layer: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.86),
-      rgb(255 255 255 / 0.66) 45%,
-      rgb(255 255 255 / 0.76)
-    ),
-    rgb(255 255 255 / 0.34);
-  --glass-layer-strong: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.94),
-      rgb(255 255 255 / 0.8)
-    ),
-    rgb(255 255 255 / 0.5);
-  --glass-layer-quiet: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.7),
-      rgb(255 255 255 / 0.5)
-    ),
-    rgb(255 255 255 / 0.2);
-  --glass-rim: inset 0 1px 0 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(24 24 27 / 0.07);
-  --glass-cast: 0 16px 40px rgb(24 24 27 / 0.14), 0 2px 8px rgb(24 24 27 / 0.06);
-  --glass-cast-sm: 0 6px 18px rgb(24 24 27 / 0.1);
-  --glass-solid: rgb(var(--surface-rgb));
-  --glass-solid-quiet: rgb(var(--surface-2-rgb));
+  --glass: linear-gradient(180deg, rgb(255 255 255 / 0.69), rgb(255 255 255 / 0.54));
+  --glass-border: rgb(255 255 255 / 0.75);
+  --glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 0.5px rgb(30 20 60 / 0.08),
+    0 8px 24px rgb(60 40 120 / 0.09);
+  --sheet: rgb(250 248 255 / 0.88);
+  --sheet-shadow: 0 20px 50px rgb(40 30 80 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --field: rgb(255 255 255 / 0.7);
+  --chip: rgb(22 19 31 / 0.06);
+  --track: rgb(22 19 31 / 0.12);
+  --hover: rgb(22 19 31 / 0.05);
+  --sep: rgb(22 19 31 / 0.07);
+  --seg: linear-gradient(180deg, #fff, rgb(255 255 255 / 0.86));
+  --seg-border: rgb(22 19 31 / 0.08);
+  --mesh-opacity: 0.5;
+  --window-edge: 0 0 0 1px rgb(22 19 31 / 0.1);
+}
+
+/* "Эффект стекла" off, or the system asked for less transparency: flat cards. */
+:root[data-glass='off'],
+:root[data-glass='off'][data-theme='dark'] {
+  --glass: #1d1a29;
+  --glass-border: rgb(255 255 255 / 0.07);
+  --glass-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+  --glass-blur: none;
+  --sheet: #221e30;
+  --sheet-blur: none;
+  --mesh-opacity: 0.35;
+}
+
+:root[data-glass='off'][data-theme='light'] {
+  --glass: #ffffff;
+  --glass-border: rgb(22 19 31 / 0.08);
+  --glass-shadow: 0 4px 14px rgb(40 30 80 / 0.08);
+  --sheet: #ffffff;
+  --mesh-opacity: 0.25;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: rgb(var(--surface-rgb));
+    --glass-blur: none;
+    --sheet: rgb(var(--surface-rgb));
+    --sheet-blur: none;
+    /* And the window itself stops being see-through. */
+    --window-alpha: 1;
+  }
 }
 
 :root {
@@ -114,40 +135,46 @@
   --border: rgb(var(--border-rgb));
   --text: rgb(var(--text-rgb));
   --text-dim: rgb(var(--text-dim-rgb));
+  --text-faint: rgb(var(--text-faint-rgb));
   --accent: rgb(var(--accent-rgb));
+  --accent-2: rgb(var(--accent-2-rgb));
+  --accent-3: rgb(var(--accent-3-rgb));
   --accent-hover: rgb(var(--accent-hover-rgb));
   --accent-dim: rgb(var(--accent-dim-rgb));
   --danger: rgb(var(--danger-rgb));
+  --success: rgb(var(--success-rgb));
+
+  /* Filled controls run from the cooler neighbour to the accent. */
+  --accent-gradient: linear-gradient(135deg, var(--accent-2), var(--accent));
+  /* The three accents round the wheel, for the lit, turning surfaces. */
+  --accent-conic: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
 
   /*
-   * How opaque the page's own background is. Below 1 the desktop shows
-   * through the window, blurred by the system (see tauri.conf.json).
+   * How opaque the window's own background is. Below 1 the desktop shows
+   * through, blurred by the system (see tauri.conf.json).
    */
   --window-alpha: 0.88;
 
-  /* Corner radius of panels; smaller shapes scale from it, pills ignore it. */
-  --radius: 14px;
+  /* Corner radius of cards; smaller shapes scale from it, pills ignore it. */
+  --radius: 20px;
 
-  /* How far a glass surface sees. Chrome blurs least, sheets blur most. */
-  --glass-blur: 22px;
-  --glass-blur-strong: 34px;
-  --glass-saturate: 165%;
-}
-
-/*
- * Someone who asked the system for less transparency gets solid surfaces —
- * the same switch the "Стекло" setting flips (see lib/appearance.ts).
- */
-@media (prefers-reduced-transparency: reduce) {
-  :root {
-    --glass-layer: var(--glass-solid);
-    --glass-layer-strong: var(--glass-solid);
-    --glass-layer-quiet: var(--glass-solid-quiet);
-    --glass-blur: 0px;
-    --glass-blur-strong: 0px;
-    /* And the window itself stops being see-through. */
-    --window-alpha: 1;
-  }
+  /*
+   * A soft body settling: overshoots a touch and comes back. Everything that
+   * moves in the interface moves on this curve.
+   */
+  --ease-spring: linear(
+    0,
+    0.06 2%,
+    0.23 5%,
+    0.5 10%,
+    0.74 16%,
+    0.9 23%,
+    0.98 30%,
+    1.02 38%,
+    1.025 45%,
+    1.01 58%,
+    1
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

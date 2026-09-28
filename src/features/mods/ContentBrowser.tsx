@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { ArrowLeft, History, PackageSearch, Search } from 'lucide-react';
-import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBlock } from '@/components/ui/ErrorBlock';
 import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
+import { Segmented } from '@/components/ui/Segmented';
 import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -239,25 +239,13 @@ export function ContentBrowser({
         {kind === 'mod' && <Badge tone="neutral">{LOADER_LABELS[instance.loader]}</Badge>}
 
         {providers.length > 1 && (
-          <div role="tablist" className="ml-auto flex rounded-lg border border-border bg-[rgb(var(--text-rgb)/0.07)] p-0.5">
-            {providers.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={id === provider}
-                onClick={() => {
-                  setProvider(id);
-                }}
-                className={cn(
-                  'h-7 rounded-md px-3 text-xs font-medium transition-colors duration-fast ease-out',
-                  id === provider ? 'bg-accent text-on-accent' : 'text-text-dim hover:text-text',
-                )}
-              >
-                {PROVIDER_LABELS[id]}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            className="ml-auto"
+            label={t`Источник`}
+            value={provider}
+            options={providers.map((id) => ({ value: id, label: PROVIDER_LABELS[id] }))}
+            onChange={setProvider}
+          />
         )}
       </div>
 

@@ -6,7 +6,7 @@ import { activeAccountOf, useAccounts } from '@/store/useAccounts';
 import { useUI } from '@/store/useUI';
 import { t } from '@/lib/i18n';
 
-/** Bottom of the sidebar: whoever the next launch will use. */
+/** Bottom of the rail: whoever the next launch will use. */
 export function AccountCard(): ReactElement {
   const account = useAccounts(activeAccountOf);
   const navigate = useUI((state) => state.navigate);
@@ -17,54 +17,45 @@ export function AccountCard(): ReactElement {
 
   if (account === null) {
     return (
-      <div className="p-2">
-        <Tooltip content={t`Добавить аккаунт`} side="right" className="w-full">
-          <button
-            type="button"
-            onClick={openAccounts}
-            className="flex w-full flex-col items-center gap-1 rounded-xl border border-dashed border-border py-2.5 text-text-dim transition-[color,border-color,transform] duration-fast ease-out hover:border-accent hover:text-accent active:scale-[0.96]"
-          >
-            <UserPlus size={18} strokeWidth={1.5} />
-            <span className="text-2xs leading-none">{t`Войти`}</span>
-          </button>
-        </Tooltip>
-      </div>
+      <Tooltip content={t`Добавить аккаунт`} side="right">
+        <button
+          type="button"
+          onClick={openAccounts}
+          className="flex w-[84px] flex-col items-center gap-1.5 text-text-dim transition-[color,transform] duration-fast hover:text-accent active:scale-[0.94]"
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-[11px] border border-dashed border-current">
+            <UserPlus size={18} strokeWidth={1.6} />
+          </span>
+          <span className="text-[11px] font-semibold leading-none">{t`Войти`}</span>
+        </button>
+      </Tooltip>
     );
   }
 
   return (
-    <div className="p-2">
-      <Tooltip
-        content={
-          account.expired
-            ? t`${account.username} — сессия истекла`
-            : t`${account.username} · ${account.kind === 'offline' ? t`оффлайн` : 'Microsoft'}`
-        }
-        side="right"
-        className="w-full"
+    <Tooltip
+      content={
+        account.expired
+          ? t`${account.username} — сессия истекла`
+          : t`${account.username} · ${account.kind === 'offline' ? t`оффлайн` : 'Microsoft'}`
+      }
+      side="right"
+    >
+      <button
+        type="button"
+        onClick={openAccounts}
+        className="flex w-[84px] flex-col items-center gap-1.5 text-text-dim transition-transform duration-fast active:scale-[0.94]"
       >
-        <button
-          type="button"
-          onClick={openAccounts}
-          className="flex w-full flex-col items-center gap-1.5 rounded-xl py-2 transition-[background-color,transform] duration-fast ease-out hover:bg-[rgb(var(--text-rgb)/0.07)] active:scale-[0.96]"
-        >
-          <span className="relative">
-            <Avatar
-              name={account.username}
-              src={account.avatarUrl}
-              size={34}
-            />
-            {account.expired && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-surface text-danger">
-                <AlertTriangle size={10} strokeWidth={2} />
-              </span>
-            )}
-          </span>
-          <span className="w-full truncate px-1 text-center text-2xs leading-none text-text-dim">
-            {account.username}
-          </span>
-        </button>
-      </Tooltip>
-    </div>
+        <span className="relative rounded-[11px] shadow-[0_0_0_2px_rgb(var(--bg-rgb)),0_0_0_3.5px_rgb(var(--accent-rgb))]">
+          <Avatar name={account.username} src={account.avatarUrl} size={40} />
+          {account.expired && (
+            <span className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-surface text-danger">
+              <AlertTriangle size={10} strokeWidth={2} />
+            </span>
+          )}
+        </span>
+        <span className="max-w-[80px] truncate text-[11px] font-semibold">{account.username}</span>
+      </button>
+    </Tooltip>
   );
 }

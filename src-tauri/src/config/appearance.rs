@@ -71,7 +71,7 @@ pub struct Appearance {
     pub reduce_motion: bool,
 }
 
-pub const DEFAULT_ACCENT: &str = "#8B5CF6";
+pub const DEFAULT_ACCENT: &str = "#A855F7";
 pub const DEFAULT_GALLERY_ID: &str = "wikipe-tan-classic";
 
 impl Default for Appearance {
@@ -90,7 +90,7 @@ impl Default for Appearance {
             mascot_opacity: 85,
             mascot_side: Side::Right,
             ui_scale: 100,
-            radius: 14,
+            radius: 20,
             reduce_motion: false,
         }
     }
@@ -131,7 +131,7 @@ impl Appearance {
         self.mascot_size = self.mascot_size.clamp(64, 320);
         self.mascot_opacity = self.mascot_opacity.clamp(10, 100);
         self.ui_scale = self.ui_scale.clamp(80, 130);
-        self.radius = self.radius.min(16);
+        self.radius = self.radius.min(28);
         // Past this the desktop wins and the text stops being readable.
         self.window_transparency = self.window_transparency.min(45);
         self
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(wild.mascot_size, 64);
         assert_eq!(wild.mascot_opacity, 10);
         assert_eq!(wild.ui_scale, 130);
-        assert_eq!(wild.radius, 16);
+        assert_eq!(wild.radius, 28);
     }
 
     #[test]

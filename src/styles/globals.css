@@ -43,7 +43,6 @@
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 6px;
   }
 
   ::-webkit-scrollbar {
@@ -56,15 +55,15 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: rgb(127 127 127 / 0.28);
     border: 3px solid transparent;
-    background-clip: content-box;
-    border-radius: 999px;
+    background-clip: padding-box;
+    border-radius: 9px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-dim);
-    background-clip: content-box;
+    background: rgb(127 127 127 / 0.45);
+    background-clip: padding-box;
   }
 
   ::selection {
@@ -76,114 +75,71 @@
 @layer components {
   /* Hairline that survives fractional device pixel ratios. */
   .hairline-t {
-    box-shadow: inset 0 1px 0 var(--border);
+    box-shadow: inset 0 1px 0 var(--sep);
   }
 
   .hairline-b {
-    box-shadow: inset 0 -1px 0 var(--border);
+    box-shadow: inset 0 -1px 0 var(--sep);
   }
 
   /*
    * The glass material.
    *
-   * Three things make a surface read as glass: it lets the background
-   * through blurred and a little more saturated, light catches its top edge,
-   * and it casts a shadow on what it floats above. `.glass` is the
-   * navigation layer (rail, task bar, banners), `.glass-sheet` is what opens
-   * on top of everything (dialogs, menus), `.glass-quiet` is for controls
-   * that sit inside another glass surface and must not stack a second blur.
+   * `.glass` and `.panel` are the cards and chrome that float over the
+   * window's colour pools; `.glass-sheet` is what opens on top of everything
+   * (dialogs, menus, toasts); `.glass-quiet` is a fill for controls that sit
+   * inside another glass surface and must not stack a second blur.
    */
   .glass,
-  .glass-sheet,
-  .glass-quiet {
+  .panel {
     position: relative;
     /* Rounded by default; a rounded-* utility still wins (utilities come after). */
     border-radius: var(--radius);
-    background: var(--glass-layer);
-    box-shadow: var(--glass-rim), var(--glass-cast);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    background: var(--glass);
+    box-shadow: inset 0 0 0 1px var(--glass-border), var(--glass-shadow);
+    backdrop-filter: var(--glass-blur);
   }
 
   .glass-sheet {
-    background: var(--glass-layer-strong);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+    position: relative;
+    border-radius: calc(var(--radius) * 0.8);
+    background: var(--sheet);
+    box-shadow: inset 0 0 0 1px var(--glass-border), var(--sheet-shadow);
+    backdrop-filter: var(--sheet-blur);
   }
 
   .glass-quiet {
-    background: var(--glass-layer-quiet);
-    box-shadow: var(--glass-rim);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
-  }
-
-  /*
-   * Content, not chrome: opaque enough to read against any wallpaper, with
-   * the same rim so it belongs to the same world.
-   */
-  .panel {
-    /* Rounded by default, as the flat panel was; rounded-* overrides it. */
+    position: relative;
     border-radius: var(--radius);
-    background: linear-gradient(
-        to bottom,
-        rgb(255 255 255 / 0.07),
-        rgb(255 255 255 / 0.03) 55%,
-        rgb(255 255 255 / 0.045)
-      ),
-      rgb(var(--bg-rgb) / 0.6);
-    box-shadow: var(--glass-rim), var(--glass-cast-sm);
-    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    background: var(--chip);
+    box-shadow: inset 0 0 0 1px var(--glass-border);
   }
 
-  :root[data-theme='light'] .panel {
-    background: linear-gradient(to bottom, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.62)),
-      rgb(255 255 255 / 0.3);
-  }
-
-  /* Glass off, or the system asked for less transparency. */
-  :root[data-glass='off'] .glass,
-  :root[data-glass='off'] .glass-sheet {
-    background: var(--glass-solid);
-    backdrop-filter: none;
-  }
-
-  :root[data-glass='off'] .glass-quiet,
-  :root[data-glass='off'] .panel {
-    background: var(--glass-solid-quiet);
-    backdrop-filter: none;
+  /* Text fields and the like: a darker well pressed into the glass. */
+  .field {
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--glass-border);
   }
 
   /* No backdrop-filter at all: keep the surfaces readable rather than pretty. */
   @supports not (backdrop-filter: blur(1px)) {
     .glass,
+    .panel,
     .glass-sheet {
-      background: var(--glass-solid);
-    }
-
-    .glass-quiet,
-    .panel {
-      background: var(--glass-solid-quiet);
+      background: rgb(var(--surface-rgb));
     }
   }
 
   /*
-   * The ambient behind everything: two slow pools of colour so glass has
-   * something to bend even when no wallpaper is chosen.
+   * The window itself: rounded, tinted, and see-through by `--window-alpha`
+   * (the system blurs whatever is behind). The colour pools and the grain
+   * are drawn by `Ambient`.
    */
   .ambient {
-    /* No system frame any more, so the window draws its own edge. */
-    border-radius: 12px;
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
-    background:
-      radial-gradient(90% 65% at 2% -12%, rgb(var(--accent-rgb) / 0.22), transparent 64%),
-      radial-gradient(80% 65% at 104% 108%, rgb(45 212 191 / 0.13), transparent 66%),
-      /* The wash that carries the middle of the screen between the pools. */
-        linear-gradient(
-          132deg,
-          rgb(var(--accent-rgb) / 0.08),
-          rgb(var(--accent-dim-rgb) / 0.05) 42%,
-          transparent 62%,
-          rgb(45 212 191 / 0.05)
-        ),
-      rgb(var(--bg-rgb) / var(--window-alpha));
+    border-radius: 24px;
+    isolation: isolate;
+    background: rgb(var(--bg-rgb) / var(--window-alpha));
+    box-shadow: var(--window-edge);
   }
 
   /* Maximised windows are square, the way every desktop draws them. */
@@ -191,13 +147,85 @@
     border-radius: 0;
   }
 
-  /* The light theme wants the same pools much fainter, or it turns pastel. */
-  :root[data-theme='light'] .ambient {
-    background:
-      radial-gradient(70% 55% at 8% -8%, rgb(var(--accent-rgb) / 0.18), transparent 70%),
-      radial-gradient(65% 55% at 102% 104%, rgb(45 212 191 / 0.14), transparent 72%),
-      radial-gradient(45% 45% at 78% 6%, rgb(var(--accent-rgb) / 0.1), transparent 75%),
-      rgb(var(--bg-rgb) / var(--window-alpha));
+  /* The accent pools: four soft blobs drifting slowly under everything. */
+  .mesh-blob {
+    position: absolute;
+    border-radius: 9999px;
+    will-change: transform;
+    animation: mesh-drift var(--mesh-duration, 22s) ease-in-out infinite alternate;
+  }
+
+  @keyframes mesh-drift {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(var(--mesh-x1), var(--mesh-y1)) scale(1.15);
+    }
+    100% {
+      transform: translate(var(--mesh-x2), var(--mesh-y2)) scale(0.92);
+    }
+  }
+
+  /* Film grain, so the gradients never band. */
+  .grain {
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /*
+   * A lit, turning surface: the three accents spin slowly inside, a gloss
+   * lies on top, and a sheen crosses it on hover. For the one main action on
+   * a screen.
+   */
+  .iridescent {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #fff;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+    box-shadow: 0 6px 20px -6px var(--accent), inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+
+  .iridescent::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 260px;
+    height: 260px;
+    margin: -130px 0 0 -130px;
+    z-index: -2;
+    background: var(--accent-conic);
+    animation: spin 7s linear infinite;
+  }
+
+  .iridescent::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.26), transparent 55%, rgb(0 0 0 / 0.14));
+  }
+
+  /* Entrance: cards settle in one after another. `--i` is the position. */
+  .stagger {
+    animation: stagger-in 560ms var(--ease-spring) backwards;
+    animation-delay: calc(min(var(--i, 0), 16) * 35ms);
+  }
+
+  @keyframes stagger-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* A strip that scrolls sideways under a row of pills needs no track. */

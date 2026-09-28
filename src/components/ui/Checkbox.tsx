@@ -32,10 +32,12 @@ export function Checkbox({
         onChange(!checked);
       }}
       className={cn(
-        'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
+        'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[6px] border',
         'transition-colors duration-fast ease-out disabled:pointer-events-none disabled:opacity-45',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
-        on ? 'border-accent bg-accent text-on-accent' : 'border-border bg-[rgb(var(--text-rgb)/0.07)] hover:border-text-dim',
+        on
+          ? 'border-transparent bg-[image:var(--accent-gradient)] text-white'
+          : 'border-[var(--glass-border)] bg-[var(--field)] hover:border-text-dim',
       )}
     >
       {indeterminate ? (

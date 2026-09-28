@@ -20,7 +20,7 @@ export function UpdateBanner(): ReactElement | null {
 
   const downloading = phase === 'downloading';
   return (
-    <div className="glass z-20 mx-2.5 mt-2.5 flex h-11 shrink-0 animate-slide-down items-center gap-3 rounded-2xl px-4">
+    <div className="glass z-20 mb-1 ml-2 mr-4 mt-1 flex h-12 shrink-0 animate-sheet-in items-center gap-3 rounded-[22px] px-[18px]">
       <ArrowUpCircle size={15} strokeWidth={1.5} className="shrink-0 text-accent" />
       <p className="min-w-0 flex-1 truncate text-xs text-text">
         {t`Доступна FirLauncher `}{update.version}

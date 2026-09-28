@@ -27,13 +27,13 @@ export interface Appearance {
   readonly mascotSide: 'left' | 'right';
   /** Interface zoom, percent, 80–130. */
   readonly uiScale: number;
-  /** px, 0–16. */
+  /** px, 0–28. */
   readonly radius: number;
   readonly reduceMotion: boolean;
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
-  accent: '#8B5CF6',
+  accent: '#A855F7',
   wallpaper: 'none',
   wallpaperDim: 55,
   wallpaperBlur: 0,
@@ -46,9 +46,12 @@ export const DEFAULT_APPEARANCE: Appearance = {
   mascotOpacity: 85,
   mascotSide: 'right',
   uiScale: 100,
-  radius: 14,
+  radius: 20,
   reduceMotion: false,
 };
+
+/** Largest corner radius the interface is laid out for. */
+export const RADIUS_MAX = 28;
 
 export interface Settings {
   readonly theme: ThemeMode;

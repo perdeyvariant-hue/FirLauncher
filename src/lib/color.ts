@@ -80,10 +80,34 @@ export function luminance({ r, g, b }: Rgb): number {
 
 export interface AccentPalette {
   readonly accent: Rgb;
+  /** The cooler neighbour on the colour wheel; gradients start from it. */
+  readonly second: Rgb;
+  /** The warmer neighbour; the third colour of the pools and lit surfaces. */
+  readonly third: Rgb;
   readonly hover: Rgb;
   readonly dim: Rgb;
   /** Text drawn on the accent: whichever of near-white/near-black reads better. */
   readonly onAccent: Rgb;
+}
+
+/**
+ * The accent's neighbours: 38° cooler and 42° warmer, so a gradient between
+ * them glows instead of turning muddy. A grey accent has no hue to turn, so
+ * its neighbours are a darker and a lighter grey instead.
+ */
+function neighbours(base: Rgb, theme: 'dark' | 'light'): { second: Rgb; third: Rgb } {
+  const { h, s, l } = toHsl(base);
+  if (s < 0.08) {
+    return {
+      second: fromHsl({ h, s, l: theme === 'dark' ? 0.42 : 0.62 }),
+      third: fromHsl({ h, s, l: theme === 'dark' ? 0.72 : 0.34 }),
+    };
+  }
+  const turn = (degrees: number): number => (((h * 360 + degrees) % 360) + 360) % 360 / 360;
+  return {
+    second: fromHsl({ h: turn(-38), s: Math.min(s, 0.88), l: Math.min(l, 0.6) }),
+    third: fromHsl({ h: turn(42), s: Math.min(s, 0.88), l: Math.min(l + 0.04, 0.64) }),
+  };
 }
 
 const LIGHT_TEXT: Rgb = { r: 255, g: 255, b: 255 };
@@ -102,7 +126,7 @@ export function accentPalette(base: Rgb, theme: 'dark' | 'light'): AccentPalette
   // measure slightly higher; only genuinely pale accents (yellow, mint,
   // light grey) switch to dark text.
   const onAccent = luminance(accent) > PALE_LUMINANCE ? DARK_TEXT : LIGHT_TEXT;
-  return { accent, hover, dim, onAccent };
+  return { accent, ...neighbours(base, theme), hover, dim, onAccent };
 }
 
 const PALE_LUMINANCE = 0.36;

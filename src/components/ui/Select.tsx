@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -19,6 +19,8 @@ export interface SelectProps<T extends string> {
   disabled?: boolean;
   className?: string;
   compact?: boolean;
+  /** An icon before the value, e.g. for a sort control. */
+  leading?: ReactNode;
 }
 
 /** Where the popup goes, in viewport coordinates. */
@@ -38,14 +40,14 @@ function place(trigger: DOMRect): Placement {
   const above = trigger.top - GAP - MARGIN;
   // Open downwards unless there is visibly more room the other way.
   const dropUp = below < 180 && above > below;
-  const maxHeight = Math.min(288, Math.max(120, dropUp ? above : below));
+  const maxHeight = Math.min(320, Math.max(120, dropUp ? above : below));
   // The list may be wider than its trigger — labels must stay readable — so
   // it is only kept from running off the right edge.
   const maxWidth = Math.max(trigger.width, window.innerWidth - trigger.left - MARGIN);
   return {
     left: trigger.left,
     top: dropUp ? trigger.top - GAP - maxHeight : trigger.bottom + GAP,
-    minWidth: trigger.width,
+    minWidth: Math.max(trigger.width, 190),
     maxWidth,
     maxHeight,
   };
@@ -65,6 +67,7 @@ export function Select<T extends string>({
   disabled = false,
   className,
   compact = false,
+  leading,
 }: SelectProps<T>): ReactElement {
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -199,21 +202,21 @@ export function Select<T extends string>({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          'relative flex w-full items-center rounded-pill pl-3.5 pr-8 text-left',
-          'border border-[rgb(var(--text-rgb)/0.1)] bg-[rgb(var(--text-rgb)/0.05)]',
-          'transition-[border-color,background-color] duration-fast ease-out',
-          'hover:bg-[rgb(var(--text-rgb)/0.08)] focus-visible:border-accent',
-          open && 'border-accent',
-          compact ? 'h-8 text-xs' : 'h-9 text-sm',
+          'relative flex w-full items-center rounded-pill pl-3.5 pr-8 text-left font-medium',
+          '[background:var(--glass)] shadow-[inset_0_0_0_1px_var(--glass-border)] backdrop-blur-[30px]',
+          'transition-[filter,box-shadow] duration-fast ease-out hover:brightness-110',
+          open && 'shadow-[inset_0_0_0_1px_var(--glass-border),0_0_0_3px_rgb(var(--accent-rgb)/0.3)]',
+          compact ? 'h-8 text-[12.5px]' : 'h-9 text-[13px]',
           disabled && 'pointer-events-none opacity-45',
         )}
       >
+        {leading !== undefined && <span className="mr-2 shrink-0 text-text-dim">{leading}</span>}
         <span className="truncate text-text">{selected?.label ?? ''}</span>
         <ChevronDown
-          size={14}
-          strokeWidth={1.5}
+          size={12}
+          strokeWidth={2.6}
           className={cn(
-            'pointer-events-none absolute right-3 text-text-dim transition-transform duration-fast',
+            'pointer-events-none absolute right-3.5 text-text opacity-60 transition-transform duration-fast',
             open && 'rotate-180',
           )}
         />
@@ -244,7 +247,7 @@ export function Select<T extends string>({
                 maxWidth: placement.maxWidth,
                 maxHeight: placement.maxHeight,
               }}
-              className="glass-sheet fixed z-[61] w-max animate-glass-in overflow-y-auto rounded-xl p-1"
+              className="glass-sheet fixed z-[61] w-max animate-glass-in overflow-y-auto rounded-lg p-1.5"
             >
               {options.map((option, index) => {
                 const isSelected = option.value === value;
@@ -264,14 +267,17 @@ export function Select<T extends string>({
                       choose(index);
                     }}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs',
+                      'flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px] text-text',
                       'transition-colors duration-fast ease-out disabled:opacity-40',
-                      index === active && 'bg-[rgb(var(--text-rgb)/0.09)]',
-                      isSelected ? 'text-accent' : 'text-text',
+                      index === active && 'bg-[var(--hover)]',
                     )}
                   >
+                    <Check
+                      size={13}
+                      strokeWidth={2.4}
+                      className={cn('shrink-0 text-accent', !isSelected && 'opacity-0')}
+                    />
                     <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                    {isSelected && <Check size={13} strokeWidth={2} className="shrink-0" />}
                   </button>
                 );
               })}

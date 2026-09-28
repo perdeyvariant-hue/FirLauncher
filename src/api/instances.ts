@@ -24,6 +24,7 @@ export interface CreateInstanceInput {
   readonly loader: ModLoader;
   readonly loaderVersion: string | null;
   readonly iconPath: string | null;
+  readonly color: number | null;
 }
 
 export function listInstances(): Promise<Instance[]> {
@@ -47,6 +48,7 @@ export function createInstance(input: CreateInstanceInput): Promise<Instance> {
       favorite: false,
       java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
       status: { state: 'idle' },
+      color: input.color,
     };
     return mocked(created, 400);
   }
@@ -89,7 +91,13 @@ export function openInstanceFolder(id: string): Promise<void> {
 
 /** `server` joins that server right after the game starts. */
 export function launchInstance(id: string, accountId: string, server: string | null = null): Promise<void> {
-  if (shouldMock()) return mocked(undefined, 600);
+  if (shouldMock()) {
+    return mocked(undefined, 600).then(() => {
+      void import('@/mocks/launch').then(({ simulateLaunch }) => {
+        setTimeout(simulateLaunch, 300);
+      });
+    });
+  }
   return ipcUnit('launch_instance', { id, accountId, server });
 }
 

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Instance, ModLoader } from '@/types/instance';
 import type { CreateInstanceInput } from '@/api/instances';
 import * as instancesApi from '@/api/instances';
+import { useLaunch } from './useLaunch';
 import { useToasts } from './useToasts';
 import { locale, t } from '@/lib/i18n';
 
@@ -141,6 +142,7 @@ export const useInstances = create<InstancesState>()((set, get) => ({
   launch: async (id, accountId, server = null) => {
     try {
       await instancesApi.launchInstance(id, accountId, server);
+      useLaunch.getState().open(id);
     } catch (raw) {
       useToasts.getState().fail(raw, () => void get().launch(id, accountId, server));
     }

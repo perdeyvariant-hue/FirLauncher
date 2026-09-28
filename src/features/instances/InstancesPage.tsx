@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Boxes, ChevronDown, Plus, SearchX } from 'lucide-react';
+import { Boxes, ChevronDown, SearchX } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Page } from '@/components/layout/PageHeader';
 import * as instancesApi from '@/api/instances';
 import { createDesktopShortcut } from '@/api/shortcuts';
 import { activeAccountOf, useAccounts } from '@/store/useAccounts';
@@ -16,12 +17,23 @@ import { ImportDialog } from '@/features/packs/ImportDialog';
 import { usePacks } from '@/store/usePacks';
 import { CreateInstanceDialog } from './CreateInstanceDialog';
 import { FilterBar } from './FilterBar';
+import type { InstanceView } from './FilterBar';
 import { GroupDialog } from './GroupDialog';
-import { InstanceCard } from './InstanceCard';
+import { InstanceCard, InstanceRow } from './InstanceCard';
+import type { InstanceCardActions } from './InstanceCard';
 import type { Instance } from '@/types/instance';
-import { locale, t } from '@/lib/i18n';
+import { locale, plural, t } from '@/lib/i18n';
 
 const COLLAPSED_KEY = 'firlauncher.collapsedGroups';
+const VIEW_KEY = 'firlauncher.instanceView';
+
+function readView(): InstanceView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
 
 function readCollapsed(): Set<string> {
   try {
@@ -75,6 +87,7 @@ export function InstancesPage(): ReactElement {
   const loading = useInstances((state) => state.loading);
   const instances = useInstances((state) => state.instances);
   const filters = useInstances((state) => state.filters);
+  const setFilters = useInstances((state) => state.setFilters);
   const visible = useMemo(() => filterInstances(instances, filters), [instances, filters]);
   const total = instances.length;
   const remove = useInstances((state) => state.remove);
@@ -100,6 +113,15 @@ export function InstancesPage(): ReactElement {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [grouping, setGrouping] = useState<Instance | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
+  const [view, setView] = useState<InstanceView>(readView);
+  const chooseView = (next: InstanceView): void => {
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // The choice still holds for this session.
+    }
+  };
   const save = useInstances((state) => state.save);
 
   const groups = useMemo(
@@ -133,20 +155,56 @@ export function InstancesPage(): ReactElement {
     void launch(id, account.id);
   };
 
-  return (
-    <div className="flex h-full flex-col">
-      <header className="hairline-b flex h-14 shrink-0 items-center px-6">
-        <h1 className="text-sm font-semibold text-text">{t`Сборки`}</h1>
-        {total > 0 && (
-          <span className="ml-2 text-xs text-text-dim">
-            {visible.length === total
-              ? total
-              : t`${String(visible.length)} из ${String(total)}`}
-          </span>
-        )}
-      </header>
+  const actions: InstanceCardActions = {
+    onOpen: openInstance,
+    onPlay: handlePlay,
+    onStop: (id) => {
+      void instancesApi.killInstance(id).catch((raw: unknown) => fail(raw));
+    },
+    onOpenFolder: (id) => {
+      void instancesApi.openInstanceFolder(id).catch((raw: unknown) => fail(raw));
+    },
+    onDuplicate: (id) => {
+      void duplicate(id);
+    },
+    onExport: (id) => {
+      const target = findInstance(id);
+      if (target !== undefined) openExport(target);
+    },
+    onDelete: setPendingDelete,
+    onToggleFavorite: (id) => {
+      const target = findInstance(id);
+      if (target !== undefined) void save({ ...target, favorite: !target.favorite });
+    },
+    onChooseGroup: (id) => {
+      setGrouping(findInstance(id) ?? null);
+    },
+    onShortcut: (id) => {
+      void createDesktopShortcut(id)
+        .then(() => {
+          notify(t`Ярлык создан на рабочем столе`, 'success');
+        })
+        .catch((raw: unknown) => fail(raw));
+    },
+  };
 
+  const filtered = visible.length !== total;
+  let position = 0;
+
+  return (
+    <Page
+      title={t`Сборки`}
+      subtitle={
+        total === 0
+          ? undefined
+          : filtered
+            ? t`${String(visible.length)} из ${String(total)}`
+            : plural(total, ['сборка', 'сборки', 'сборок'], ['instance', 'instances'])
+      }
+    >
       <FilterBar
+        view={view}
+        onView={chooseView}
         onCreate={() => {
           setCreateOpen(true);
         }}
@@ -158,104 +216,92 @@ export function InstancesPage(): ReactElement {
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-        {loading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-            {Array.from({ length: 6 }, (_, index) => (
-              <Skeleton key={index} className="h-[104px]" />
-            ))}
-          </div>
-        ) : total === 0 ? (
-          <EmptyState
-            icon={<Boxes size={20} strokeWidth={1.5} />}
-            title={t`Пока нет ни одной сборки`}
-            description={t`Создайте новую или импортируйте готовую — .mrpack, архив CurseForge либо инстанс MultiMC.`}
-            action={
+      {loading ? (
+        <div className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(212px,1fr))] gap-3.5">
+          {Array.from({ length: 6 }, (_, index) => (
+            <Skeleton key={index} className="h-[228px]" />
+          ))}
+        </div>
+      ) : total === 0 ? (
+        <EmptyState
+          icon={<Boxes />}
+          title={t`Нет сборок`}
+          description={t`Создайте первую сборку или установите готовый модпак с Modrinth и CurseForge.`}
+          action={
+            <>
               <Button
                 variant="primary"
-                icon={<Plus size={15} strokeWidth={1.5} />}
                 onClick={() => {
                   setCreateOpen(true);
                 }}
               >
-                {t`Создать сборку`}</Button>
-            }
-          />
-        ) : visible.length === 0 ? (
-          <EmptyState
-            icon={<SearchX size={20} strokeWidth={1.5} />}
-            title={t`Ничего не найдено`}
-            description={t`Измените поисковый запрос или сбросьте фильтры.`}
-          />
-        ) : (
-          <div className="flex flex-col gap-5">
-            {(sections ?? [{ key: '', title: '', items: visible }]).map((section) => {
-              const folded = sections !== null && collapsed.has(section.key);
-              return (
-                <section key={section.key} className="flex flex-col gap-2.5">
-                  {sections !== null && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        toggleSection(section.key);
-                      }}
-                      className="flex w-fit items-center gap-1.5 text-xs font-semibold text-text-dim transition-colors duration-fast ease-out hover:text-text"
-                    >
-                      <ChevronDown
-                        size={14}
-                        strokeWidth={1.75}
-                        className={cn('transition-transform duration-fast ease-out', folded && '-rotate-90')}
-                      />
-                      {section.title}
-                      <span className="font-normal">{section.items.length}</span>
-                    </button>
-                  )}
-                  {!folded && (
-                    <div className="grid animate-fade-in grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-                      {section.items.map((instance) => (
-            <InstanceCard
-              key={instance.id}
-              instance={instance}
-              onOpen={openInstance}
-              onPlay={handlePlay}
-              onStop={(id) => {
-                void instancesApi.killInstance(id).catch((raw: unknown) => fail(raw));
+                {t`Создать сборку`}
+              </Button>
+              <Button
+                onClick={() => {
+                  navigate({ name: 'modpacks' });
+                }}
+              >
+                {t`Каталог модпаков`}
+              </Button>
+            </>
+          }
+        />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={<SearchX />}
+          title={t`Ничего не найдено`}
+          description={t`Попробуйте изменить поиск или сбросить фильтры.`}
+          action={
+            <Button
+              onClick={() => {
+                setFilters({ search: '', version: null, loader: null });
               }}
-              onOpenFolder={(id) => {
-                void instancesApi.openInstanceFolder(id).catch((raw: unknown) => fail(raw));
-              }}
-              onDuplicate={(id) => {
-                void duplicate(id);
-              }}
-              onExport={(id) => {
-                const target = instances.find((item) => item.id === id);
-                if (target !== undefined) openExport(target);
-              }}
-              onDelete={setPendingDelete}
-              onToggleFavorite={(id) => {
-                const target = findInstance(id);
-                if (target !== undefined) void save({ ...target, favorite: !target.favorite });
-              }}
-              onChooseGroup={(id) => {
-                setGrouping(findInstance(id) ?? null);
-              }}
-              onShortcut={(id) => {
-                void createDesktopShortcut(id)
-                  .then(() => {
-                    notify(t`Ярлык создан на рабочем столе`, 'success');
-                  })
-                  .catch((raw: unknown) => fail(raw));
-              }}
-            />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        )}
-      </div>
+            >
+              {t`Сбросить фильтры`}
+            </Button>
+          }
+        />
+      ) : (
+        (sections ?? [{ key: '', title: '', items: visible }]).map((section) => {
+          const folded = sections !== null && collapsed.has(section.key);
+          return (
+            <section key={section.key} className="mt-3.5">
+              {sections !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleSection(section.key);
+                  }}
+                  className="flex h-[34px] items-center gap-2 px-1 text-xs font-bold uppercase tracking-[0.06em] text-text-dim transition-colors duration-fast hover:text-text"
+                >
+                  <ChevronDown
+                    size={11}
+                    strokeWidth={3}
+                    className={cn('transition-transform duration-spring ease-spring', folded && '-rotate-90')}
+                  />
+                  {section.title}
+                  <span className="font-semibold opacity-60">{section.items.length}</span>
+                </button>
+              )}
+              {!folded &&
+                (view === 'grid' ? (
+                  <div className="mt-1.5 grid grid-cols-[repeat(auto-fill,minmax(212px,1fr))] gap-3.5">
+                    {section.items.map((instance) => (
+                      <InstanceCard key={instance.id} instance={instance} index={position++} {...actions} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="glass mt-1.5 flex flex-col overflow-hidden rounded-xl">
+                    {section.items.map((instance) => (
+                      <InstanceRow key={instance.id} instance={instance} index={position++} {...actions} />
+                    ))}
+                  </div>
+                ))}
+            </section>
+          );
+        })
+      )}
 
       <GroupDialog
         instance={grouping}
@@ -297,6 +343,6 @@ export function InstancesPage(): ReactElement {
           setPendingDelete(null);
         }}
       />
-    </div>
+    </Page>
   );
 }

@@ -22,20 +22,25 @@ export function EmptyState({
     <div
       className={cn(
         'flex flex-col items-center justify-center text-center',
-        compact ? 'gap-2 py-10' : 'gap-3 py-20',
+        compact ? 'gap-2 py-10' : 'mx-auto mt-[70px] max-w-[380px] gap-2.5',
         className,
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgb(var(--text-rgb)/0.07)] text-text-dim">
+      <div
+        className={cn(
+          'glass flex items-center justify-center text-accent [&_svg]:stroke-[1.6]',
+          compact ? 'h-12 w-12 rounded-[16px]' : 'h-[72px] w-[72px] rounded-[24px] [&_svg]:h-[30px] [&_svg]:w-[30px]',
+        )}
+      >
         {icon}
       </div>
-      <div className="max-w-[320px]">
-        <p className="text-sm font-medium text-text">{title}</p>
+      <div className="max-w-[380px]">
+        <p className={cn('font-bold text-text', compact ? 'text-[15px]' : 'mt-1.5 text-[19px]')}>{title}</p>
         {description !== undefined && (
-          <p className="mt-1 text-xs leading-relaxed text-text-dim">{description}</p>
+          <p className="mt-1 text-pretty text-[13.5px] leading-normal text-text-dim">{description}</p>
         )}
       </div>
-      {action}
+      {action !== undefined && <div className="mt-2.5 flex gap-2">{action}</div>}
     </div>
   );
 }

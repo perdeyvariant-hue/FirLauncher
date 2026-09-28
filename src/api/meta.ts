@@ -59,6 +59,8 @@ export function saveSettings(settings: Settings): Promise<Settings> {
 }
 
 export interface StorageUsage {
+  /** The data folder. */
+  readonly root: string;
   readonly instances: readonly { readonly id: string; readonly name: string; readonly bytes: number }[];
   readonly libraries: number;
   readonly assets: number;
@@ -78,6 +80,7 @@ export function storageUsage(): Promise<StorageUsage> {
   if (shouldMock()) {
     return mocked<StorageUsage>(
       {
+        root: '%APPDATA%/FirLauncher',
         instances: [
           { id: 'inst-2', name: 'Fabric Perf', bytes: 812_000_000 },
           { id: 'inst-1', name: 'Vanilla 1.21.4', bytes: 96_000_000 },

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { cn } from '@/lib/cn';
+import { Ambient, Grain } from '@/components/layout/Ambient';
 import { activeAccountOf, useAccounts } from '@/store/useAccounts';
 import { useAppearanceImages } from '@/store/useAppearanceImages';
 import { useSettings } from '@/store/useSettings';
@@ -79,20 +80,28 @@ function Mascot({ appearance }: { appearance: Appearance }): ReactElement | null
   if (src === null) return null;
 
   return (
-    <img
-      src={src}
-      alt=""
+    <div
       className={cn(
-        'pointer-events-none absolute bottom-4 w-auto animate-fade-in select-none object-contain',
-        appearance.mascotSide === 'left' ? 'left-6' : 'right-6',
-        pixelated ? 'pixelated' : 'drop-shadow-lg',
+        'pointer-events-none absolute bottom-[18px] animate-breathe',
+        // Clear of the rail on the left.
+        appearance.mascotSide === 'left' ? 'left-[130px]' : 'right-7',
       )}
-      style={{ height: appearance.mascotSize, opacity: appearance.mascotOpacity / 100 }}
-    />
+      style={{ transformOrigin: '50% 100%' }}
+    >
+      <img
+        src={src}
+        alt=""
+        className={cn(
+          'w-auto animate-fade-in select-none object-contain',
+          pixelated ? 'pixelated' : 'drop-shadow-lg',
+        )}
+        style={{ height: appearance.mascotSize, opacity: appearance.mascotOpacity / 100 }}
+      />
+    </div>
   );
 }
 
-/** Wallpaper and corner mascot, painted behind the page content. */
+/** Colour pools, wallpaper, grain and the corner mascot, behind the pages. */
 export function BackgroundLayer(): ReactElement {
   const appearance = useSettings((state) => state.settings.appearance);
   const loadImages = useAppearanceImages((state) => state.load);
@@ -103,7 +112,9 @@ export function BackgroundLayer(): ReactElement {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <Ambient />
       <Wallpaper appearance={appearance} />
+      <Grain />
       <Mascot appearance={appearance} />
     </div>
   );

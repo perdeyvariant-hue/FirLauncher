@@ -113,7 +113,7 @@ export function TitleBar(): ReactElement {
     <div
       data-tauri-drag-region
       data-blurred={blurred}
-      className="group/bar relative z-30 flex h-10 shrink-0 items-center justify-end gap-2.5 px-4"
+      className="group/bar absolute inset-x-0 top-0 z-30 flex h-10 items-center justify-end gap-2.5 px-5"
     >
       <TrafficLight
         kind="minimize"

@@ -10,18 +10,22 @@ export interface BadgeProps {
   className?: string;
 }
 
+/**
+ * Chips. `outline` is the mono chip for versions and numbers; `accent` is a
+ * tinted label such as "Активный".
+ */
 const TONES: Readonly<Record<BadgeTone, string>> = {
-  neutral: 'bg-[rgb(var(--text-rgb)/0.08)] text-text-dim',
-  accent: 'bg-accent/18 text-accent shadow-rim',
+  neutral: 'bg-[var(--chip)] text-text-dim',
+  accent: 'bg-accent/[0.26] font-bold text-text',
   danger: 'bg-danger/15 text-danger',
-  outline: 'border border-[rgb(var(--text-rgb)/0.14)] text-text-dim',
+  outline: 'bg-[var(--chip)] font-mono text-text-dim',
 };
 
 export function Badge({ children, tone = 'neutral', icon, className }: BadgeProps): ReactElement {
   return (
     <span
       className={cn(
-        'inline-flex h-5 items-center gap-1 rounded-pill px-2 text-2xs font-medium',
+        'inline-flex h-[21px] items-center gap-1 whitespace-nowrap rounded-pill px-2 text-[11px] font-medium',
         TONES[tone],
         className,
       )}

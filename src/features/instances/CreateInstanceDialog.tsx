@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Check, ImagePlus, X } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { IconButton } from '@/components/ui/IconButton';
-import { Input } from '@/components/ui/Input';
+import { Segmented } from '@/components/ui/Segmented';
 import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
-import { Switch } from '@/components/ui/Switch';
+import { ART_GRADIENTS, artGradient } from '@/lib/art';
 import { initialsOf } from '@/lib/format';
 import { isTauri, toLauncherError } from '@/lib/ipc';
 import * as metaApi from '@/api/meta';
@@ -15,6 +16,7 @@ import type { LoaderVersion, MinecraftVersion } from '@/types/version';
 import type { ModLoader } from '@/types/instance';
 import { LOADER_LABELS, MOD_LOADERS } from '@/types/instance';
 import { useInstances } from '@/store/useInstances';
+import { useSettings } from '@/store/useSettings';
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
 import { t } from '@/lib/i18n';
@@ -31,7 +33,8 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
 
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
-  const [showSnapshots, setShowSnapshots] = useState(false);
+  const showSnapshots = useSettings((state) => state.settings.showSnapshots);
+  const [color, setColor] = useState(0);
   const [versions, setVersions] = useState<MinecraftVersion[]>([]);
   const [mcVersion, setMcVersion] = useState('');
   const [loader, setLoader] = useState<ModLoader>('vanilla');
@@ -53,6 +56,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     setLoader('vanilla');
     setLoaderVersion(null);
     setIconPath(null);
+    setColor(0);
     setSubmitting(false);
 
     let cancelled = false;
@@ -122,10 +126,15 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     [versions, showSnapshots],
   );
 
-  const loaderOptions: SelectOption<ModLoader>[] = MOD_LOADERS.map((item) => ({
-    value: item,
-    label: LOADER_LABELS[item],
-  }));
+  // The newest releases, one tap each; everything else is in the list.
+  const quickVersions = useMemo(
+    () => versions.filter((version) => version.type === 'release').slice(0, 6).map((version) => version.id),
+    [versions],
+  );
+  const loaderOrder: readonly ModLoader[] = ['vanilla', 'fabric', 'forge', 'neoforge', 'quilt'];
+  const loaderOptions = loaderOrder
+    .filter((item) => MOD_LOADERS.includes(item))
+    .map((item) => ({ value: item, label: LOADER_LABELS[item] }));
 
   const loaderVersionOptions: SelectOption<string>[] = loaderVersions.map((item) => ({
     value: item.version,
@@ -170,6 +179,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
       loader,
       loaderVersion: loader === 'vanilla' ? null : loaderVersion,
       iconPath,
+      color,
     });
     setSubmitting(false);
     if (instance === null) return;
@@ -177,16 +187,29 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     openInstance(instance.id);
   };
 
+  const recommended = loaderVersions.find((item) => item.recommended)?.version ?? null;
+  const loaderHint =
+    loader === 'vanilla'
+      ? t`Без загрузчика модов · Minecraft ${mcVersion}`
+      : loaderError !== null
+        ? loaderError
+        : loadingLoader
+          ? t`Ищем версии ${LOADER_LABELS[loader]}…`
+          : loaderVersion !== null && loaderVersion === recommended
+            ? t`${LOADER_LABELS[loader]} ${loaderVersion} · рекомендуемая для ${mcVersion}`
+            : loaderVersion !== null
+              ? t`${LOADER_LABELS[loader]} ${loaderVersion} для ${mcVersion}`
+              : t`Нет сборок ${LOADER_LABELS[loader]} для ${mcVersion}`;
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       title={t`Новая сборка`}
-      description={t`Версия и лоадер скачаются при первом запуске.`}
       busy={submitting}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={submitting}>
+          <Button onClick={onClose} disabled={submitting}>
             {t`Отмена`}</Button>
           <Button
             variant="primary"
@@ -200,105 +223,147 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         </>
       }
     >
-      <div className="flex flex-col gap-4 py-2">
-        <div className="flex items-start gap-3">
+      <div className="flex flex-col pb-1 pt-2">
+        <div className="flex items-center gap-3.5">
           <button
             type="button"
+            title={iconPath === null ? t`Выбрать иконку` : t`Иконка: ${iconPath.split(/[\\/]/).pop() ?? iconPath}`}
             onClick={() => {
               void pickIcon();
             }}
-            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-[rgb(var(--text-rgb)/0.07)] text-text-dim transition-colors duration-fast ease-out hover:border-accent hover:text-accent"
+            className="group relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[16px] font-mono text-[17px] font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35)] transition-transform duration-fast active:scale-95"
+            style={{ background: artGradient(color) }}
           >
             {/* The picked file lives outside the webview's reach, so the
                 preview stays symbolic until the backend stores it. */}
             {iconPath !== null ? (
-              <Check size={18} strokeWidth={1.5} className="text-accent" />
-            ) : trimmedName === '' ? (
-              <ImagePlus size={18} strokeWidth={1.5} />
+              <Check size={20} strokeWidth={2.2} />
             ) : (
-              <span className="text-sm font-semibold">{initialsOf(trimmedName)}</span>
+              <span className="transition-opacity group-hover:opacity-0">
+                {initialsOf(trimmedName === '' ? t`Новая сборка` : trimmedName)}
+              </span>
+            )}
+            {iconPath === null && (
+              <ImagePlus
+                size={18}
+                strokeWidth={1.8}
+                className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+              />
             )}
           </button>
 
           <div className="min-w-0 flex-1">
-            <Input
-              label={t`Имя`}
-              placeholder={t`Например, Fabric Performance`}
-              value={name}
-              error={nameError}
-              hint={
-                iconPath === null
-                  ? t`Иконка необязательна — иначе берутся инициалы.`
-                  : t`Иконка: ${iconPath.split(/[\\/]/).pop() ?? iconPath}`
-              }
-              autoFocus
-              onChange={(event) => {
-                setName(event.target.value);
-              }}
-              onBlur={() => {
-                setNameTouched(true);
-              }}
-              trailing={
-                iconPath === null ? undefined : (
-                  <IconButton
-                    label={t`Убрать иконку`}
-                    size="sm"
-                    icon={<X size={13} strokeWidth={1.5} />}
-                    onClick={() => {
-                      setIconPath(null);
-                    }}
-                  />
-                )
-              }
-            />
+            <div className="field flex h-[38px] items-center rounded-[12px] px-3 focus-within:shadow-[inset_0_0_0_1px_var(--glass-border),0_0_0_3px_rgb(var(--accent-rgb)/0.35)]">
+              <input
+                value={name}
+                placeholder={t`Название сборки`}
+                aria-label={t`Название сборки`}
+                aria-invalid={nameError !== null}
+                autoFocus
+                onChange={(event) => {
+                  setName(event.target.value);
+                }}
+                onBlur={() => {
+                  setNameTouched(true);
+                }}
+                className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
+              />
+              {iconPath !== null && (
+                <IconButton
+                  label={t`Убрать иконку`}
+                  size="sm"
+                  icon={<X size={13} strokeWidth={1.75} />}
+                  onClick={() => {
+                    setIconPath(null);
+                  }}
+                />
+              )}
+            </div>
+            <div className="mt-[9px] flex gap-[7px]" role="radiogroup" aria-label={t`Цвет обложки`}>
+              {ART_GRADIENTS.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  role="radio"
+                  aria-checked={index === color}
+                  aria-label={t`Цвет ${String(index + 1)}`}
+                  onClick={() => {
+                    setColor(index);
+                  }}
+                  className="h-5 w-5 rounded-full transition-transform duration-fast hover:scale-110"
+                  style={{
+                    background: artGradient(index),
+                    boxShadow:
+                      index === color
+                        ? '0 0 0 2px var(--sheet), 0 0 0 4px rgb(var(--accent-rgb))'
+                        : 'inset 0 1px 0 rgb(255 255 255 / 0.4)',
+                  }}
+                />
+              ))}
+            </div>
+            {nameError !== null && <p className="mt-1.5 text-xs text-danger">{nameError}</p>}
           </div>
         </div>
 
-        <Select
-          label={t`Версия Minecraft`}
-          value={mcVersion}
-          options={
-            versionOptions.length > 0
-              ? versionOptions
-              : [{ value: '', label: loadingVersions ? t`Загрузка…` : t`Нет версий` }]
-          }
-          disabled={loadingVersions || versionOptions.length === 0}
-          onChange={setMcVersion}
-        />
-
-        <Switch
-          checked={showSnapshots}
-          onChange={setShowSnapshots}
-          label={t`Показывать снапшоты`}
-          description={t`Экспериментальные сборки Mojang между релизами.`}
-        />
-
-        <div className="grid grid-cols-2 gap-3">
+        <p className="mb-2 mt-5 text-[13px] text-text-dim">{t`Версия Minecraft`}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {quickVersions.map((version) => (
+            <button
+              key={version}
+              type="button"
+              onClick={() => {
+                setMcVersion(version);
+              }}
+              className={cn(
+                'h-[30px] rounded-pill px-3 font-mono text-xs font-medium transition-[filter,transform] duration-fast active:scale-95',
+                version === mcVersion
+                  ? 'bg-[image:var(--accent-gradient)] text-white'
+                  : 'bg-[var(--chip)] text-text hover:bg-[var(--hover)]',
+              )}
+            >
+              {version}
+            </button>
+          ))}
           <Select
-            label={t`Модлоадер`}
-            value={loader}
-            options={loaderOptions}
-            onChange={(value) => {
-              setLoader(value);
-            }}
-          />
-
-          <Select
-            label={t`Версия лоадера`}
-            value={loaderVersion ?? ''}
-            disabled={loader === 'vanilla' || loadingLoader || loaderVersionOptions.length === 0}
+            compact
+            className="w-auto"
+            // A version already on a chip is not repeated here.
+            value={quickVersions.includes(mcVersion) ? '' : mcVersion}
             options={
-              loader === 'vanilla'
-                ? [{ value: '', label: t`Не требуется` }]
-                : loaderVersionOptions.length > 0
-                  ? loaderVersionOptions
-                  : [{ value: '', label: loadingLoader ? t`Загрузка…` : t`Нет сборок` }]
+              versionOptions.length > 0
+                ? [{ value: '', label: t`Другая версия…`, disabled: true }, ...versionOptions]
+                : [{ value: '', label: loadingVersions ? t`Загрузка…` : t`Нет версий` }]
             }
+            disabled={loadingVersions || versionOptions.length === 0}
             onChange={(value) => {
-              setLoaderVersion(value === '' ? null : value);
+              if (value !== '') setMcVersion(value);
             }}
-            {...(loaderError === null ? {} : { hint: loaderError })}
           />
+        </div>
+
+        <p className="mb-2 mt-[18px] text-[13px] text-text-dim">{t`Загрузчик модов`}</p>
+        <Segmented
+          fullWidth
+          label={t`Загрузчик модов`}
+          value={loader}
+          options={loaderOptions}
+          onChange={setLoader}
+        />
+        <div className="mt-2 flex min-h-8 items-center gap-2">
+          <p className={cn('min-w-0 flex-1 text-xs', loaderError === null ? 'text-text-faint' : 'text-danger')}>
+            {loaderHint}
+          </p>
+          {loader !== 'vanilla' && loaderVersionOptions.length > 1 && (
+            <Select
+              compact
+              className="w-auto"
+              value={loaderVersion ?? ''}
+              options={loaderVersionOptions}
+              onChange={(value) => {
+                setLoaderVersion(value === '' ? null : value);
+              }}
+            />
+          )}
         </div>
       </div>
     </Dialog>

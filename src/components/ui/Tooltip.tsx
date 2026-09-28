@@ -62,7 +62,7 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
             className={cn(
               'pointer-events-none fixed z-[70] animate-fade-in whitespace-nowrap',
               'rounded-md border border-border bg-[rgb(var(--text-rgb)/0.07)] px-2 py-1 text-2xs text-text',
-              'shadow-[var(--shadow-panel)]',
+              'shadow-[var(--sheet-shadow)]',
             )}
           >
             {content}

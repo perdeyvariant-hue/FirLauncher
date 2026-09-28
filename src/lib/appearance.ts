@@ -1,7 +1,7 @@
 import { accentPalette, parseHex, toChannels } from '@/lib/color';
 import { isTauri } from '@/lib/ipc';
 import type { Appearance, Settings, ThemeMode } from '@/types/settings';
-import { DEFAULT_APPEARANCE } from '@/types/settings';
+import { RADIUS_MAX } from '@/types/settings';
 
 /**
  * Applies theme and personalisation to <html>: `data-theme`, the accent
@@ -19,17 +19,26 @@ export function resolveTheme(mode: ThemeMode): ResolvedTheme {
   return prefersLight ? 'light' : 'dark';
 }
 
-const ACCENT_VARS = ['--accent-rgb', '--accent-hover-rgb', '--accent-dim-rgb', '--on-accent-rgb'];
+const ACCENT_VARS = [
+  '--accent-rgb',
+  '--accent-2-rgb',
+  '--accent-3-rgb',
+  '--accent-hover-rgb',
+  '--accent-dim-rgb',
+  '--on-accent-rgb',
+];
 
 function applyAccent(root: HTMLElement, hex: string, theme: ResolvedTheme): void {
   const base = parseHex(hex);
-  // The stock purple keeps its hand-tuned shades from tokens.css.
-  if (base === null || hex.toUpperCase() === DEFAULT_APPEARANCE.accent) {
+  // Unreadable value: fall back to the stock colours in tokens.css.
+  if (base === null) {
     for (const name of ACCENT_VARS) root.style.removeProperty(name);
     return;
   }
   const palette = accentPalette(base, theme);
   root.style.setProperty('--accent-rgb', toChannels(palette.accent));
+  root.style.setProperty('--accent-2-rgb', toChannels(palette.second));
+  root.style.setProperty('--accent-3-rgb', toChannels(palette.third));
   root.style.setProperty('--accent-hover-rgb', toChannels(palette.hover));
   root.style.setProperty('--accent-dim-rgb', toChannels(palette.dim));
   root.style.setProperty('--on-accent-rgb', toChannels(palette.onAccent));
@@ -55,7 +64,7 @@ function applyZoom(percent: number): void {
 export function applyAppearance(appearance: Appearance, theme: ResolvedTheme): void {
   const root = document.documentElement;
   applyAccent(root, appearance.accent, theme);
-  root.style.setProperty('--radius', `${String(Math.min(16, Math.max(0, appearance.radius)))}px`);
+  root.style.setProperty('--radius', `${String(Math.min(RADIUS_MAX, Math.max(0, appearance.radius)))}px`);
   root.classList.toggle('reduce-motion', appearance.reduceMotion);
   // The window itself is translucent; this is how much of the page's own
   // background is left painted over the desktop behind it.

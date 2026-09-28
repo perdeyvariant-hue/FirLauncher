@@ -20,8 +20,8 @@ export interface DialogProps {
 }
 
 const WIDTHS: Readonly<Record<NonNullable<DialogProps['width']>, string>> = {
-  sm: 'max-w-[380px]',
-  md: 'max-w-[520px]',
+  sm: 'max-w-[440px]',
+  md: 'max-w-[500px]',
   lg: 'max-w-[760px]',
   xl: 'max-w-[980px]',
 };
@@ -76,7 +76,7 @@ export function Dialog({
         if (event.target === event.currentTarget) requestClose();
       }}
     >
-      <div className="absolute inset-0 animate-fade-in bg-[var(--overlay)] backdrop-blur-[10px]" />
+      <div className="absolute inset-0 animate-fade-in bg-[var(--overlay)] backdrop-blur-[6px]" />
 
       <div
         ref={panelRef}
@@ -85,17 +85,18 @@ export function Dialog({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'glass-sheet relative flex w-full animate-glass-in flex-col outline-none',
+          'glass-sheet relative flex w-full animate-sheet-in flex-col outline-none',
           'overflow-hidden rounded-2xl',
+          'shadow-[inset_0_0_0_1px_var(--glass-border),0_30px_80px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.15)]',
           'max-h-[calc(100vh-48px)]',
           WIDTHS[width],
         )}
       >
-        <header className="flex items-start gap-3 px-5 pb-3 pt-4">
+        <header className="flex items-start gap-3 px-6 pb-2 pt-6">
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-semibold text-text">{title}</h2>
+            <h2 className="truncate text-xl font-bold tracking-[-0.02em] text-text">{title}</h2>
             {description !== undefined && (
-              <p className="mt-1 text-xs leading-relaxed text-text-dim">{description}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-text-dim">{description}</p>
             )}
           </div>
           <IconButton
@@ -107,12 +108,10 @@ export function Dialog({
           />
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-2">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3">{children}</div>
 
         {footer !== undefined && (
-          <footer className="hairline-t flex items-center justify-end gap-2 px-5 py-3">
-            {footer}
-          </footer>
+          <footer className="flex items-center justify-end gap-2 px-6 pb-6 pt-3">{footer}</footer>
         )}
       </div>
     </div>,

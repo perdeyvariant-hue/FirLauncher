@@ -16,7 +16,7 @@ export function Progress({
   size = 'sm',
 }: ProgressProps): ReactElement {
   const clamped = value === null ? null : Math.min(Math.max(value, 0), 1);
-  const barColor = tone === 'danger' ? 'bg-danger' : 'bg-accent';
+  const barColor = tone === 'danger' ? 'bg-danger' : 'bg-[image:var(--accent-gradient)]';
 
   return (
     <div
@@ -25,8 +25,8 @@ export function Progress({
       aria-valuemax={100}
       aria-valuenow={clamped === null ? undefined : Math.round(clamped * 100)}
       className={cn(
-        'relative w-full overflow-hidden rounded-full bg-[rgb(var(--text-rgb)/0.07)]',
-        size === 'xs' ? 'h-1' : 'h-1.5',
+        'relative w-full overflow-hidden rounded-pill bg-[var(--track)]',
+        size === 'xs' ? 'h-[5px]' : 'h-1.5',
         className,
       )}
     >
@@ -34,9 +34,17 @@ export function Progress({
         <div className={cn('absolute inset-y-0 w-1/3 animate-indeterminate rounded-full', barColor)} />
       ) : (
         <div
-          className={cn('h-full rounded-full transition-[width] duration-slow ease-out', barColor)}
+          className={cn(
+            'relative h-full overflow-hidden rounded-pill transition-[width] duration-slow ease-linear',
+            barColor,
+          )}
           style={{ width: `${String(clamped * 100)}%` }}
-        />
+        >
+          {/* Light running along the filled part while work goes on. */}
+          {clamped < 1 && (
+            <span className="absolute inset-y-0 w-2/5 animate-shimmer bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+          )}
+        </div>
       )}
     </div>
   );

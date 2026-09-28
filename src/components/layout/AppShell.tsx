@@ -11,11 +11,13 @@ import { DropZone } from '@/features/drop/DropZone';
 import { ExportDialog } from '@/features/packs/ExportDialog';
 import { SkippedFilesDialog } from '@/features/packs/SkippedFilesDialog';
 import { CommandPalette } from '@/features/palette/CommandPalette';
+import { LaunchPanel } from '@/features/launch/LaunchPanel';
 
 /**
- * The wallpaper runs edge to edge under the whole window and everything
- * else floats above it: that is what the glass has to bend. The rail and the
- * task bar keep a margin so their edges stay visible.
+ * The colour pools and the wallpaper run edge to edge under the whole window
+ * and everything else floats above them: that is what the glass has to bend.
+ * The rail floats free of the edges; each screen scrolls under its own
+ * folding title.
  */
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const [palette, setPalette] = useState(false);
@@ -35,20 +37,19 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
   }, []);
 
   return (
-    <div className="ambient relative flex h-full w-full flex-col overflow-hidden">
+    <div className="ambient relative h-full w-full overflow-hidden">
       <BackgroundLayer />
 
       <TitleBar />
+      <Sidebar />
 
-      <div className="relative z-10 flex min-h-0 w-full min-w-0 flex-1">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <UpdateBanner />
-          <main className="relative min-h-0 flex-1 overflow-hidden">{children}</main>
-          <TaskBar />
-        </div>
+      <div className="absolute bottom-0 left-[118px] right-0 top-10 z-10 flex min-w-0 flex-col">
+        <UpdateBanner />
+        <main className="relative min-h-0 flex-1 overflow-hidden">{children}</main>
+        <TaskBar />
       </div>
 
+      <LaunchPanel />
       <ToastHost />
       <ExportDialog />
       <CrashDialog />
