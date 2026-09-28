@@ -9,8 +9,9 @@ import { Segmented } from '@/components/ui/Segmented';
 import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { ART_GRADIENTS, artGradient } from '@/lib/art';
-import { initialsOf } from '@/lib/format';
-import { GLYPHS, Glyph, LETTERS, suggestGlyph } from '@/lib/glyphs';
+import { BLOCKS, BLOCK_PREFIX, suggestBlock } from '@/lib/blocks';
+import { GLYPHS, suggestGlyph } from '@/lib/glyphs';
+import { useGameArt } from '@/store/useGameArt';
 import { isTauri, toLauncherError } from '@/lib/ipc';
 import * as metaApi from '@/api/meta';
 import type { LoaderVersion, MinecraftVersion } from '@/types/version';
@@ -19,9 +20,14 @@ import { LOADER_LABELS, MOD_LOADERS } from '@/types/instance';
 import { useInstances } from '@/store/useInstances';
 import { useSettings } from '@/store/useSettings';
 import { CoverPicker } from './CoverPicker';
+import { Cover } from './InstanceCard';
 
 function randomGlyph(): string {
   return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]?.id ?? 'cube';
+}
+
+function randomBlock(): string {
+  return BLOCKS[Math.floor(Math.random() * BLOCKS.length)]?.id ?? 'grass_block';
 }
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
@@ -44,6 +50,8 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   // Chosen by hand; until then the name suggests one, or a random pick.
   const [glyph, setGlyph] = useState<string | null>(null);
   const [fallbackGlyph, setFallbackGlyph] = useState(randomGlyph);
+  const [fallbackBlock, setFallbackBlock] = useState(randomBlock);
+  const textures = useGameArt((state) => state.textures);
   const [versions, setVersions] = useState<MinecraftVersion[]>([]);
   const [mcVersion, setMcVersion] = useState('');
   const [loader, setLoader] = useState<ModLoader>('vanilla');
@@ -68,6 +76,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     setColor(Math.floor(Math.random() * ART_GRADIENTS.length));
     setGlyph(null);
     setFallbackGlyph(randomGlyph());
+    setFallbackBlock(randomBlock());
     setSubmitting(false);
 
     let cancelled = false;
@@ -157,7 +166,14 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   }));
 
   const trimmedName = name.trim();
-  const shownGlyph = glyph ?? suggestGlyph(trimmedName) ?? fallbackGlyph;
+  // With the game's textures at hand a new instance gets a block; the name
+  // suggests which, and what the preview shows is exactly what is saved.
+  const haveBlocks = 'stone' in textures;
+  const shownGlyph =
+    glyph ??
+    (haveBlocks
+      ? `${BLOCK_PREFIX}${suggestBlock(trimmedName) ?? fallbackBlock}`
+      : (suggestGlyph(trimmedName) ?? fallbackGlyph));
   const nameError =
     nameTouched && trimmedName === '' ? t`Введите имя сборки` : null;
   const canSubmit =
@@ -247,26 +263,26 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
             className="group relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[16px] font-mono text-[17px] font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35)] transition-transform duration-fast active:scale-95"
             style={{ background: artGradient(color) }}
           >
+            <Cover
+              instance={{ id: 'new', name: trimmedName, color, glyph: shownGlyph, iconPath: null }}
+              size="hero"
+              className="absolute inset-0"
+            />
             {/* The picked file lives outside the webview's reach, so the
-                preview stays symbolic until the backend stores it. */}
-            {iconPath !== null ? (
-              <Check size={20} strokeWidth={2.2} />
-            ) : shownGlyph === LETTERS ? (
-              <span className="transition-opacity group-hover:opacity-0">
-                {initialsOf(trimmedName === '' ? t`Новая сборка` : trimmedName)}
-              </span>
-            ) : (
-              <span className="transition-opacity group-hover:opacity-0">
-                <Glyph id={shownGlyph} size={26} strokeWidth={1.9} />
-              </span>
-            )}
-            {iconPath === null && (
-              <ImagePlus
-                size={18}
-                strokeWidth={1.8}
-                className="absolute opacity-0 transition-opacity group-hover:opacity-100"
-              />
-            )}
+                preview marks it rather than showing it. */}
+            <span
+              className={
+                iconPath === null
+                  ? 'absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'
+                  : 'absolute inset-0 grid place-items-center bg-black/40'
+              }
+            >
+              {iconPath === null ? (
+                <ImagePlus size={18} strokeWidth={1.8} />
+              ) : (
+                <Check size={20} strokeWidth={2.2} />
+              )}
+            </span>
           </button>
 
           <div className="min-w-0 flex-1">

@@ -511,6 +511,7 @@ src-tauri/                бэкенд
   examples/modpack_update_smoke.rs  обновление модпака с сохранением правок
   examples/servers_smoke.rs  пинг серверов
   examples/shortcut_smoke.rs ярлык сборки
+  examples/art_smoke.rs      текстуры блоков, панорамы и обложки из скриншотов
   examples/packs_smoke.rs    импорт и экспорт сборок, установка модпака
 ```
 

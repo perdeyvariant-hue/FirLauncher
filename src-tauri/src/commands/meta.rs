@@ -65,3 +65,18 @@ pub async fn clean_storage(state: State<'_, AppState>) -> Result<crate::storage:
     let (files, bytes) = crate::storage::clean(&state.paths).await?;
     Ok(crate::storage::CleanupPlan { files, bytes, blocked: None })
 }
+
+/// Title-screen panoramas from the downloaded assets, as cover thumbnails.
+#[tauri::command]
+pub async fn game_panoramas(state: State<'_, AppState>) -> Result<Vec<String>> {
+    crate::art::panoramas(&state.paths).await
+}
+
+/// Block textures from the newest downloaded client, by name.
+#[tauri::command]
+pub async fn block_textures(
+    state: State<'_, AppState>,
+    names: Vec<String>,
+) -> Result<std::collections::HashMap<String, String>> {
+    crate::art::block_textures(&state.paths, names).await
+}

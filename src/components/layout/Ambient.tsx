@@ -18,13 +18,13 @@ const BLOBS: readonly Blob[] = [
   },
   {
     style: { right: '-15%', top: '-10%', width: '65%', height: '85%' },
-    color: 'rgb(var(--accent-2-rgb) / 0.55)',
+    color: 'rgb(var(--accent-2-rgb) / 0.4)',
     path: [-16, 12, 6, -10],
     seconds: 25.5,
   },
   {
     style: { left: '25%', bottom: '-35%', width: '70%', height: '90%' },
-    color: 'rgb(var(--accent-3-rgb) / 0.4)',
+    color: 'rgb(var(--accent-3-rgb) / 0.25)',
     path: [10, -14, -12, -4],
     seconds: 29,
   },

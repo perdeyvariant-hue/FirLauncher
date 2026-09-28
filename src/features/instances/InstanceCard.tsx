@@ -1,15 +1,19 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { CSSProperties, MouseEvent, ReactElement } from 'react';
 import { Play, Square, Star } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { ContextMenu } from '@/components/ui/ContextMenu';
 import type { ContextMenuItem } from '@/components/ui/ContextMenu';
-import { artGradient, artIndexOf } from '@/lib/art';
+import { artGradient, artIndexOf, hashOf } from '@/lib/art';
+import { BLOCK_PREFIX, blockById, defaultBlock } from '@/lib/blocks';
+import type { BlockDef } from '@/lib/blocks';
 import { formatPlaytime, formatRelativeDate, initialsOf } from '@/lib/format';
-import { Glyph, LETTERS, glyphOf } from '@/lib/glyphs';
+import { Glyph, LETTERS, glyphById, glyphOf } from '@/lib/glyphs';
 import { translate } from '@/lib/i18n';
+import { useGameArt } from '@/store/useGameArt';
 import { useTasks } from '@/store/useTasks';
+import { BlockIcon } from './BlockIcon';
 import type { Instance } from '@/types/instance';
 import { LOADER_LABELS } from '@/types/instance';
 import type { Task } from '@/types/task';
@@ -129,7 +133,50 @@ export function instanceMenu(instance: Instance, actions: InstanceCardActions): 
   ];
 }
 
-/** Cover art: the instance's own icon, else its picture (or initials) on its gradient. */
+export type CoverMark =
+  | { readonly kind: 'block'; readonly block: BlockDef }
+  | { readonly kind: 'glyph'; readonly id: string }
+  | { readonly kind: 'letters' };
+
+/**
+ * What stands on an instance's cover. A block needs its textures from the
+ * game files; without them the drawn pictures stand in.
+ */
+export function coverMark(
+  instance: Pick<Instance, 'id' | 'name' | 'glyph'>,
+  textures: Record<string, string>,
+): CoverMark {
+  const usable = (block: BlockDef | undefined): block is BlockDef =>
+    block !== undefined && block.top in textures && block.side in textures;
+  const chosen = instance.glyph;
+  if (chosen === LETTERS) return { kind: 'letters' };
+  if (chosen !== null && chosen.startsWith(BLOCK_PREFIX)) {
+    const block = blockById(chosen.slice(BLOCK_PREFIX.length));
+    if (usable(block)) return { kind: 'block', block };
+  } else if (chosen !== null && glyphById(chosen) !== undefined) {
+    return { kind: 'glyph', id: chosen };
+  }
+  const fallback = blockById(defaultBlock(instance));
+  if (usable(fallback)) return { kind: 'block', block: fallback };
+  const glyph = glyphOf({ ...instance, glyph: null });
+  return glyph === LETTERS ? { kind: 'letters' } : { kind: 'glyph', id: glyph };
+}
+
+/** The picker's value for what a cover shows now. */
+export function coverValue(
+  instance: Pick<Instance, 'id' | 'name' | 'glyph'>,
+  textures: Record<string, string>,
+): string {
+  const mark = coverMark(instance, textures);
+  return mark.kind === 'block' ? `${BLOCK_PREFIX}${mark.block.id}` : mark.kind === 'glyph' ? mark.id : LETTERS;
+}
+
+/**
+ * Cover art. Tiles show a picture from the game — the instance's newest
+ * screenshot, else a title-screen panorama — with its block in front; the
+ * small squares keep just the block on a quiet one-colour ground. A custom
+ * icon image replaces the block.
+ */
 export function Cover({
   instance,
   size,
@@ -141,45 +188,93 @@ export function Cover({
   className?: string;
   style?: CSSProperties;
 }): ReactElement {
+  const textures = useGameArt((state) => state.textures);
+  const panoramas = useGameArt((state) => state.panoramas);
+  const shot = useGameArt((state) => state.covers[instance.id]);
+  const loadCover = useGameArt((state) => state.loadCover);
+  const tile = size === 'tile';
+
+  useEffect(() => {
+    if (tile) loadCover(instance.id);
+  }, [tile, instance.id, loadCover]);
+
+  const picture = !tile
+    ? null
+    : typeof shot === 'string'
+      ? shot
+      : panoramas.length > 0
+        ? (panoramas[hashOf(`${instance.id}#pano`) % panoramas.length] ?? null)
+        : null;
+  // Over the player's own screenshot the block steps aside into a corner.
+  const cornered = tile && typeof shot === 'string';
+  const mark = coverMark(instance, textures);
+
+  const markSize = size === 'tile' ? (cornered ? 40 : 84) : size === 'hero' ? 50 : 30;
+  const iconSize = size === 'tile' ? (cornered ? 36 : 64) : size === 'hero' ? 40 : 30;
+  const glyphSize = size === 'tile' ? (cornered ? 22 : 46) : size === 'hero' ? 30 : 20;
   const initialsSize = size === 'tile' ? 'text-[30px]' : size === 'hero' ? 'text-[19px]' : 'text-[13px]';
-  const iconSize = size === 'tile' ? 64 : size === 'hero' ? 40 : 30;
-  const glyphSize = size === 'tile' ? 46 : size === 'hero' ? 30 : 20;
-  const glyph = glyphOf(instance);
+
+  const shadow = 'drop-shadow-[0_6px_14px_rgb(0_0_0/0.45)]';
+  const content =
+    instance.iconPath !== null ? (
+      <img
+        src={instance.iconPath}
+        alt=""
+        width={iconSize}
+        height={iconSize}
+        className={cn('pixelated rounded-[12%] object-cover', shadow)}
+        style={{ width: iconSize, height: iconSize }}
+      />
+    ) : mark.kind === 'block' ? (
+      <BlockIcon block={mark.block} textures={textures} size={markSize} className={shadow} />
+    ) : mark.kind === 'glyph' ? (
+      <Glyph
+        id={mark.id}
+        size={glyphSize}
+        strokeWidth={tile ? 1.6 : 1.9}
+        className={cn('text-white/95', shadow)}
+      />
+    ) : (
+      <span
+        className={cn(
+          'font-mono font-bold leading-none text-white/90 [text-shadow:0_2px_8px_rgb(0_0_0/0.25)]',
+          initialsSize,
+        )}
+      >
+        {initialsOf(instance.name)}
+      </span>
+    );
+
   return (
     <div
       className={cn(
         'relative grid place-items-center overflow-hidden',
-        'shadow-[inset_0_1px_0_rgb(255_255_255/0.35),inset_0_-20px_40px_rgb(0_0_0/0.18)]',
+        'shadow-[inset_0_1px_0_rgb(255_255_255/0.22)]',
         className,
       )}
       style={{ background: coverOf(instance), ...style }}
     >
-      {instance.iconPath === null && glyph !== LETTERS ? (
-        <Glyph
-          id={glyph}
-          size={glyphSize}
-          strokeWidth={size === 'tile' ? 1.6 : 1.9}
-          className="text-white/95 drop-shadow-[0_2px_8px_rgb(0_0_0/0.3)]"
-        />
-      ) : instance.iconPath === null ? (
-        <span
-          className={cn(
-            'font-mono font-bold leading-none text-white/90 [text-shadow:0_2px_8px_rgb(0_0_0/0.25)]',
-            initialsSize,
-          )}
-        >
-          {initialsOf(instance.name)}
-        </span>
-      ) : (
-        <img
-          src={instance.iconPath}
-          alt=""
-          width={iconSize}
-          height={iconSize}
-          className="pixelated rounded-[12%] object-cover drop-shadow-[0_4px_10px_rgb(0_0_0/0.35)]"
-          style={{ width: iconSize, height: iconSize }}
-        />
+      {picture !== null && (
+        <>
+          <img
+            src={picture}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-slow ease-out group-hover:scale-[1.04]"
+          />
+          {/* Keeps the block and the badges readable on bright frames. */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background: cornered
+                ? 'linear-gradient(to top, rgb(0 0 0 / 0.45), transparent 45%)'
+                : 'radial-gradient(closest-side, rgb(0 0 0 / 0.28), transparent), linear-gradient(to top, rgb(0 0 0 / 0.3), transparent 60%)',
+            }}
+          />
+        </>
       )}
+      <div className={cornered ? 'absolute bottom-2 left-2.5' : 'relative'}>{content}</div>
     </div>
   );
 }

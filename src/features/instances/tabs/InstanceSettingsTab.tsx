@@ -18,9 +18,9 @@ import type { LoaderVersion } from '@/types/version';
 import { useToasts } from '@/store/useToasts';
 import { useInstances } from '@/store/useInstances';
 import { artIndexOf } from '@/lib/art';
-import { glyphOf } from '@/lib/glyphs';
+import { useGameArt } from '@/store/useGameArt';
 import { CoverPicker } from '../CoverPicker';
-import { Cover } from '../InstanceCard';
+import { Cover, coverValue } from '../InstanceCard';
 import { useSettings } from '@/store/useSettings';
 import { t } from '@/lib/i18n';
 
@@ -150,15 +150,16 @@ function LoaderSection({ instance }: { instance: Instance }): ReactElement {
 /** Cover colour and picture, applied as soon as they are picked. */
 function CoverSection({ instance }: { instance: Instance }): ReactElement {
   const save = useInstances((state) => state.save);
+  const textures = useGameArt((state) => state.textures);
   const color = instance.color ?? artIndexOf(instance.id);
-  const glyph = glyphOf(instance);
+  const glyph = coverValue(instance, textures);
   return (
     <Section
       title={t`Обложка`}
       description={
         instance.iconPath === null
-          ? t`Цвет и значок на карточке сборки.`
-          : t`У сборки своя картинка — она показывается вместо значка, а цвет остаётся фоном.`
+          ? t`Фоном служит ваш последний скриншот из этой сборки, а пока его нет — панорама из игры.`
+          : t`У сборки своя картинка — она показывается вместо блока.`
       }
     >
       <div className="flex items-start gap-4">

@@ -25,6 +25,7 @@ pub mod paths;
 pub mod presence;
 pub mod shortcuts;
 pub mod state;
+pub mod art;
 pub mod storage;
 pub mod tasks;
 
@@ -148,6 +149,9 @@ pub fn run() {
             commands::instances::restore_snapshot,
             commands::instances::delete_snapshot,
             commands::meta::storage_usage,
+            commands::meta::game_panoramas,
+            commands::meta::block_textures,
+            commands::instances::instance_cover,
             commands::meta::plan_storage_cleanup,
             commands::meta::clean_storage,
             commands::meta::list_loader_versions,

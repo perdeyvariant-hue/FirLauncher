@@ -98,12 +98,15 @@ pub struct InstanceMeta {
     pub glyph: Option<String>,
 }
 
-/// Glyph ids end up in the interface only, but stay plain slugs all the same.
+/// Cover ids (`"cog"`, `"block:grass_block"`) end up in the interface only,
+/// but stay plain slugs all the same.
 pub fn clean_glyph(glyph: Option<String>) -> Option<String> {
     glyph.filter(|value| {
         !value.is_empty()
-            && value.len() <= 24
-            && value.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+            && value.len() <= 48
+            && value
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '-' | '_' | ':'))
     })
 }
 
@@ -423,6 +426,14 @@ pub async fn icon_data_url(paths: &Paths, meta: &InstanceMeta) -> Option<String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cover_ids_keep_blocks_and_refuse_paths() {
+        assert_eq!(clean_glyph(Some(String::from("block:grass_block"))).as_deref(), Some("block:grass_block"));
+        assert_eq!(clean_glyph(Some(String::from("cog"))).as_deref(), Some("cog"));
+        assert_eq!(clean_glyph(Some(String::from("../x"))), None);
+        assert_eq!(clean_glyph(Some(String::new())), None);
+    }
 
     fn scratch(name: &str) -> Paths {
         let dir = std::env::temp_dir().join(format!("firlauncher-test-{name}"));

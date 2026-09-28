@@ -1,3 +1,4 @@
+import { useGameArt } from '@/store/useGameArt';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -149,6 +150,8 @@ export default function App(): ReactElement {
     track(
       onEvent('game://exit', (payload) => {
         void loadInstances();
+        // A session may have left a new screenshot for the cover.
+        useGameArt.getState().dropCover(payload.instanceId);
         // A crash opens the crash assistant with the diagnosis.
         if (payload.crashed) void useCrash.getState().open(payload.instanceId);
       }),

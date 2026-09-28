@@ -91,8 +91,8 @@ export interface AccentPalette {
 }
 
 /**
- * The accent's neighbours: 38° cooler and 42° warmer, so a gradient between
- * them glows instead of turning muddy. A grey accent has no hue to turn, so
+ * The accent's neighbours: a little cooler and darker, a little warmer and
+ * lighter, so a gradient between them glows instead of turning muddy. A grey accent has no hue to turn, so
  * its neighbours are a darker and a lighter grey instead.
  */
 function neighbours(base: Rgb, theme: 'dark' | 'light'): { second: Rgb; third: Rgb } {
@@ -104,9 +104,11 @@ function neighbours(base: Rgb, theme: 'dark' | 'light'): { second: Rgb; third: R
     };
   }
   const turn = (degrees: number): number => (((h * 360 + degrees) % 360) + 360) % 360 / 360;
+  // Close neighbours: a gradient between them reads as one colour catching
+  // the light, not as a rainbow.
   return {
-    second: fromHsl({ h: turn(-38), s: Math.min(s, 0.88), l: Math.min(l, 0.6) }),
-    third: fromHsl({ h: turn(42), s: Math.min(s, 0.88), l: Math.min(l + 0.04, 0.64) }),
+    second: fromHsl({ h: turn(-14), s: Math.min(s, 0.85), l: Math.max(Math.min(l, 0.6) - 0.08, 0.2) }),
+    third: fromHsl({ h: turn(16), s: Math.min(s, 0.8), l: Math.min(l + 0.06, 0.66) }),
   };
 }
 

@@ -25,8 +25,8 @@
   --text-dim-rgb: 178 173 192;
   --text-faint-rgb: 128 123 142;
   --accent-rgb: 168 85 247;
-  --accent-2-rgb: 99 102 241;
-  --accent-3-rgb: 236 72 153;
+  --accent-2-rgb: 139 70 230;
+  --accent-3-rgb: 205 110 250;
   --accent-hover-rgb: 192 132 252;
   --accent-dim-rgb: 126 34 206;
   --danger-rgb: 248 113 113;
@@ -57,7 +57,7 @@
   --seg: linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.1));
   --seg-border: rgb(255 255 255 / 0.18);
   /* How strongly the accent pools show behind everything. */
-  --mesh-opacity: 0.9;
+  --mesh-opacity: 0.55;
   --window-edge: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
@@ -70,8 +70,8 @@
   --text-dim-rgb: 96 92 108;
   --text-faint-rgb: 137 134 148;
   --accent-rgb: 147 51 234;
-  --accent-2-rgb: 79 70 229;
-  --accent-3-rgb: 219 39 119;
+  --accent-2-rgb: 118 40 200;
+  --accent-3-rgb: 180 90 240;
   --accent-hover-rgb: 126 34 206;
   --accent-dim-rgb: 192 132 252;
   --danger-rgb: 220 38 38;
@@ -93,7 +93,7 @@
   --sep: rgb(22 19 31 / 0.07);
   --seg: linear-gradient(180deg, #fff, rgb(255 255 255 / 0.86));
   --seg-border: rgb(22 19 31 / 0.08);
-  --mesh-opacity: 0.5;
+  --mesh-opacity: 0.35;
   --window-edge: 0 0 0 1px rgb(22 19 31 / 0.1);
 }
 

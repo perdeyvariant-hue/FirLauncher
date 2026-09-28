@@ -631,3 +631,9 @@ pub async fn restore_snapshot(state: State<'_, AppState>, id: String, snapshot_i
 pub async fn delete_snapshot(state: State<'_, AppState>, id: String, snapshot_id: String) -> Result<()> {
     instances::snapshots::delete(&state.paths, &id, &snapshot_id).await
 }
+
+/// The instance's newest screenshot as a cover thumbnail, if it has one.
+#[tauri::command]
+pub async fn instance_cover(state: State<'_, AppState>, id: String) -> Result<Option<String>> {
+    crate::art::instance_cover(&state.paths, &id).await
+}
