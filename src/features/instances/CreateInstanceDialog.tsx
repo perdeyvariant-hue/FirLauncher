@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { ART_GRADIENTS, artGradient } from '@/lib/art';
 import { initialsOf } from '@/lib/format';
+import { GLYPHS, Glyph, LETTERS, suggestGlyph } from '@/lib/glyphs';
 import { isTauri, toLauncherError } from '@/lib/ipc';
 import * as metaApi from '@/api/meta';
 import type { LoaderVersion, MinecraftVersion } from '@/types/version';
@@ -17,6 +18,11 @@ import type { ModLoader } from '@/types/instance';
 import { LOADER_LABELS, MOD_LOADERS } from '@/types/instance';
 import { useInstances } from '@/store/useInstances';
 import { useSettings } from '@/store/useSettings';
+import { CoverPicker } from './CoverPicker';
+
+function randomGlyph(): string {
+  return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]?.id ?? 'cube';
+}
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
 import { t } from '@/lib/i18n';
@@ -35,6 +41,9 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   const [nameTouched, setNameTouched] = useState(false);
   const showSnapshots = useSettings((state) => state.settings.showSnapshots);
   const [color, setColor] = useState(0);
+  // Chosen by hand; until then the name suggests one, or a random pick.
+  const [glyph, setGlyph] = useState<string | null>(null);
+  const [fallbackGlyph, setFallbackGlyph] = useState(randomGlyph);
   const [versions, setVersions] = useState<MinecraftVersion[]>([]);
   const [mcVersion, setMcVersion] = useState('');
   const [loader, setLoader] = useState<ModLoader>('vanilla');
@@ -56,7 +65,9 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     setLoader('vanilla');
     setLoaderVersion(null);
     setIconPath(null);
-    setColor(0);
+    setColor(Math.floor(Math.random() * ART_GRADIENTS.length));
+    setGlyph(null);
+    setFallbackGlyph(randomGlyph());
     setSubmitting(false);
 
     let cancelled = false;
@@ -146,6 +157,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   }));
 
   const trimmedName = name.trim();
+  const shownGlyph = glyph ?? suggestGlyph(trimmedName) ?? fallbackGlyph;
   const nameError =
     nameTouched && trimmedName === '' ? t`Введите имя сборки` : null;
   const canSubmit =
@@ -180,6 +192,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
       loaderVersion: loader === 'vanilla' ? null : loaderVersion,
       iconPath,
       color,
+      glyph: shownGlyph,
     });
     setSubmitting(false);
     if (instance === null) return;
@@ -238,9 +251,13 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
                 preview stays symbolic until the backend stores it. */}
             {iconPath !== null ? (
               <Check size={20} strokeWidth={2.2} />
-            ) : (
+            ) : shownGlyph === LETTERS ? (
               <span className="transition-opacity group-hover:opacity-0">
                 {initialsOf(trimmedName === '' ? t`Новая сборка` : trimmedName)}
+              </span>
+            ) : (
+              <span className="transition-opacity group-hover:opacity-0">
+                <Glyph id={shownGlyph} size={26} strokeWidth={1.9} />
               </span>
             )}
             {iconPath === null && (
@@ -279,31 +296,12 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
                 />
               )}
             </div>
-            <div className="mt-[9px] flex gap-[7px]" role="radiogroup" aria-label={t`Цвет обложки`}>
-              {ART_GRADIENTS.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  role="radio"
-                  aria-checked={index === color}
-                  aria-label={t`Цвет ${String(index + 1)}`}
-                  onClick={() => {
-                    setColor(index);
-                  }}
-                  className="h-5 w-5 rounded-full transition-transform duration-fast hover:scale-110"
-                  style={{
-                    background: artGradient(index),
-                    boxShadow:
-                      index === color
-                        ? '0 0 0 2px var(--sheet), 0 0 0 4px rgb(var(--accent-rgb))'
-                        : 'inset 0 1px 0 rgb(255 255 255 / 0.4)',
-                  }}
-                />
-              ))}
-            </div>
             {nameError !== null && <p className="mt-1.5 text-xs text-danger">{nameError}</p>}
           </div>
         </div>
+
+        <p className="mb-2 mt-5 text-[13px] text-text-dim">{t`Обложка`}</p>
+        <CoverPicker color={color} glyph={shownGlyph} onColor={setColor} onGlyph={setGlyph} />
 
         <p className="mb-2 mt-5 text-[13px] text-text-dim">{t`Версия Minecraft`}</p>
         <div className="flex flex-wrap items-center gap-1.5">

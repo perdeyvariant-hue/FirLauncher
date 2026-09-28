@@ -9,6 +9,7 @@ import * as metaApi from '@/api/meta';
 import type { CleanupPlan, StorageUsage } from '@/api/meta';
 import { artGradient, artIndexOf } from '@/lib/art';
 import { formatBytes, initialsOf } from '@/lib/format';
+import { Glyph, LETTERS, glyphOf } from '@/lib/glyphs';
 import { isTauri } from '@/lib/ipc';
 import { useAsyncData } from '@/lib/useAsyncData';
 import { useInstances } from '@/store/useInstances';
@@ -203,7 +204,11 @@ export function StorageSection(): ReactElement {
                           className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-[7px] font-mono text-[8.5px] font-bold text-white"
                           style={{ background: artGradient(known?.color ?? artIndexOf(item.id)) }}
                         >
-                          {initialsOf(item.name)}
+                          {known !== undefined && glyphOf(known) !== LETTERS ? (
+                            <Glyph id={glyphOf(known)} size={12} strokeWidth={2.2} />
+                          ) : (
+                            initialsOf(item.name)
+                          )}
                         </span>
                         <span className="w-[140px] truncate text-text">{item.name}</span>
                         <span className="h-[5px] flex-1 rounded-pill bg-[var(--track)]">

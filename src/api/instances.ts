@@ -25,6 +25,7 @@ export interface CreateInstanceInput {
   readonly loaderVersion: string | null;
   readonly iconPath: string | null;
   readonly color: number | null;
+  readonly glyph: string | null;
 }
 
 export function listInstances(): Promise<Instance[]> {
@@ -49,6 +50,7 @@ export function createInstance(input: CreateInstanceInput): Promise<Instance> {
       java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
       status: { state: 'idle' },
       color: input.color,
+      glyph: input.glyph,
     };
     return mocked(created, 400);
   }

@@ -13,11 +13,16 @@ export const ART_GRADIENTS: readonly (readonly [string, string])[] = [
   ['#64748b', '#334155'],
 ];
 
-/** A stable colour index for any string. */
-export function artIndexOf(key: string): number {
+/** A stable number for any string. */
+export function hashOf(key: string): number {
   let hash = 0;
   for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  return hash % ART_GRADIENTS.length;
+  return hash;
+}
+
+/** A stable colour index for any string. */
+export function artIndexOf(key: string): number {
+  return hashOf(key) % ART_GRADIENTS.length;
 }
 
 export function artGradient(index: number): string {

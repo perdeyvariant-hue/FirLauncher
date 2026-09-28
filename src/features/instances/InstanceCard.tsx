@@ -7,6 +7,7 @@ import { ContextMenu } from '@/components/ui/ContextMenu';
 import type { ContextMenuItem } from '@/components/ui/ContextMenu';
 import { artGradient, artIndexOf } from '@/lib/art';
 import { formatPlaytime, formatRelativeDate, initialsOf } from '@/lib/format';
+import { Glyph, LETTERS, glyphOf } from '@/lib/glyphs';
 import { translate } from '@/lib/i18n';
 import { useTasks } from '@/store/useTasks';
 import type { Instance } from '@/types/instance';
@@ -128,20 +129,22 @@ export function instanceMenu(instance: Instance, actions: InstanceCardActions): 
   ];
 }
 
-/** Cover art: the instance's own icon, or its initials on its gradient. */
+/** Cover art: the instance's own icon, else its picture (or initials) on its gradient. */
 export function Cover({
   instance,
   size,
   className,
   style,
 }: {
-  instance: Instance;
+  instance: Pick<Instance, 'id' | 'name' | 'color' | 'glyph' | 'iconPath'>;
   size: 'tile' | 'row' | 'hero';
   className?: string;
   style?: CSSProperties;
 }): ReactElement {
   const initialsSize = size === 'tile' ? 'text-[30px]' : size === 'hero' ? 'text-[19px]' : 'text-[13px]';
   const iconSize = size === 'tile' ? 64 : size === 'hero' ? 40 : 30;
+  const glyphSize = size === 'tile' ? 46 : size === 'hero' ? 30 : 20;
+  const glyph = glyphOf(instance);
   return (
     <div
       className={cn(
@@ -151,7 +154,14 @@ export function Cover({
       )}
       style={{ background: coverOf(instance), ...style }}
     >
-      {instance.iconPath === null ? (
+      {instance.iconPath === null && glyph !== LETTERS ? (
+        <Glyph
+          id={glyph}
+          size={glyphSize}
+          strokeWidth={size === 'tile' ? 1.6 : 1.9}
+          className="text-white/95 drop-shadow-[0_2px_8px_rgb(0_0_0/0.3)]"
+        />
+      ) : instance.iconPath === null ? (
         <span
           className={cn(
             'font-mono font-bold leading-none text-white/90 [text-shadow:0_2px_8px_rgb(0_0_0/0.25)]',

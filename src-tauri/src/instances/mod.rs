@@ -91,6 +91,20 @@ pub struct InstanceMeta {
     /// decide. Only the interface reads it.
     #[serde(default)]
     pub color: Option<u8>,
+    /// Which built-in picture to draw on the cover (`"letters"` for the
+    /// initials); `None` lets the name and id decide. Only the interface
+    /// reads it.
+    #[serde(default)]
+    pub glyph: Option<String>,
+}
+
+/// Glyph ids end up in the interface only, but stay plain slugs all the same.
+pub fn clean_glyph(glyph: Option<String>) -> Option<String> {
+    glyph.filter(|value| {
+        !value.is_empty()
+            && value.len() <= 24
+            && value.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    })
 }
 
 impl InstanceMeta {
@@ -235,6 +249,8 @@ pub struct CreateInstanceInput {
     pub icon_path: Option<String>,
     #[serde(default)]
     pub color: Option<u8>,
+    #[serde(default)]
+    pub glyph: Option<String>,
 }
 
 pub async fn create(paths: &Paths, input: CreateInstanceInput) -> Result<InstanceMeta> {
@@ -268,6 +284,7 @@ pub async fn create(paths: &Paths, input: CreateInstanceInput) -> Result<Instanc
         favorite: false,
         java: InstanceJava::default(),
         color: input.color,
+        glyph: clean_glyph(input.glyph),
     };
 
     write_meta(paths, &meta).await?;
@@ -440,6 +457,7 @@ mod tests {
                 loader_version: None,
                 icon_path: None,
                 color: None,
+                glyph: None,
             },
         )
         .await
@@ -470,6 +488,7 @@ mod tests {
                 loader_version: None,
                 icon_path: None,
                 color: None,
+                glyph: None,
             },
         )
         .await

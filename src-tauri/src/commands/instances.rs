@@ -69,6 +69,7 @@ pub async fn update_instance(
         total_play_seconds: existing.total_play_seconds,
         // The UI sends back the rendered data URL, never the stored file name.
         icon_file: existing.icon_file,
+        glyph: instances::clean_glyph(instance.glyph.clone()),
         ..instance
     };
     instances::write_meta(&state.paths, &merged).await?;

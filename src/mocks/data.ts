@@ -58,6 +58,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 0,
+    glyph: null,
   },
   {
     id: 'inst-2',
@@ -74,6 +75,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: 6144, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 4,
+    glyph: null,
   },
   {
     id: 'inst-3',
@@ -90,6 +92,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: 8192, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 5,
+    glyph: null,
   },
   {
     id: 'inst-4',
@@ -106,6 +109,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 1,
+    glyph: null,
   },
   {
     id: 'inst-5',
@@ -122,6 +126,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: 4096, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 2,
+    glyph: null,
   },
   {
     id: 'inst-6',
@@ -138,6 +143,7 @@ export const MOCK_INSTANCES: Instance[] = [
     java: { javaPath: null, javaMajor: null, memoryMb: null, extraJvmArgs: null, window: null, env: {} },
     status: { state: 'idle' },
     color: 3,
+    glyph: null,
   },
 ];
 

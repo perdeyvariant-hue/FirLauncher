@@ -17,6 +17,10 @@ import { LOADER_LABELS } from '@/types/instance';
 import type { LoaderVersion } from '@/types/version';
 import { useToasts } from '@/store/useToasts';
 import { useInstances } from '@/store/useInstances';
+import { artIndexOf } from '@/lib/art';
+import { glyphOf } from '@/lib/glyphs';
+import { CoverPicker } from '../CoverPicker';
+import { Cover } from '../InstanceCard';
 import { useSettings } from '@/store/useSettings';
 import { t } from '@/lib/i18n';
 
@@ -38,11 +42,11 @@ function Section({
   children: ReactElement | ReactElement[];
 }): ReactElement {
   return (
-    <section className="panel flex flex-col gap-4 p-4">
+    <section className="glass flex flex-col gap-3.5 rounded-xl p-[18px]">
       <div>
-        <h3 className="text-xs font-semibold text-text">{title}</h3>
+        <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-text">{title}</h3>
         {description !== undefined && (
-          <p className="mt-1 text-2xs leading-relaxed text-text-dim">{description}</p>
+          <p className="mt-1 text-xs leading-relaxed text-text-faint">{description}</p>
         )}
       </div>
       {children}
@@ -143,6 +147,37 @@ function LoaderSection({ instance }: { instance: Instance }): ReactElement {
   );
 }
 
+/** Cover colour and picture, applied as soon as they are picked. */
+function CoverSection({ instance }: { instance: Instance }): ReactElement {
+  const save = useInstances((state) => state.save);
+  const color = instance.color ?? artIndexOf(instance.id);
+  const glyph = glyphOf(instance);
+  return (
+    <Section
+      title={t`Обложка`}
+      description={
+        instance.iconPath === null
+          ? t`Цвет и значок на карточке сборки.`
+          : t`У сборки своя картинка — она показывается вместо значка, а цвет остаётся фоном.`
+      }
+    >
+      <div className="flex items-start gap-4">
+        <Cover instance={instance} size="hero" className="h-16 w-16 shrink-0 rounded-[18px]" />
+        <CoverPicker
+          color={color}
+          glyph={glyph}
+          onColor={(next) => {
+            void save({ ...instance, color: next });
+          }}
+          onGlyph={(next) => {
+            void save({ ...instance, glyph: next });
+          }}
+        />
+      </div>
+    </Section>
+  );
+}
+
 export function InstanceSettingsTab({ instance }: { instance: Instance }): ReactElement {
   const save = useInstances((state) => state.save);
   const defaults = useSettings((state) => state.settings);
@@ -188,6 +223,7 @@ export function InstanceSettingsTab({ instance }: { instance: Instance }): React
 
   return (
     <div className="flex flex-col gap-3">
+      <CoverSection instance={instance} />
       <LoaderSection instance={instance} />
 
       <Section

@@ -52,6 +52,8 @@ export interface Instance {
   readonly status: InstanceStatus;
   /** Cover gradient index (see lib/art.ts); null lets the id decide. */
   readonly color: number | null;
+  /** Cover picture id (see lib/glyphs.tsx), 'letters', or null to let the name decide. */
+  readonly glyph: string | null;
 }
 
 export interface InstalledMod {

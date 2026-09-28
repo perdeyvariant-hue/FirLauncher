@@ -137,6 +137,7 @@ pub async fn create_instance(
             loader_version,
             icon_path: None,
             color: None,
+            glyph: None,
         },
     )
     .await

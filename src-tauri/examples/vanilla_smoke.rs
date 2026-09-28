@@ -140,6 +140,7 @@ async fn main() -> Result<()> {
         favorite: false,
         java: InstanceJava::default(),
         color: None,
+        glyph: None,
     },
     };
 

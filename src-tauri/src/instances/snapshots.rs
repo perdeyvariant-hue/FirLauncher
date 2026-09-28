@@ -270,6 +270,7 @@ fn merge_meta(current: &InstanceMeta, saved: InstanceMeta) -> InstanceMeta {
         group: current.group.clone(),
         favorite: current.favorite,
         color: current.color,
+        glyph: current.glyph.clone(),
         // A profile id from the snapshot may name a profile cleaned up since;
         // with none, the next launch installs the loader again.
         profile_id: if same_loader { current.profile_id.clone() } else { None },
