@@ -7,13 +7,17 @@ export type ButtonVariant = 'primary' | 'secondary' | 'glass' | 'ghost' | 'dange
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 /**
- * Capsules. The primary action is filled with the accent and nothing more;
- * secondary actions are outlines drawn in the glass rim, `glass` is a pane
+ * Capsules. The primary action is glass tinted with the accent; secondary
+ * actions are outlines drawn in the glass rim, `glass` is a pane
  * of the same material as the cards, `ghost` is text.
  */
 const VARIANTS: Readonly<Record<ButtonVariant, string>> = {
+  // Glass tinted with the accent: the page shows through, blurred, under a
+  // rim of the accent and a highlight along the top edge.
   primary:
-    'bg-accent font-semibold text-on-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] hover:bg-accent-hover',
+    'bg-[linear-gradient(180deg,rgb(var(--accent-rgb)/0.42),rgb(var(--accent-rgb)/0.24))] font-semibold text-text ' +
+    'shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.55),inset_0_1px_0_rgb(255_255_255/0.22),0_4px_14px_-6px_rgb(var(--accent-rgb)/0.5)] ' +
+    'backdrop-blur-[18px] hover:bg-[linear-gradient(180deg,rgb(var(--accent-rgb)/0.55),rgb(var(--accent-rgb)/0.32))]',
   secondary: 'bg-transparent text-text shadow-rim hover:bg-[var(--hover)]',
   glass:
     '[background:var(--glass)] text-text shadow-[inset_0_0_0_1px_var(--glass-border)] backdrop-blur-[30px] hover:bg-[var(--hover)]',
