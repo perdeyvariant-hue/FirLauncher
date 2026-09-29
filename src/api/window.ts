@@ -41,3 +41,13 @@ export function quitLauncher(): Promise<void> {
   if (shouldMock()) return Promise.resolve();
   return ipcUnit('quit_launcher');
 }
+
+/**
+ * The corner radius the window itself has, so the interface can match it:
+ * Windows 11 rounds the window at its own radius, Windows 10 cannot round
+ * it at all (0), elsewhere the design's own radius applies.
+ */
+export function windowCornerRadius(): Promise<number> {
+  if (shouldMock()) return Promise.resolve(24);
+  return ipc<number>('window_corner_radius');
+}

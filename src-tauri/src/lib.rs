@@ -26,6 +26,7 @@ pub mod presence;
 pub mod shortcuts;
 pub mod state;
 pub mod art;
+pub mod corners;
 pub mod storage;
 pub mod tasks;
 
@@ -93,8 +94,9 @@ pub fn run() {
             // flashes before the interface is themed. A shortcut start keeps
             // it hidden: there the launcher is a means to an end, and the
             // small launch card shows itself when it is ready.
-            if !shortcuts::started_from_shortcut() {
-                if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window("main") {
+                corners::apply(&window);
+                if !shortcuts::started_from_shortcut() {
                     let _ = window.show();
                 }
             }
@@ -197,6 +199,7 @@ pub fn run() {
             commands::window::toggle_maximize_launcher,
             commands::window::is_launcher_maximized,
             commands::window::quit_launcher,
+            commands::window::window_corner_radius,
             commands::instances::list_resource_packs,
             commands::instances::list_shader_packs,
             commands::instances::list_screenshots,

@@ -136,7 +136,8 @@
    * are drawn by `Ambient`.
    */
   .ambient {
-    border-radius: 24px;
+    /* Follows the window's own corners (see api/window.ts). */
+    border-radius: var(--window-radius, 24px);
     isolation: isolate;
     background: rgb(var(--bg-rgb) / var(--window-alpha));
     box-shadow: var(--window-edge);

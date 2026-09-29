@@ -90,3 +90,9 @@ pub fn is_launcher_maximized(app: AppHandle) -> Result<bool> {
 pub fn quit_launcher(app: AppHandle) -> Result<()> {
     main_window(&app)?.close().map_err(failed)
 }
+
+/// The corner radius the interface should draw so it matches the window.
+#[tauri::command]
+pub fn window_corner_radius() -> u8 {
+    crate::corners::radius()
+}

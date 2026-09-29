@@ -26,7 +26,7 @@
         "windowEffects": {
           "effects": ["acrylic", "underWindowBackground"],
           "state": "active",
-          "radius": 14
+          "radius": 24
         }
       }
     ],
