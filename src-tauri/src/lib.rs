@@ -199,7 +199,7 @@ pub fn run() {
             commands::window::toggle_maximize_launcher,
             commands::window::is_launcher_maximized,
             commands::window::quit_launcher,
-            commands::window::window_corner_radius,
+            commands::window::window_frame,
             commands::instances::list_resource_packs,
             commands::instances::list_shader_packs,
             commands::instances::list_screenshots,

@@ -42,12 +42,15 @@ export function quitLauncher(): Promise<void> {
   return ipcUnit('quit_launcher');
 }
 
-/**
- * The corner radius the window itself has, so the interface can match it:
- * Windows 11 rounds the window at its own radius, Windows 10 cannot round
- * it at all (0), elsewhere the design's own radius applies.
- */
-export function windowCornerRadius(): Promise<number> {
-  if (shouldMock()) return Promise.resolve(24);
-  return ipc<number>('window_corner_radius');
+export interface WindowFrame {
+  /** Corner radius the interface draws, px. */
+  readonly radius: number;
+  /** Whether the system blurs what shows through a see-through window. */
+  readonly blur: boolean;
+}
+
+/** How the window frames the interface; see src-tauri/src/corners.rs. */
+export function windowFrame(): Promise<WindowFrame> {
+  if (shouldMock()) return Promise.resolve({ radius: 24, blur: true });
+  return ipc<WindowFrame>('window_frame');
 }

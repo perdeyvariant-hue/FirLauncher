@@ -11,12 +11,15 @@ import '@fontsource/jetbrains-mono/700.css';
 import './styles/globals.css';
 
 import App from './App';
-import { windowCornerRadius } from './api/window';
+import { windowFrame } from './api/window';
+import { setWindowBlur } from './lib/appearance';
 
-// The shell's corners must match the window's, or blur shows past them.
-void windowCornerRadius()
-  .then((radius) => {
-    document.documentElement.style.setProperty('--window-radius', `${String(radius)}px`);
+// The shell's corners must match the window's, and a window whose
+// background the system cannot blur stays opaque.
+void windowFrame()
+  .then((frame) => {
+    document.documentElement.style.setProperty('--window-radius', `${String(frame.radius)}px`);
+    setWindowBlur(frame.blur);
   })
   .catch(() => undefined);
 

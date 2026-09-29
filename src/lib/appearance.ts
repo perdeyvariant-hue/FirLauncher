@@ -68,12 +68,26 @@ export function applyAppearance(appearance: Appearance, theme: ResolvedTheme): v
   root.classList.toggle('reduce-motion', appearance.reduceMotion);
   // The window itself is translucent; this is how much of the page's own
   // background is left painted over the desktop behind it.
-  const seeThrough = Math.min(45, Math.max(0, appearance.windowTransparency)) / 100;
+  // Without the system's blur behind it the desktop would show sharp, so
+  // the window stays opaque there.
+  const seeThrough = windowBlur ? Math.min(45, Math.max(0, appearance.windowTransparency)) / 100 : 0;
   root.style.setProperty('--window-alpha', String(1 - seeThrough));
   // There is always something behind the panels now: the wallpaper, or the
   // ambient wash the shell paints when none is chosen.
   root.dataset['glass'] = appearance.glassPanels ? 'on' : 'off';
   applyZoom(appearance.uiScale);
+}
+
+let windowBlur = true;
+
+/** Whether the system blurs what shows through the window (see api/window.ts). */
+export function canSeeThrough(): boolean {
+  return windowBlur;
+}
+
+export function setWindowBlur(blur: boolean): void {
+  windowBlur = blur;
+  if (current !== null) applyLook(current);
 }
 
 let listening = false;

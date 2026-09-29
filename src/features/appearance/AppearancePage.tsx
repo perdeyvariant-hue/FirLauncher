@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/Slider';
 import { Switch } from '@/components/ui/Switch';
 import { Page } from '@/components/layout/PageHeader';
 import { accentPalette, contrastRatio, parseHex, toHex } from '@/lib/color';
-import { resolveTheme } from '@/lib/appearance';
+import { canSeeThrough, resolveTheme } from '@/lib/appearance';
 import { openExternal } from '@/api/system';
 import { activeAccountOf, useAccounts } from '@/store/useAccounts';
 import { useAppearanceImages } from '@/store/useAppearanceImages';
@@ -588,6 +588,7 @@ export function AppearancePage(): ReactElement {
                 label={t`Эффект стекла`}
               />
             </div>
+            {canSeeThrough() && (
             <div className="mt-3.5">
               <Slider
                 label={t`Прозрачность окна`}
@@ -605,6 +606,7 @@ export function AppearancePage(): ReactElement {
                 }}
               />
             </div>
+            )}
           </Card>
 
           <Card title={t`Талисман`}>

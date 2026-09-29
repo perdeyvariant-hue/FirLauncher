@@ -91,8 +91,9 @@ pub fn quit_launcher(app: AppHandle) -> Result<()> {
     main_window(&app)?.close().map_err(failed)
 }
 
-/// The corner radius the interface should draw so it matches the window.
+/// How the window frames the interface: corner radius, and whether what
+/// shows through it is blurred.
 #[tauri::command]
-pub fn window_corner_radius() -> u8 {
-    crate::corners::radius()
+pub fn window_frame() -> crate::corners::Frame {
+    crate::corners::frame()
 }
