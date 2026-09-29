@@ -75,17 +75,12 @@ const GAP = 6;
 const SLOW = '640ms var(--ease-spring)';
 const FAST = '340ms var(--ease-spring)';
 
-/** The fir on a tile of slowly turning accent light. */
+/** The fir on a plain tile of the accent colour. */
 function LogoTile(): ReactElement {
   return (
-    <div className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[16px] [isolation:isolate] shadow-[0_6px_18px_-4px_rgb(var(--accent-rgb)),inset_0_1px_0_rgb(255_255_255/0.45)]">
-      <span
-        aria-hidden
-        className="absolute left-1/2 top-1/2 z-[-2] -ml-[60px] -mt-[60px] h-[120px] w-[120px] animate-iri [background:var(--accent-conic)]"
-      />
-      <span aria-hidden className="absolute inset-0 z-[-1] bg-gradient-to-b from-white/30 to-transparent to-60%" />
+    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.18)]">
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
-        <path d="M12 2 16.5 8H14l4 5h-3l4.5 6H13v3h-2v-3H4.5L9 13H6l4-5H7.5Z" fill="#fff" />
+        <path d="M12 2 16.5 8H14l4 5h-3l4.5 6H13v3h-2v-3H4.5L9 13H6l4-5H7.5Z" className="fill-on-accent" />
       </svg>
     </div>
   );
@@ -121,7 +116,7 @@ export function Sidebar(): ReactElement {
       <div className="relative mt-[22px] w-[78px]" style={{ height: NAV.length * step - GAP }}>
         <div
           aria-hidden
-          className="absolute inset-x-0 rounded-[20px] [background:var(--seg)] shadow-[inset_0_0_0_1px_var(--seg-border),inset_0_1px_0_rgb(255_255_255/0.35),0_4px_14px_rgb(0_0_0/0.18),0_0_22px_-6px_rgb(var(--accent-rgb))]"
+          className="absolute inset-x-0 rounded-[20px] [background:var(--seg)] shadow-[inset_0_0_0_1px_var(--seg-border),inset_0_1px_0_rgb(255_255_255/0.12),0_4px_14px_rgb(0_0_0/0.18)]"
           style={{
             top: index * step,
             bottom: (NAV.length - 1 - index) * step,

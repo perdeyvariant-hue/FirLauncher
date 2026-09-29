@@ -39,7 +39,7 @@ export function AccountsPage(): ReactElement {
       }
       actions={
         <Button
-          iridescent
+          variant="primary"
           icon={<Plus size={15} strokeWidth={2.2} />}
           onClick={() => {
             setAddOpen(true);

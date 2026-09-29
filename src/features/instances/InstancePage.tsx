@@ -151,7 +151,7 @@ export function InstancePage({ instanceId, tab }: InstancePageProps): ReactEleme
                 {t`Остановить`}</Button>
             ) : (
               <Button
-                iridescent
+                variant="primary"
                 size="lg"
                 className="ml-1.5"
                 icon={<Play size={15} strokeWidth={1.5} fill="currentColor" />}

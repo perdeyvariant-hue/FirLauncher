@@ -17,13 +17,13 @@
 
 :root,
 :root[data-theme='dark'] {
-  --bg-rgb: 14 11 22;
-  --surface-rgb: 30 26 42;
-  --surface-2-rgb: 38 34 52;
-  --border-rgb: 58 54 72;
+  --bg-rgb: 9 9 12;
+  --surface-rgb: 22 21 27;
+  --surface-2-rgb: 30 29 36;
+  --border-rgb: 46 45 54;
   --text-rgb: 246 243 255;
-  --text-dim-rgb: 178 173 192;
-  --text-faint-rgb: 128 123 142;
+  --text-dim-rgb: 168 166 178;
+  --text-faint-rgb: 118 116 128;
   --accent-rgb: 168 85 247;
   --accent-2-rgb: 139 70 230;
   --accent-3-rgb: 205 110 250;
@@ -33,32 +33,32 @@
   --success-rgb: 74 222 128;
   --on-accent-rgb: 255 255 255;
 
-  --overlay: rgb(5 3 10 / 0.35);
+  --overlay: rgb(0 0 0 / 0.45);
 
   /*
-   * Glass: light lying on a surface. A white sheen, brighter at the top, over
-   * whatever is behind; a hairline rim; a soft shadow under it.
+   * Glass: a faint sheen over whatever is behind, a hairline rim and a soft
+   * shadow. Kept low so the dark theme stays dark and quiet.
    */
-  --glass: linear-gradient(180deg, rgb(255 255 255 / 0.168), rgb(255 255 255 / 0.098));
-  --glass-border: rgb(255 255 255 / 0.16);
-  --glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 10px 30px rgb(0 0 0 / 0.28);
+  --glass: linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.04));
+  --glass-border: rgb(255 255 255 / 0.09);
+  --glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 10px 30px rgb(0 0 0 / 0.35);
   --glass-blur: blur(30px) saturate(180%);
   /* What opens on top of everything: menus, dialogs, toasts. */
-  --sheet: rgb(30 26 42 / 0.8);
+  --sheet: rgb(20 19 25 / 0.88);
   --sheet-blur: blur(40px) saturate(180%);
-  --sheet-shadow: 0 20px 50px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.15);
+  --sheet-shadow: 0 20px 50px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.08);
   /* Small fills inside glass. */
-  --field: rgb(0 0 0 / 0.22);
-  --chip: rgb(255 255 255 / 0.08);
-  --track: rgb(255 255 255 / 0.14);
-  --hover: rgb(255 255 255 / 0.08);
-  --sep: rgb(255 255 255 / 0.07);
+  --field: rgb(0 0 0 / 0.3);
+  --chip: rgb(255 255 255 / 0.06);
+  --track: rgb(255 255 255 / 0.11);
+  --hover: rgb(255 255 255 / 0.06);
+  --sep: rgb(255 255 255 / 0.06);
   /* The raised thumb of a segmented control and the rail's highlight. */
-  --seg: linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.1));
-  --seg-border: rgb(255 255 255 / 0.18);
+  --seg: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.08));
+  --seg-border: rgb(255 255 255 / 0.1);
   /* How strongly the accent pools show behind everything. */
-  --mesh-opacity: 0.55;
-  --window-edge: 0 0 0 1px rgb(255 255 255 / 0.1);
+  --mesh-opacity: 0.22;
+  --window-edge: 0 0 0 1px rgb(255 255 255 / 0.08);
 }
 
 :root[data-theme='light'] {
@@ -100,11 +100,11 @@
 /* "Эффект стекла" off, or the system asked for less transparency: flat cards. */
 :root[data-glass='off'],
 :root[data-glass='off'][data-theme='dark'] {
-  --glass: #1d1a29;
+  --glass: #16151b;
   --glass-border: rgb(255 255 255 / 0.07);
   --glass-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
   --glass-blur: none;
-  --sheet: #221e30;
+  --sheet: #1b1a21;
   --sheet-blur: none;
   --mesh-opacity: 0.35;
 }

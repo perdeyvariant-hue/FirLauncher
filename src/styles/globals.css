@@ -174,41 +174,6 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /*
-   * A lit, turning surface: the three accents spin slowly inside, a gloss
-   * lies on top, and a sheen crosses it on hover. For the one main action on
-   * a screen.
-   */
-  .iridescent {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    color: #fff;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
-    box-shadow: 0 6px 20px -6px var(--accent), inset 0 1px 0 rgb(255 255 255 / 0.4);
-  }
-
-  .iridescent::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 260px;
-    height: 260px;
-    margin: -130px 0 0 -130px;
-    z-index: -2;
-    background: var(--accent-conic);
-    animation: spin 7s linear infinite;
-  }
-
-  .iridescent::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.26), transparent 55%, rgb(0 0 0 / 0.14));
-  }
-
   /* Entrance: cards settle in one after another. `--i` is the position. */
   .stagger {
     animation: stagger-in 560ms var(--ease-spring) backwards;

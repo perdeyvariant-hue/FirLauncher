@@ -43,12 +43,12 @@ interface Preset {
 const PRESETS: readonly Preset[] = [
   { name: t`Фиолетовая ночь`, accent: '#A855F7', theme: 'dark', wallpaper: 'none' },
   { name: t`Хвойный лес`, accent: '#22C55E', theme: 'dark', wallpaper: 'forest' },
-  { name: t`Океан`, accent: '#0EA5E9', theme: 'dark', wallpaper: 'mist' },
-  { name: t`Хеллоуин`, accent: '#F97316', theme: 'dark', wallpaper: 'dots' },
-  { name: t`Сакура`, accent: '#EC4899', theme: 'light', wallpaper: 'mist' },
+  { name: t`Океан`, accent: '#0EA5E9', theme: 'dark', wallpaper: 'none' },
+  { name: t`Хеллоуин`, accent: '#F97316', theme: 'dark', wallpaper: 'none' },
+  { name: t`Сакура`, accent: '#EC4899', theme: 'dark', wallpaper: 'none' },
   { name: t`Космос`, accent: '#6366F1', theme: 'dark', wallpaper: 'dots' },
   { name: t`Монохром`, accent: '#A1A1AA', theme: 'dark', wallpaper: 'none' },
-  { name: t`Мятный лёд`, accent: '#14B8A6', theme: 'light', wallpaper: 'none' },
+  { name: t`Мятный лёд`, accent: '#14B8A6', theme: 'dark', wallpaper: 'none' },
 ];
 
 const THEMES: readonly { readonly value: ThemeMode; readonly label: string }[] = [
@@ -87,39 +87,38 @@ function channels(hex: string, theme: 'dark' | 'light'): { a: string; b: string;
   return { a: toHex(palette.accent), b: toHex(palette.second), c: toHex(palette.third) };
 }
 
-/** A tiny launcher drawn in the preset's colours: rail, bar and two cards. */
+/** A tiny launcher in the preset's colours: a dark window, one glow, faint panes. */
 function PresetPreview({ preset }: { preset: Preset }): ReactElement {
   const dark = preset.theme === 'dark';
-  const { a, b, c } = channels(preset.accent, preset.theme);
-  const pane = dark ? 'rgb(255 255 255 / 0.14)' : 'rgb(255 255 255 / 0.6)';
+  const accent = parseHex(channels(preset.accent, preset.theme).a);
+  const rgb = accent === null ? '168 85 247' : `${String(accent.r)} ${String(accent.g)} ${String(accent.b)}`;
   const scope = {
-    '--accent-rgb': (() => {
-      const rgb = parseHex(a);
-      return rgb === null ? undefined : `${String(rgb.r)} ${String(rgb.g)} ${String(rgb.b)}`;
-    })(),
-    '--text-dim-rgb': dark ? '178 173 192' : '96 92 108',
+    '--accent-rgb': rgb,
+    '--text-dim-rgb': dark ? '168 166 178' : '96 92 108',
     background: [
-      `radial-gradient(circle at 20% 25%, ${a}, transparent 55%)`,
-      `radial-gradient(circle at 85% 30%, ${b}, transparent 50%)`,
-      `radial-gradient(circle at 60% 110%, ${c}, transparent 55%)`,
-      dark ? '#120f1c' : '#f1eef8',
+      `radial-gradient(90% 80% at 15% 10%, rgb(${rgb} / ${dark ? '0.28' : '0.22'}), transparent 70%)`,
+      dark ? '#0c0c10' : '#f1eff5',
     ].join(', '),
   } as CSSProperties;
   const box = (style: CSSProperties): ReactElement => (
     <div
-      className="absolute rounded-[8px] border border-white/30"
-      style={{ background: pane, ...style }}
+      className="absolute rounded-[6px]"
+      style={{
+        background: dark ? 'rgb(255 255 255 / 0.05)' : 'rgb(255 255 255 / 0.7)',
+        boxShadow: dark ? 'inset 0 0 0 1px rgb(255 255 255 / 0.08)' : 'inset 0 0 0 1px rgb(22 19 31 / 0.06)',
+        ...style,
+      }}
     />
   );
   return (
     <div className="relative aspect-video overflow-hidden" style={{ ...scope, borderRadius: 'calc(var(--radius) - 8px)' }}>
-      {preset.wallpaper === 'mist' && <MistWallpaper />}
       {preset.wallpaper === 'dots' && <DotsWallpaper />}
       {preset.wallpaper === 'forest' && <ForestWallpaper />}
       {box({ left: '8%', top: '14%', bottom: '14%', width: '12%' })}
-      {box({ left: '25%', right: '8%', top: '14%', height: '26%' })}
-      {box({ left: '25%', width: '31%', top: '48%', bottom: '14%' })}
-      {box({ right: '8%', width: '31%', top: '48%', bottom: '14%' })}
+      {box({ left: '25%', right: '8%', top: '14%', height: '22%' })}
+      {box({ left: '25%', width: '31%', top: '44%', bottom: '14%' })}
+      {box({ right: '8%', width: '31%', top: '44%', bottom: '14%' })}
+      <span className="absolute left-[25%] top-[44%] m-[6%] h-[6%] w-[14%] rounded-full" style={{ background: `rgb(${rgb})` }} />
     </div>
   );
 }
@@ -321,16 +320,13 @@ export function AppearancePage(): ReactElement {
               style={
                 {
                   '--i': index,
-                  ...(selected ? { boxShadow: `0 0 0 2px ${a}, 0 10px 30px -8px ${a}` } : {}),
+                  ...(selected ? { boxShadow: `0 0 0 1.5px ${a}` } : {}),
                 } as CSSProperties
               }
             >
               <PresetPreview preset={preset} />
-              <span className="flex items-center justify-between gap-1.5 px-1 pt-2.5">
-                <span className="truncate text-[13px] font-semibold text-text">{preset.name}</span>
-                <span className="shrink-0 text-[11px] text-text-faint">
-                  {preset.theme === 'dark' ? t`Тёмная` : t`Светлая`}
-                </span>
+              <span className="block truncate px-1 pt-2.5 text-[13px] font-semibold text-text">
+                {preset.name}
               </span>
             </button>
           );

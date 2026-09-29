@@ -67,7 +67,7 @@ export function Tabs<T extends string>({
       {thumb !== null && (
         <span
           aria-hidden
-          className="absolute bottom-[3px] top-[3px] rounded-pill [background:var(--seg)] shadow-[inset_0_0_0_1px_var(--seg-border),inset_0_1px_0_rgb(255_255_255/0.35),0_2px_8px_rgb(0_0_0/0.18),0_0_22px_-6px_rgb(var(--accent-rgb))]"
+          className="absolute bottom-[3px] top-[3px] rounded-pill [background:var(--seg)] shadow-[inset_0_0_0_1px_var(--seg-border),inset_0_1px_0_rgb(255_255_255/0.12),0_2px_8px_rgb(0_0_0/0.18)]"
           style={{
             left: thumb.left,
             width: thumb.width,

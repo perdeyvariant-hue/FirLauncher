@@ -51,7 +51,6 @@ const config: Config = {
         glass: 'inset 0 0 0 1px var(--glass-border), var(--glass-shadow)',
         sheet: 'inset 0 0 0 1px var(--glass-border), var(--sheet-shadow)',
         rim: 'inset 0 0 0 1px var(--glass-border)',
-        glow: '0 6px 20px -6px rgb(var(--accent-rgb))',
       },
       fontFamily: {
         // SF on a Mac, the bundled Inter everywhere else.

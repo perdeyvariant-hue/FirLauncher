@@ -126,7 +126,7 @@ export function FilterBar({ view, onView, onCreate, onImport, onModpacks }: Filt
         <Button className="px-3.5" onClick={onImport}>
           {t`Импорт`}
         </Button>
-        <Button iridescent icon={<Plus size={15} strokeWidth={2.2} />} onClick={onCreate}>
+        <Button variant="primary" icon={<Plus size={15} strokeWidth={2.2} />} onClick={onCreate}>
           {t`Создать`}
         </Button>
       </div>
