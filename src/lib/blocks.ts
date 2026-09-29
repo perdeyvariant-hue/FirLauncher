@@ -1,4 +1,3 @@
-import { hashOf } from './art';
 import { t } from './i18n';
 
 /**
@@ -20,6 +19,18 @@ export interface BlockDef {
 const GRASS = '#91bd59';
 
 export const BLOCKS: readonly BlockDef[] = [
+  // The blocks each update is remembered by, newest first.
+  { id: 'crafter', label: t`Крафтер`, top: 'crafter_top', side: 'crafter_east', front: 'crafter_north' },
+  { id: 'cherry_log', label: t`Вишнёвое бревно`, top: 'cherry_log_top', side: 'cherry_log' },
+  { id: 'sculk_catalyst', label: t`Скалк-катализатор`, top: 'sculk_catalyst_top', side: 'sculk_catalyst_side' },
+  { id: 'deepslate_diamond_ore', label: t`Глубинная алмазная руда`, top: 'deepslate_diamond_ore', side: 'deepslate_diamond_ore' },
+  { id: 'ancient_debris', label: t`Древние обломки`, top: 'ancient_debris_top', side: 'ancient_debris_side' },
+  { id: 'bee_nest', label: t`Пчелиное гнездо`, top: 'bee_nest_top', side: 'bee_nest_side', front: 'bee_nest_front' },
+  { id: 'barrel', label: t`Бочка`, top: 'barrel_top', side: 'barrel_side' },
+  { id: 'tube_coral_block', label: t`Трубчатый коралл`, top: 'tube_coral_block', side: 'tube_coral_block' },
+  { id: 'magenta_glazed_terracotta', label: t`Глазурованная керамика`, top: 'magenta_glazed_terracotta', side: 'magenta_glazed_terracotta' },
+  { id: 'observer', label: t`Наблюдатель`, top: 'observer_top', side: 'observer_side', front: 'observer_front' },
+  { id: 'purpur_block', label: t`Пурпур`, top: 'purpur_block', side: 'purpur_block' },
   { id: 'grass_block', label: t`Трава`, top: 'grass_block_top', side: 'grass_block_side', topTint: GRASS },
   { id: 'oak_log', label: t`Бревно`, top: 'oak_log_top', side: 'oak_log' },
   { id: 'oak_planks', label: t`Доски`, top: 'oak_planks', side: 'oak_planks' },
@@ -71,40 +82,44 @@ export function blockById(id: string): BlockDef | undefined {
   return BLOCKS.find((block) => block.id === id);
 }
 
-/** Words in a name that suggest a block, checked in order. */
-const HINTS: readonly (readonly [RegExp, string])[] = [
-  [/техно|tech|create|механ|индустр|industr|automat|автомат/i, 'piston'],
-  [/скай|sky/i, 'grass_block'],
-  [/хардкор|hardcore/i, 'tnt'],
-  [/хоррор|horror|страш|scary|хэллоуин|хеллоуин|halloween/i, 'carved_pumpkin'],
-  [/rlcraft|rpg|приключ|adventure|адвенч|dungeon|данж/i, 'bookshelf'],
-  [/pvp|пвп|bedwars|бедвар|skywars/i, 'iron_block'],
-  // \b only knows Latin letters, so Cyrillic words are bounded by hand.
-  [/маги[яиюей]|magic|(^|\s)маг(\s|$)|волшеб|thaum|botania/i, 'amethyst_block'],
-  [/\blab\b|лаборат|тест|test|snapshot|снапшот|экспер/i, 'slime_block'],
-  [/космос|space|galact|галакт|planet|планет|энд|\bend\b/i, 'end_stone'],
-  [/замок|castle|крепост|medieval|средневек/i, 'stone_bricks'],
-  [/ферм|farm|агро/i, 'hay_block'],
-  [/океан|ocean|море|sea\b|остров|island/i, 'prismarine'],
-  [/снег|зим|winter|snow|ice|лёд|лед/i, 'packed_ice'],
-  [/незер|nether|(^|\s)ад(\s|$)|hell|огн|fire/i, 'netherrack'],
-  [/пещер|cave|шахт|mine|копа|алмаз|diamond/i, 'diamond_ore'],
-  [/строит|build|креатив|creative/i, 'crafting_table'],
-  [/perf|оптимиз|fps|sodium|быстр|fast|редстоун|redstone/i, 'redstone_block'],
-  [/выжив|survival|лес|forest/i, 'oak_log'],
-  [/ванил|vanilla/i, 'grass_block'],
+/**
+ * The block each update is known by, keyed by its minor version: 1.16 is the
+ * Nether Update, so its instances wear ancient debris.
+ */
+const SIGNATURES: readonly (readonly [number, string])[] = [
+  [21, 'crafter'],
+  [20, 'cherry_log'],
+  [19, 'sculk_catalyst'],
+  [18, 'deepslate_diamond_ore'],
+  [17, 'amethyst_block'],
+  [16, 'ancient_debris'],
+  [15, 'bee_nest'],
+  [14, 'barrel'],
+  [13, 'tube_coral_block'],
+  [12, 'magenta_glazed_terracotta'],
+  [11, 'observer'],
+  [10, 'magma_block'],
+  [9, 'purpur_block'],
+  [8, 'sea_lantern'],
+  [7, 'packed_ice'],
+  [6, 'hay_block'],
+  [5, 'redstone_block'],
 ];
 
-export function suggestBlock(name: string): string | null {
-  for (const [pattern, id] of HINTS) if (pattern.test(name)) return id;
-  return null;
+/**
+ * The block for a game version. Snapshots and anything newer than the table
+ * get the newest update's block; the oldest versions get grass.
+ */
+export function versionBlock(mcVersion: string): string {
+  const minor = /^1\.(\d+)/.exec(mcVersion)?.[1];
+  const newest = SIGNATURES[0]?.[1] ?? 'grass_block';
+  if (minor === undefined) return newest;
+  const number = Number(minor);
+  if (number > (SIGNATURES[0]?.[0] ?? 0)) return newest;
+  return SIGNATURES.find(([version]) => version === number)?.[1] ?? 'grass_block';
 }
 
-/** A block for an instance nobody chose one for: the name's, else the id's. */
-export function defaultBlock(instance: { id: string; name: string }): string {
-  return (
-    suggestBlock(instance.name) ??
-    BLOCKS[hashOf(`${instance.id}#block`) % BLOCKS.length]?.id ??
-    'grass_block'
-  );
+/** A block for an instance nobody chose one for: its game version's. */
+export function defaultBlock(instance: { mcVersion: string }): string {
+  return versionBlock(instance.mcVersion);
 }

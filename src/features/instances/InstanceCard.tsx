@@ -5,13 +5,13 @@ import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/Badge';
 import { ContextMenu } from '@/components/ui/ContextMenu';
 import type { ContextMenuItem } from '@/components/ui/ContextMenu';
-import { artGradient, artIndexOf, hashOf } from '@/lib/art';
+import { artGradient, artIndexOf } from '@/lib/art';
 import { BLOCK_PREFIX, blockById, defaultBlock } from '@/lib/blocks';
 import type { BlockDef } from '@/lib/blocks';
 import { formatPlaytime, formatRelativeDate, initialsOf } from '@/lib/format';
 import { Glyph, LETTERS, glyphById, glyphOf } from '@/lib/glyphs';
 import { translate } from '@/lib/i18n';
-import { useGameArt } from '@/store/useGameArt';
+import { useGameArt, useVersionTextures } from '@/store/useGameArt';
 import { useTasks } from '@/store/useTasks';
 import { BlockIcon } from './BlockIcon';
 import type { Instance } from '@/types/instance';
@@ -143,7 +143,7 @@ export type CoverMark =
  * game files; without them the drawn pictures stand in.
  */
 export function coverMark(
-  instance: Pick<Instance, 'id' | 'name' | 'glyph'>,
+  instance: Pick<Instance, 'id' | 'name' | 'glyph' | 'mcVersion'>,
   textures: Record<string, string>,
 ): CoverMark {
   const usable = (block: BlockDef | undefined): block is BlockDef =>
@@ -164,7 +164,7 @@ export function coverMark(
 
 /** The picker's value for what a cover shows now. */
 export function coverValue(
-  instance: Pick<Instance, 'id' | 'name' | 'glyph'>,
+  instance: Pick<Instance, 'id' | 'name' | 'glyph' | 'mcVersion'>,
   textures: Record<string, string>,
 ): string {
   const mark = coverMark(instance, textures);
@@ -183,28 +183,26 @@ export function Cover({
   className,
   style,
 }: {
-  instance: Pick<Instance, 'id' | 'name' | 'color' | 'glyph' | 'iconPath'>;
+  instance: Pick<Instance, 'id' | 'name' | 'color' | 'glyph' | 'iconPath' | 'mcVersion'>;
   size: 'tile' | 'row' | 'hero';
   className?: string;
   style?: CSSProperties;
 }): ReactElement {
-  const textures = useGameArt((state) => state.textures);
-  const panoramas = useGameArt((state) => state.panoramas);
+  // The block is drawn with its own version's textures, over its panorama.
+  const textures = useVersionTextures(instance.mcVersion);
+  const panorama = useGameArt((state) => state.panoramas[instance.mcVersion]);
+  const loadPanorama = useGameArt((state) => state.loadPanorama);
   const shot = useGameArt((state) => state.covers[instance.id]);
   const loadCover = useGameArt((state) => state.loadCover);
   const tile = size === 'tile';
 
   useEffect(() => {
-    if (tile) loadCover(instance.id);
-  }, [tile, instance.id, loadCover]);
+    if (!tile) return;
+    loadCover(instance.id);
+    loadPanorama(instance.mcVersion);
+  }, [tile, instance.id, instance.mcVersion, loadCover, loadPanorama]);
 
-  const picture = !tile
-    ? null
-    : typeof shot === 'string'
-      ? shot
-      : panoramas.length > 0
-        ? (panoramas[hashOf(`${instance.id}#pano`) % panoramas.length] ?? null)
-        : null;
+  const picture = !tile ? null : typeof shot === 'string' ? shot : (panorama ?? null);
   // Over the player's own screenshot the block steps aside into a corner.
   const cornered = tile && typeof shot === 'string';
   const mark = coverMark(instance, textures);

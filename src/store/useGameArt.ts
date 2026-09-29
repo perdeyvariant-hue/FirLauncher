@@ -1,49 +1,71 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import * as artApi from '@/api/art';
 import { BLOCK_TEXTURES } from '@/lib/blocks';
 
 interface GameArtState {
-  /** Texture name → data URL. Empty until loaded or without a downloaded client. */
-  textures: Record<string, string>;
-  panoramas: string[];
+  /** Game version → texture name → data URL. Filled per version on demand. */
+  textures: Record<string, Record<string, string>>;
+  /** Game version → its title-screen panorama; null when there is none. */
+  panoramas: Record<string, string | null>;
   /** Instance id → its newest screenshot; null when it has none. */
   covers: Record<string, string | null>;
-  loaded: boolean;
-  load: () => Promise<void>;
+  loadTextures: (version: string) => void;
+  loadPanorama: (version: string) => void;
   loadCover: (instanceId: string) => void;
   /** Forget a cover so the next look reads the screenshots again. */
   dropCover: (instanceId: string) => void;
 }
 
-const pendingCovers = new Set<string>();
+const pending = new Set<string>();
 
-/** Pictures from the player's game files, fetched once per session. */
+/** Runs `fetch` once per key while nothing is known for it yet. */
+function once<T>(key: string, known: boolean, fetch: () => Promise<T>, store: (value: T) => void): void {
+  if (known || pending.has(key)) return;
+  pending.add(key);
+  void fetch().then((value) => {
+    pending.delete(key);
+    store(value);
+  });
+}
+
+/** Pictures from the player's game files, fetched once per version or instance. */
 export const useGameArt = create<GameArtState>()((set, get) => ({
   textures: {},
-  panoramas: [],
+  panoramas: {},
   covers: {},
-  loaded: false,
 
-  load: async () => {
-    if (get().loaded) return;
-    set({ loaded: true });
-    const [textures, panoramas] = await Promise.all([
-      artApi.blockTextures(BLOCK_TEXTURES).catch(() => ({})),
-      artApi.gamePanoramas().catch(() => []),
-    ]);
-    set({ textures, panoramas });
+  loadTextures: (version) => {
+    once(
+      `textures:${version}`,
+      version in get().textures,
+      () => artApi.blockTextures(version, BLOCK_TEXTURES).catch(() => ({})),
+      (found) => {
+        set((state) => ({ textures: { ...state.textures, [version]: found } }));
+      },
+    );
+  },
+
+  loadPanorama: (version) => {
+    once(
+      `panorama:${version}`,
+      version in get().panoramas,
+      () => artApi.versionPanorama(version).catch(() => null),
+      (panorama) => {
+        set((state) => ({ panoramas: { ...state.panoramas, [version]: panorama } }));
+      },
+    );
   },
 
   loadCover: (instanceId) => {
-    if (instanceId in get().covers || pendingCovers.has(instanceId)) return;
-    pendingCovers.add(instanceId);
-    void artApi
-      .instanceCover(instanceId)
-      .catch(() => null)
-      .then((cover) => {
-        pendingCovers.delete(instanceId);
+    once(
+      `cover:${instanceId}`,
+      instanceId in get().covers,
+      () => artApi.instanceCover(instanceId).catch(() => null),
+      (cover) => {
         set((state) => ({ covers: { ...state.covers, [instanceId]: cover } }));
-      });
+      },
+    );
   },
 
   dropCover: (instanceId) => {
@@ -56,3 +78,15 @@ export const useGameArt = create<GameArtState>()((set, get) => ({
     });
   },
 }));
+
+/** The textures of a game version, asking for them the first time. */
+export function useVersionTextures(version: string): Record<string, string> {
+  const textures = useGameArt((state) => state.textures[version]);
+  const load = useGameArt((state) => state.loadTextures);
+  useEffect(() => {
+    if (version !== '') load(version);
+  }, [version, load]);
+  return textures ?? EMPTY;
+}
+
+const EMPTY: Record<string, string> = {};

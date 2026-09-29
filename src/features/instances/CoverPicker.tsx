@@ -5,12 +5,14 @@ import { Segmented } from '@/components/ui/Segmented';
 import { ART_GRADIENTS, artGradient } from '@/lib/art';
 import { BLOCKS, BLOCK_PREFIX } from '@/lib/blocks';
 import { GLYPHS, Glyph, LETTERS } from '@/lib/glyphs';
-import { useGameArt } from '@/store/useGameArt';
+import { useVersionTextures } from '@/store/useGameArt';
 import { t } from '@/lib/i18n';
 import { BlockIcon } from './BlockIcon';
 
 export interface CoverPickerProps {
   color: number;
+  /** Whose textures the blocks are drawn with. */
+  version: string;
   /** What the cover shows now: `block:<id>`, a glyph id or `letters`. */
   glyph: string;
   onColor: (color: number) => void;
@@ -24,8 +26,8 @@ const TILE =
  * Cover colour and what stands on it: a block from the game (when its
  * textures are on this computer), a drawn picture, or the initials.
  */
-export function CoverPicker({ color, glyph, onColor, onGlyph }: CoverPickerProps): ReactElement {
-  const textures = useGameArt((state) => state.textures);
+export function CoverPicker({ color, version, glyph, onColor, onGlyph }: CoverPickerProps): ReactElement {
+  const textures = useVersionTextures(version);
   const blocks = BLOCKS.filter((block) => block.top in textures && block.side in textures);
   const [tab, setTab] = useState<'blocks' | 'glyphs'>(
     blocks.length > 0 && (glyph.startsWith(BLOCK_PREFIX) || glyph === '') ? 'blocks' : 'glyphs',

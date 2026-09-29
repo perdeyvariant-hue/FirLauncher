@@ -18,7 +18,7 @@ import type { LoaderVersion } from '@/types/version';
 import { useToasts } from '@/store/useToasts';
 import { useInstances } from '@/store/useInstances';
 import { artIndexOf } from '@/lib/art';
-import { useGameArt } from '@/store/useGameArt';
+import { useVersionTextures } from '@/store/useGameArt';
 import { CoverPicker } from '../CoverPicker';
 import { Cover, coverValue } from '../InstanceCard';
 import { useSettings } from '@/store/useSettings';
@@ -150,7 +150,7 @@ function LoaderSection({ instance }: { instance: Instance }): ReactElement {
 /** Cover colour and picture, applied as soon as they are picked. */
 function CoverSection({ instance }: { instance: Instance }): ReactElement {
   const save = useInstances((state) => state.save);
-  const textures = useGameArt((state) => state.textures);
+  const textures = useVersionTextures(instance.mcVersion);
   const color = instance.color ?? artIndexOf(instance.id);
   const glyph = coverValue(instance, textures);
   return (
@@ -158,7 +158,7 @@ function CoverSection({ instance }: { instance: Instance }): ReactElement {
       title={t`Обложка`}
       description={
         instance.iconPath === null
-          ? t`Фоном служит ваш последний скриншот из этой сборки, а пока его нет — панорама из игры.`
+          ? t`Фоном служит ваш последний скриншот из этой сборки, а пока его нет — панорама её версии. Блок по умолчанию — символ этой версии.`
           : t`У сборки своя картинка — она показывается вместо блока.`
       }
     >
@@ -166,6 +166,7 @@ function CoverSection({ instance }: { instance: Instance }): ReactElement {
         <Cover instance={instance} size="hero" className="h-16 w-16 shrink-0 rounded-[18px]" />
         <CoverPicker
           color={color}
+          version={instance.mcVersion}
           glyph={glyph}
           onColor={(next) => {
             void save({ ...instance, color: next });

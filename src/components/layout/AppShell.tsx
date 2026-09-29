@@ -12,7 +12,6 @@ import { ExportDialog } from '@/features/packs/ExportDialog';
 import { SkippedFilesDialog } from '@/features/packs/SkippedFilesDialog';
 import { CommandPalette } from '@/features/palette/CommandPalette';
 import { LaunchPanel } from '@/features/launch/LaunchPanel';
-import { useGameArt } from '@/store/useGameArt';
 
 /**
  * The colour pools and the wallpaper run edge to edge under the whole window
@@ -22,11 +21,6 @@ import { useGameArt } from '@/store/useGameArt';
  */
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const [palette, setPalette] = useState(false);
-
-  // Block textures and panoramas for the instance covers, once per session.
-  useEffect(() => {
-    void useGameArt.getState().load();
-  }, []);
 
   // Ctrl+K (Cmd+K on a Mac) from anywhere, including inside a text field.
   useEffect(() => {

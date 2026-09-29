@@ -66,17 +66,18 @@ pub async fn clean_storage(state: State<'_, AppState>) -> Result<crate::storage:
     Ok(crate::storage::CleanupPlan { files, bytes, blocked: None })
 }
 
-/// Title-screen panoramas from the downloaded assets, as cover thumbnails.
+/// A game version's title-screen panorama as a cover thumbnail.
 #[tauri::command]
-pub async fn game_panoramas(state: State<'_, AppState>) -> Result<Vec<String>> {
-    crate::art::panoramas(&state.paths).await
+pub async fn version_panorama(state: State<'_, AppState>, version: String) -> Result<Option<String>> {
+    crate::art::version_panorama(&state.client(), &state.paths, &version).await
 }
 
-/// Block textures from the newest downloaded client, by name.
+/// Block textures by name, from the given version's client when downloaded.
 #[tauri::command]
 pub async fn block_textures(
     state: State<'_, AppState>,
+    version: Option<String>,
     names: Vec<String>,
 ) -> Result<std::collections::HashMap<String, String>> {
-    crate::art::block_textures(&state.paths, names).await
+    crate::art::block_textures(&state.paths, version, names).await
 }

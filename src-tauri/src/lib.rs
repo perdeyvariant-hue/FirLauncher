@@ -149,7 +149,7 @@ pub fn run() {
             commands::instances::restore_snapshot,
             commands::instances::delete_snapshot,
             commands::meta::storage_usage,
-            commands::meta::game_panoramas,
+            commands::meta::version_panorama,
             commands::meta::block_textures,
             commands::instances::instance_cover,
             commands::meta::plan_storage_cleanup,

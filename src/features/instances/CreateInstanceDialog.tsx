@@ -9,9 +9,9 @@ import { Segmented } from '@/components/ui/Segmented';
 import { Select } from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select';
 import { ART_GRADIENTS, artGradient } from '@/lib/art';
-import { BLOCKS, BLOCK_PREFIX, suggestBlock } from '@/lib/blocks';
+import { BLOCK_PREFIX, versionBlock } from '@/lib/blocks';
 import { GLYPHS, suggestGlyph } from '@/lib/glyphs';
-import { useGameArt } from '@/store/useGameArt';
+import { useVersionTextures } from '@/store/useGameArt';
 import { isTauri, toLauncherError } from '@/lib/ipc';
 import * as metaApi from '@/api/meta';
 import type { LoaderVersion, MinecraftVersion } from '@/types/version';
@@ -24,10 +24,6 @@ import { Cover } from './InstanceCard';
 
 function randomGlyph(): string {
   return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]?.id ?? 'cube';
-}
-
-function randomBlock(): string {
-  return BLOCKS[Math.floor(Math.random() * BLOCKS.length)]?.id ?? 'grass_block';
 }
 import { useToasts } from '@/store/useToasts';
 import { useUI } from '@/store/useUI';
@@ -50,8 +46,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   // Chosen by hand; until then the name suggests one, or a random pick.
   const [glyph, setGlyph] = useState<string | null>(null);
   const [fallbackGlyph, setFallbackGlyph] = useState(randomGlyph);
-  const [fallbackBlock, setFallbackBlock] = useState(randomBlock);
-  const textures = useGameArt((state) => state.textures);
+
   const [versions, setVersions] = useState<MinecraftVersion[]>([]);
   const [mcVersion, setMcVersion] = useState('');
   const [loader, setLoader] = useState<ModLoader>('vanilla');
@@ -76,7 +71,6 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
     setColor(Math.floor(Math.random() * ART_GRADIENTS.length));
     setGlyph(null);
     setFallbackGlyph(randomGlyph());
-    setFallbackBlock(randomBlock());
     setSubmitting(false);
 
     let cancelled = false;
@@ -166,14 +160,14 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   }));
 
   const trimmedName = name.trim();
-  // With the game's textures at hand a new instance gets a block; the name
-  // suggests which, and what the preview shows is exactly what is saved.
+  // With the game's textures at hand a new instance gets its version's
+  // block; left alone it follows the version, so nothing is stored for it.
+  const textures = useVersionTextures(mcVersion);
   const haveBlocks = 'stone' in textures;
-  const shownGlyph =
-    glyph ??
-    (haveBlocks
-      ? `${BLOCK_PREFIX}${suggestBlock(trimmedName) ?? fallbackBlock}`
-      : (suggestGlyph(trimmedName) ?? fallbackGlyph));
+  const autoGlyph = haveBlocks
+    ? `${BLOCK_PREFIX}${versionBlock(mcVersion)}`
+    : (suggestGlyph(trimmedName) ?? fallbackGlyph);
+  const shownGlyph = glyph ?? autoGlyph;
   const nameError =
     nameTouched && trimmedName === '' ? t`Введите имя сборки` : null;
   const canSubmit =
@@ -208,7 +202,8 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
       loaderVersion: loader === 'vanilla' ? null : loaderVersion,
       iconPath,
       color,
-      glyph: shownGlyph,
+      // A block left at its default keeps following the version.
+      glyph: glyph ?? (haveBlocks ? null : autoGlyph),
     });
     setSubmitting(false);
     if (instance === null) return;
@@ -264,7 +259,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
             style={{ background: artGradient(color) }}
           >
             <Cover
-              instance={{ id: 'new', name: trimmedName, color, glyph: shownGlyph, iconPath: null }}
+              instance={{ id: 'new', name: trimmedName, color, glyph: shownGlyph, iconPath: null, mcVersion }}
               size="hero"
               className="absolute inset-0"
             />
@@ -317,7 +312,7 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         </div>
 
         <p className="mb-2 mt-5 text-[13px] text-text-dim">{t`Обложка`}</p>
-        <CoverPicker color={color} glyph={shownGlyph} onColor={setColor} onGlyph={setGlyph} />
+        <CoverPicker color={color} version={mcVersion} glyph={shownGlyph} onColor={setColor} onGlyph={setGlyph} />
 
         <p className="mb-2 mt-5 text-[13px] text-text-dim">{t`Версия Minecraft`}</p>
         <div className="flex flex-wrap items-center gap-1.5">
