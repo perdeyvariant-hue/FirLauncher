@@ -247,7 +247,7 @@ export function Select<T extends string>({
                 maxWidth: placement.maxWidth,
                 maxHeight: placement.maxHeight,
               }}
-              className="glass-sheet fixed z-[61] w-max animate-glass-in overflow-y-auto rounded-lg p-1.5"
+              className="glass-sheet fixed z-[61] flex w-max animate-sheet-in flex-col gap-0.5 overflow-y-auto rounded-[14px] p-1.5"
             >
               {options.map((option, index) => {
                 const isSelected = option.value === value;
@@ -267,9 +267,10 @@ export function Select<T extends string>({
                       choose(index);
                     }}
                     className={cn(
-                      'flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px] text-text',
+                      'flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px]',
                       'transition-colors duration-fast ease-out disabled:opacity-40',
-                      index === active && 'bg-[var(--hover)]',
+                      isSelected ? 'bg-accent/[0.14] font-medium text-text' : 'text-text-dim',
+                      index === active && !isSelected && 'bg-[var(--hover)] text-text',
                     )}
                   >
                     <Check

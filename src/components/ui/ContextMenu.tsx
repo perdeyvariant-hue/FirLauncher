@@ -93,8 +93,7 @@ export function ContextMenu({ items, children, className, title }: ContextMenuPr
               visibility: position === null ? 'hidden' : 'visible',
             }}
             className={cn(
-              'glass-sheet fixed z-50 origin-top-left animate-sheet-in overflow-hidden rounded-lg p-1.5',
-              'shadow-[inset_0_0_0_1px_var(--glass-border),0_20px_50px_rgb(0_0_0/0.45)]',
+              'glass-sheet fixed z-50 origin-top-left animate-sheet-in overflow-hidden rounded-[14px] p-1.5',
             )}
           >
             {title !== undefined && (
@@ -119,7 +118,7 @@ export function ContextMenu({ items, children, className, title }: ContextMenuPr
                     'disabled:pointer-events-none disabled:opacity-40',
                     item.tone === 'danger'
                       ? 'text-danger hover:bg-danger/10'
-                      : 'text-text hover:bg-[var(--hover)]',
+                      : 'text-text-dim hover:bg-[var(--hover)] hover:text-text',
                   )}
                 >
                   {item.label}
