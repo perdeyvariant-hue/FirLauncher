@@ -75,12 +75,12 @@ const GAP = 6;
 const SLOW = '640ms var(--ease-spring)';
 const FAST = '340ms var(--ease-spring)';
 
-/** The fir on a plain tile of the accent colour. */
+/** A dark fir on a plain tile of the accent colour, the same in every theme. */
 function LogoTile(): ReactElement {
   return (
     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.18)]">
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
-        <path d="M12 2 16.5 8H14l4 5h-3l4.5 6H13v3h-2v-3H4.5L9 13H6l4-5H7.5Z" className="fill-on-accent" />
+        <path d="M12 2 16.5 8H14l4 5h-3l4.5 6H13v3h-2v-3H4.5L9 13H6l4-5H7.5Z" fill="#0b0a0f" />
       </svg>
     </div>
   );

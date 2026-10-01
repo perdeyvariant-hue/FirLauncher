@@ -191,7 +191,7 @@ function PictureChoice({
           aria-label={t`Удалить: ${label}`}
           title={t`Удалить`}
           onClick={onRemove}
-          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-[var(--sheet)] text-text-dim opacity-0 transition-opacity duration-fast hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-[var(--sheet-solid)] text-text-dim opacity-0 transition-opacity duration-fast hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
         >
           <X size={13} strokeWidth={1.75} />
         </button>

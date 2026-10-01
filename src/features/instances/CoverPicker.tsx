@@ -36,7 +36,7 @@ export function CoverPicker({ color, version, glyph, onColor, onGlyph }: CoverPi
 
   const ring = (selected: boolean): string =>
     selected
-      ? 'shadow-[0_0_0_2px_var(--sheet),0_0_0_3.5px_rgb(var(--accent-rgb))]'
+      ? 'shadow-[0_0_0_2px_var(--sheet-solid),0_0_0_3.5px_rgb(var(--accent-rgb))]'
       : 'bg-[var(--chip)] hover:bg-[var(--hover)]';
 
   return (
@@ -58,7 +58,7 @@ export function CoverPicker({ color, version, glyph, onColor, onGlyph }: CoverPi
                 background: artGradient(index),
                 boxShadow:
                   index === color
-                    ? '0 0 0 2px var(--sheet), 0 0 0 4px rgb(var(--accent-rgb))'
+                    ? '0 0 0 2px var(--sheet-solid), 0 0 0 4px rgb(var(--accent-rgb))'
                     : 'inset 0 1px 0 rgb(255 255 255 / 0.3)',
               }}
             />
