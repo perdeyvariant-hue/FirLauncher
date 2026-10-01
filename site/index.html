@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FirLauncher — лаунчер Minecraft с открытым кодом</title>
+  <meta name="description" content="Бесплатный лаунчер Minecraft с открытым исходным кодом: сборки с модами, Fabric, Forge, NeoForge и Quilt, моды с Modrinth и CurseForge в один клик. Windows, macOS и Linux.">
+  <meta property="og:title" content="FirLauncher — лаунчер Minecraft с открытым кодом">
+  <meta property="og:description" content="Сборки с модами, моды с Modrinth и CurseForge в один клик. Бесплатно, без рекламы, весь код на GitHub.">
+  <meta property="og:image" content="assets/instances.webp">
+  <meta name="theme-color" content="#0e0c14">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#download">Перейти к скачиванию</a>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="FirLauncher, на главную">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#a855f7"/><path d="M12 3.6 15.6 8.4H13.6l3.2 4H14.4l3.6 4.8H13v2.6h-2v-2.6H6l3.6-4.8H7.2l3.2-4H8.4Z" fill="#0b0a0f"/></svg>
+      FirLauncher
+    </a>
+    <nav class="top-nav" aria-label="Разделы">
+      <a href="#features">Возможности</a>
+      <a href="#open-source">Код</a>
+      <a href="#download">Скачать</a>
+      <a class="top-gh" href="https://github.com/perdeyvariant-hue/FirLauncher">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Лаунчер Minecraft с&nbsp;открытым кодом</h1>
+        <p class="lede">Сборки с модами на Fabric, Forge, NeoForge и Quilt, моды с Modrinth и CurseForge в один клик. Бесплатно, без рекламы, весь код — на GitHub.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" id="hero-download" href="#download">Скачать</a>
+          <a class="btn btn-quiet" href="https://github.com/perdeyvariant-hue/FirLauncher">Исходный код</a>
+        </div>
+        <p class="hero-meta" id="hero-meta">Windows, macOS и Linux</p>
+      </div>
+      <figure class="hero-shot">
+        <img src="assets/instances.webp" width="2560" height="1600" alt="Окно FirLauncher: сборки с обложками из игры, фильтры по версии и лоадеру">
+      </figure>
+    </section>
+
+    <section class="open" id="open-source">
+      <div class="open-text">
+        <h2>Код открыт целиком</h2>
+        <p>Лицензия MIT: лаунчер можно читать, собирать, менять и распространять. Он не собирает статистику и не показывает рекламу — это видно по исходникам, а не только по обещанию.</p>
+        <p>Внутри — Rust и Tauri, интерфейс на React. Нашли ошибку или хотите что-то добавить — пишите в <a href="https://github.com/perdeyvariant-hue/FirLauncher/issues">Issues</a> или присылайте pull request.</p>
+      </div>
+      <div class="open-code">
+        <p class="code-title">Собрать из исходников</p>
+        <pre><code>git clone https://github.com/perdeyvariant-hue/FirLauncher
+cd FirLauncher
+npm install
+npm run tauri dev</code></pre>
+        <p class="code-note">Нужны Node.js и Rust. Подробности — в <a href="https://github.com/perdeyvariant-hue/FirLauncher/blob/main/docs/DEVELOPMENT.md">DEVELOPMENT.md</a>.</p>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <h2>Что умеет</h2>
+
+      <div class="group">
+        <h3>Сборки</h3>
+        <dl>
+          <div><dt>Каждая сборка отдельно</dt><dd>Свои моды, миры и настройки — ничего не смешивается между версиями.</dd></div>
+          <div><dt>Любая версия, любой лоадер</dt><dd>Fabric, Quilt, Forge и NeoForge. Лоадер можно поставить или сменить прямо в настройках сборки.</dd></div>
+          <div><dt>Импорт и экспорт</dt><dd>Модпаки .mrpack, архивы CurseForge, сборки MultiMC и Prism — достаточно перетащить файл в окно.</dd></div>
+          <div><dt>Ярлык на рабочий стол</dt><dd>Запускает игру сразу, без окна лаунчера.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>Моды</h3>
+        <dl>
+          <div><dt>Modrinth и CurseForge</dt><dd>Поиск с фильтрами, установка в один клик, зависимости ставятся сами.</dd></div>
+          <div><dt>Обновления с описанием</dt><dd>До обновления видно, что изменилось в каждой новой версии мода.</dd></div>
+          <div><dt>Бережные обновления модпаков</dt><dd>Ваши моды и правки конфигов остаются на месте.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>Если что-то сломалось</h3>
+        <dl>
+          <div><dt>Разбор вылета</dt><dd>Лаунчер читает лог и объясняет причину простыми словами, часто с кнопкой «Исправить».</dd></div>
+          <div><dt>Снимки сборки</dt><dd>Перед обновлениями сохраняются моды, конфиги и лоадер — откат в один клик.</dd></div>
+          <div><dt>Резервные копии миров</dt><dd>Автоматически перед обновлениями и по кнопке.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>Игра</h3>
+        <dl>
+          <div><dt>Microsoft и оффлайн-аккаунты</dt><dd>С оффлайн-аккаунтом работает и сетевая игра на серверах без проверки лицензии.</dd></div>
+          <div><dt>Java ставить не нужно</dt><dd>Лаунчер сам скачает подходящую версию.</dd></div>
+          <div><dt>Обновляется сам</dt><dd>Новая версия приходит кнопкой прямо в лаунчере и проверяется по цифровой подписи.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="gallery" aria-label="Скриншоты">
+      <figure>
+        <img src="assets/launch.webp" width="2560" height="1600" loading="lazy" alt="Карточка запуска с живым логом игры">
+        <figcaption>После «Играть» видно, как поднимается игра: прогресс подготовки, затем её собственный лог.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/mods.webp" width="2560" height="1600" loading="lazy" alt="Список модов сборки с доступными обновлениями">
+        <figcaption>Моды с настоящими названиями и иконками, обновления — для выбранных или всех сразу.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/appearance.webp" width="2560" height="1600" loading="lazy" alt="Настройки оформления: темы, цвет акцента, обои и талисман">
+        <figcaption>Темы, цвет акцента, обои и талисман в углу — под себя.</figcaption>
+      </figure>
+    </section>
+
+    <section class="download" id="download">
+      <div class="download-head">
+        <h2>Скачать</h2>
+        <p id="release-line">Последняя версия на <a href="https://github.com/perdeyvariant-hue/FirLauncher/releases/latest">странице релизов</a>.</p>
+      </div>
+
+      <div class="platforms" id="platforms">
+        <div class="platform" data-os="windows">
+          <h3>Windows 10 и 11</h3>
+          <ul class="files"></ul>
+        </div>
+        <div class="platform" data-os="macos">
+          <h3>macOS</h3>
+          <ul class="files"></ul>
+        </div>
+        <div class="platform" data-os="linux">
+          <h3>Linux</h3>
+          <ul class="files"></ul>
+        </div>
+      </div>
+
+      <div class="notes">
+        <p>Уже установили? Скачивать заново не нужно: в лаунчере появится кнопка «Обновить и перезапустить».</p>
+        <p><strong>Windows.</strong> Установщик пока не подписан сертификатом, поэтому SmartScreen может предупредить — нажмите «Подробнее», затем «Выполнить в любом случае».</p>
+        <p><strong>macOS.</strong> Приложение не заверено Apple: откройте его правой кнопкой мыши и выберите «Открыть». Если система пишет, что файл повреждён, выполните в Терминале <code>xattr -cr /Applications/FirLauncher.app</code>.</p>
+        <p><a href="https://github.com/perdeyvariant-hue/FirLauncher/releases">Все версии и история изменений</a></p>
+      </div>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">Вопросы</h2>
+      <details>
+        <summary>Это правда бесплатно?</summary>
+        <p>Да. FirLauncher распространяется по лицензии MIT, без платных функций и рекламы.</p>
+      </details>
+      <details>
+        <summary>Нужна ли лицензия Minecraft?</summary>
+        <p>Для игры на официальных серверах и для своего скина нужен аккаунт Microsoft с купленной игрой. Оффлайн-аккаунт подходит для одиночной игры, игры по сети дома и серверов, которые не проверяют лицензию.</p>
+      </details>
+      <details>
+        <summary>Где хранятся сборки?</summary>
+        <p>В папке данных лаунчера: <code>%APPDATA%\FirLauncher</code> на Windows, <code>~/Library/Application Support/FirLauncher</code> на macOS и <code>~/.config/FirLauncher</code> на Linux. Её можно сменить в настройках.</p>
+      </details>
+      <details>
+        <summary>Чем он отличается от официального лаунчера?</summary>
+        <p>FirLauncher сделан для игры с модами: у каждой сборки свои моды и миры, моды ставятся из каталогов с зависимостями, модпаки импортируются и обновляются, а при вылете лаунчер объясняет, что пошло не так.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>FirLauncher — проект с открытым исходным кодом, лицензия MIT. <a href="https://github.com/perdeyvariant-hue/FirLauncher">github.com/perdeyvariant-hue/FirLauncher</a></p>
+    <p class="disclaimer">Неофициальный продукт Minecraft. Не одобрен Mojang или Microsoft и не связан с ними.</p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
