@@ -152,7 +152,7 @@ export const MOCK_TASKS: Task[] = [
     id: 'task-1',
     kind: 'install-version',
     title: 'Minecraft 1.21.4',
-    stage: 'Ассеты 1284 / 3891',
+    stage: 'Ассеты (3891)',
     state: 'running',
     progress: 0.33,
     bytesDone: 92_341_760,

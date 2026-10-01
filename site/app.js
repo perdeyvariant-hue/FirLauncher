@@ -1,27 +1,78 @@
 // Download links come from the newest GitHub release, so the page never
 // needs editing when a version ships. Without the API (offline, rate limit)
-// every link falls back to the releases page.
+// every link falls back to the releases page. The page's own language
+// (<html lang>) picks the wording.
 (function () {
   'use strict';
 
   var REPO = 'perdeyvariant-hue/FirLauncher';
   var RELEASES = 'https://github.com/' + REPO + '/releases/latest';
+  var EN = document.documentElement.lang === 'en';
+
+  var TEXT = EN
+    ? {
+        locale: 'en-GB',
+        mb: 'MB',
+        exe: 'Installer (.exe)',
+        msi: 'MSI package',
+        arm: 'Apple Silicon (.dmg)',
+        intel: 'Intel (.dmg)',
+        deb: 'Debian, Ubuntu (.deb)',
+        rpm: 'Fedora, openSUSE (.rpm)',
+        yours: 'Your system',
+        fallback: 'Files are on the <a href="' + RELEASES + '">release page</a>.',
+        released: function (version, when) {
+          return 'Version ' + version + ', released ' + when + '. ';
+        },
+        notes: 'What’s new',
+        downloadFor: 'Download for ',
+        heroMeta: function (version, size) {
+          return 'Version ' + version + ', ' + size + '. Available for Windows, macOS and Linux.';
+        },
+        heroAll: function (version) {
+          return 'Version ' + version + ' for Windows, macOS and Linux.';
+        },
+      }
+    : {
+        locale: 'ru-RU',
+        mb: 'МБ',
+        exe: 'Установщик (.exe)',
+        msi: 'Пакет MSI',
+        arm: 'Apple Silicon (.dmg)',
+        intel: 'Intel (.dmg)',
+        deb: 'Debian, Ubuntu (.deb)',
+        rpm: 'Fedora, openSUSE (.rpm)',
+        yours: 'Ваша система',
+        fallback: 'Файлы — на <a href="' + RELEASES + '">странице релиза</a>.',
+        released: function (version, when) {
+          // "1 октября 2026 г." already ends with a full stop.
+          return 'Версия ' + version + ' от ' + when + (/\.$/.test(when) ? ' ' : '. ');
+        },
+        notes: 'Что нового',
+        downloadFor: 'Скачать для ',
+        heroMeta: function (version, size) {
+          return 'Версия ' + version + ', ' + size + '. Есть версии для Windows, macOS и Linux.';
+        },
+        heroAll: function (version) {
+          return 'Версия ' + version + ' для Windows, macOS и Linux.';
+        },
+      };
 
   // Which files belong where, in the order they are offered; the first one
   // of a system is its main download.
   var FILES = {
     windows: [
-      { test: /_x64-setup\.exe$/, label: 'Установщик (.exe)' },
-      { test: /_x64_en-US\.msi$/, label: 'Пакет MSI' },
+      { test: /_x64-setup\.exe$/, label: TEXT.exe },
+      { test: /_x64_en-US\.msi$/, label: TEXT.msi },
     ],
     macos: [
-      { test: /_aarch64\.dmg$/, label: 'Apple Silicon (.dmg)' },
-      { test: /_x64\.dmg$/, label: 'Intel (.dmg)' },
+      { test: /_aarch64\.dmg$/, label: TEXT.arm },
+      { test: /_x64\.dmg$/, label: TEXT.intel },
     ],
     linux: [
       { test: /_amd64\.AppImage$/, label: 'AppImage' },
-      { test: /_amd64\.deb$/, label: 'Debian, Ubuntu (.deb)' },
-      { test: /\.x86_64\.rpm$/, label: 'Fedora, openSUSE (.rpm)' },
+      { test: /_amd64\.deb$/, label: TEXT.deb },
+      { test: /\.x86_64\.rpm$/, label: TEXT.rpm },
     ],
   };
 
@@ -38,11 +89,11 @@
   }
 
   function size(bytes) {
-    return (bytes / 1024 / 1024).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' МБ';
+    return (bytes / 1024 / 1024).toLocaleString(TEXT.locale, { maximumFractionDigits: 1 }) + ' ' + TEXT.mb;
   }
 
   function date(iso) {
-    return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(TEXT.locale, { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   function link(href, text, bytes) {
@@ -63,7 +114,7 @@
   function fallback(list) {
     var li = document.createElement('li');
     li.className = 'fallback';
-    li.innerHTML = 'Файлы — на <a href="' + RELEASES + '">странице релиза</a>.';
+    li.innerHTML = TEXT.fallback;
     list.appendChild(li);
   }
 
@@ -76,7 +127,7 @@
       box.classList.add('is-yours');
       var mark = document.createElement('span');
       mark.className = 'yours';
-      mark.textContent = 'Ваша система';
+      mark.textContent = TEXT.yours;
       box.querySelector('h3').appendChild(mark);
     }
   });
@@ -92,12 +143,10 @@
       var version = release.tag_name.replace(/^v/, '');
       var line = document.getElementById('release-line');
       line.innerHTML = '';
-      // "1 октября 2026 г." already ends with a full stop.
-      var when = date(release.published_at);
-      line.append('Версия ' + version + ' от ' + when + (/\.$/.test(when) ? ' ' : '. '));
+      line.append(TEXT.released(version, date(release.published_at)));
       var notes = document.createElement('a');
       notes.href = release.html_url;
-      notes.textContent = 'Что нового';
+      notes.textContent = TEXT.notes;
       line.appendChild(notes);
 
       var main = {};
@@ -119,11 +168,10 @@
       var meta = document.getElementById('hero-meta');
       if (os && main[os]) {
         hero.href = main[os].browser_download_url;
-        hero.textContent = 'Скачать для ' + NAMES[os];
-        meta.textContent =
-          'Версия ' + version + ', ' + size(main[os].size) + '. Есть версии для Windows, macOS и Linux.';
+        hero.textContent = TEXT.downloadFor + NAMES[os];
+        meta.textContent = TEXT.heroMeta(version, size(main[os].size));
       } else {
-        meta.textContent = 'Версия ' + version + ' для Windows, macOS и Linux.';
+        meta.textContent = TEXT.heroAll(version);
       }
     })
     .catch(function () {

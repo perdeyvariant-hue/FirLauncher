@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FirLauncher — an open-source Minecraft launcher</title>
+  <meta name="description" content="A free, open-source Minecraft launcher: modded instances on Fabric, Forge, NeoForge and Quilt, mods from Modrinth and CurseForge in one click. Windows, macOS and Linux.">
+  <meta property="og:title" content="FirLauncher — an open-source Minecraft launcher">
+  <meta property="og:description" content="Modded instances, one-click mods from Modrinth and CurseForge. Free, no ads, all the code on GitHub.">
+  <meta property="og:image" content="../assets/en/instances.webp">
+  <meta name="theme-color" content="#0e0c14">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="ru" href="https://firlauncher.github.io/FirLauncher/">
+  <link rel="alternate" hreflang="en" href="https://firlauncher.github.io/FirLauncher/en/">
+  <link rel="alternate" hreflang="x-default" href="https://firlauncher.github.io/FirLauncher/en/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#download">Skip to downloads</a>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="FirLauncher home">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#a855f7"/><path d="M12 3.6 15.6 8.4H13.6l3.2 4H14.4l3.6 4.8H13v2.6h-2v-2.6H6l3.6-4.8H7.2l3.2-4H8.4Z" fill="#0b0a0f"/></svg>
+      FirLauncher
+    </a>
+    <nav class="top-nav" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#open-source">Code</a>
+      <a href="#download">Download</a>
+      <a class="top-gh" href="https://github.com/perdeyvariant-hue/FirLauncher">GitHub</a>
+      <span class="lang" role="group" aria-label="Language">
+        <a href="../" hreflang="ru" lang="ru">RU</a>
+        <a aria-current="page" lang="en">EN</a>
+      </span>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-text">
+        <h1>An open-source Minecraft launcher</h1>
+        <p class="lede">Modded instances on Fabric, Forge, NeoForge and Quilt, mods from Modrinth and CurseForge in one click. Free, no ads, every line of code on GitHub.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" id="hero-download" href="#download">Download</a>
+          <a class="btn btn-quiet" href="https://github.com/perdeyvariant-hue/FirLauncher">Source code</a>
+        </div>
+        <p class="hero-meta" id="hero-meta">Windows, macOS and Linux</p>
+      </div>
+      <figure class="hero-shot">
+        <img src="../assets/en/instances.webp" width="2560" height="1600" alt="The FirLauncher window: instances with covers from the game, filters by version and loader">
+      </figure>
+    </section>
+
+    <section class="open" id="open-source">
+      <div class="open-text">
+        <h2>All of the code is open</h2>
+        <p>MIT licence: read it, build it, change it, share it. The launcher collects no statistics and shows no ads — the source code says so, not just a promise.</p>
+        <p>Rust and Tauri underneath, a React interface on top. Found a bug or want to add something? Open an <a href="https://github.com/perdeyvariant-hue/FirLauncher/issues">issue</a> or send a pull request.</p>
+      </div>
+      <div class="open-code">
+        <p class="code-title">Build from source</p>
+        <pre><code>git clone https://github.com/perdeyvariant-hue/FirLauncher
+cd FirLauncher
+npm install
+npm run tauri dev</code></pre>
+        <p class="code-note">You need Node.js and Rust. Details in <a href="https://github.com/perdeyvariant-hue/FirLauncher/blob/main/docs/DEVELOPMENT.md">DEVELOPMENT.md</a>.</p>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <h2>What it does</h2>
+
+      <div class="group">
+        <h3>Instances</h3>
+        <dl>
+          <div><dt>Every instance on its own</dt><dd>Its own mods, worlds and settings — nothing leaks between versions.</dd></div>
+          <div><dt>Any version, any loader</dt><dd>Fabric, Quilt, Forge and NeoForge. Add or switch the loader right in the instance settings.</dd></div>
+          <div><dt>Import and export</dt><dd>.mrpack modpacks, CurseForge archives, MultiMC and Prism instances — just drop the file on the window.</dd></div>
+          <div><dt>Desktop shortcut</dt><dd>Starts the game straight away, without the launcher window.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>Mods</h3>
+        <dl>
+          <div><dt>Modrinth and CurseForge</dt><dd>Search with filters, one-click install, dependencies come along by themselves.</dd></div>
+          <div><dt>Updates with changelogs</dt><dd>See what changed in every newer version of a mod before you update.</dd></div>
+          <div><dt>Careful modpack updates</dt><dd>Your own mods and config edits stay where they are.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>When something breaks</h3>
+        <dl>
+          <div><dt>Crashes explained</dt><dd>The launcher reads the log and tells you the cause in plain words, often with a Fix button.</dd></div>
+          <div><dt>Instance snapshots</dt><dd>Mods, configs and the loader are saved before updates — roll back in one click.</dd></div>
+          <div><dt>World backups</dt><dd>Automatically before updates, and whenever you ask.</dd></div>
+        </dl>
+      </div>
+
+      <div class="group">
+        <h3>Playing</h3>
+        <dl>
+          <div><dt>Microsoft and offline accounts</dt><dd>Offline accounts can play online too, on servers that don’t check licences.</dd></div>
+          <div><dt>No Java to install</dt><dd>The launcher downloads the right version itself.</dd></div>
+          <div><dt>Updates itself</dt><dd>New versions arrive as a button inside the launcher and are checked against a digital signature.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="gallery" aria-label="Screenshots">
+      <figure>
+        <img src="../assets/en/launch.webp" width="2560" height="1600" loading="lazy" alt="The launch card with the game's live log">
+        <figcaption>After Play you watch the game come up: preparation progress, then the game’s own log.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/en/mods.webp" width="2560" height="1600" loading="lazy" alt="An instance's mods with updates available">
+        <figcaption>Mods with their real names and icons; update the ones you pick, or all at once.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/en/appearance.webp" width="2560" height="1600" loading="lazy" alt="Appearance settings: themes, accent colour, wallpaper and mascot">
+        <figcaption>Themes, accent colour, wallpaper and a corner mascot — make it yours.</figcaption>
+      </figure>
+    </section>
+
+    <section class="download" id="download">
+      <div class="download-head">
+        <h2>Download</h2>
+        <p id="release-line">The latest version is on the <a href="https://github.com/perdeyvariant-hue/FirLauncher/releases/latest">releases page</a>.</p>
+      </div>
+
+      <div class="platforms" id="platforms">
+        <div class="platform" data-os="windows">
+          <h3>Windows 10 and 11</h3>
+          <ul class="files"></ul>
+        </div>
+        <div class="platform" data-os="macos">
+          <h3>macOS</h3>
+          <ul class="files"></ul>
+        </div>
+        <div class="platform" data-os="linux">
+          <h3>Linux</h3>
+          <ul class="files"></ul>
+        </div>
+      </div>
+
+      <div class="notes">
+        <p>Already installed? No need to download again: the launcher shows an “Update and restart” button.</p>
+        <p><strong>Windows.</strong> The installer isn’t code-signed yet, so SmartScreen may warn you — click “More info”, then “Run anyway”.</p>
+        <p><strong>macOS.</strong> The app isn’t notarised by Apple: right-click it and choose Open. If macOS says the file is damaged, run <code>xattr -cr /Applications/FirLauncher.app</code> in Terminal.</p>
+        <p><a href="https://github.com/perdeyvariant-hue/FirLauncher/releases">All versions and changelogs</a></p>
+      </div>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">Questions</h2>
+      <details>
+        <summary>Is it really free?</summary>
+        <p>Yes. FirLauncher is released under the MIT licence, with no paid features and no ads.</p>
+      </details>
+      <details>
+        <summary>Do I need to own Minecraft?</summary>
+        <p>To play on official servers and use your own skin, you need a Microsoft account that owns the game. An offline account works for singleplayer, LAN games and servers that don’t check licences.</p>
+      </details>
+      <details>
+        <summary>Where are my instances stored?</summary>
+        <p>In the launcher’s data folder: <code>%APPDATA%\FirLauncher</code> on Windows, <code>~/Library/Application Support/FirLauncher</code> on macOS and <code>~/.config/FirLauncher</code> on Linux. You can move it in the settings.</p>
+      </details>
+      <details>
+        <summary>How is it different from the official launcher?</summary>
+        <p>FirLauncher is made for modded play: every instance has its own mods and worlds, mods install from catalogues together with their dependencies, modpacks import and update, and when the game crashes the launcher tells you why.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>FirLauncher is an open-source project under the MIT licence. <a href="https://github.com/perdeyvariant-hue/FirLauncher">github.com/perdeyvariant-hue/FirLauncher</a></p>
+    <p class="disclaimer">Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</p>
+  </footer>
+
+  <script src="../app.js" defer></script>
+</body>
+</html>
