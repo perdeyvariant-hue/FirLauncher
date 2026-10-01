@@ -8,7 +8,7 @@
 
 ## Скачать
 
-Сайт проекта: **[perdeyvariant-hue.github.io/FirLauncher](https://perdeyvariant-hue.github.io/FirLauncher/)**.
+Сайт проекта: **[firlauncher.github.io](https://firlauncher.github.io/)**.
 
 Последняя версия — на странице **[Releases](https://github.com/perdeyvariant-hue/FirLauncher/releases/latest)**.
 

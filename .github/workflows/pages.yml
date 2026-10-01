@@ -1,6 +1,12 @@
-# Publishes the project site (site/) to GitHub Pages. The page reads its
-# download links from the latest release at runtime, so a release needs no
-# site change; this runs only when the site itself changes.
+# The project site lives at the root of the organisation's domain,
+# https://firlauncher.github.io/, which GitHub serves from the
+# FirLauncher/firlauncher.github.io repository. The site is still edited
+# here in site/; this workflow copies it there (with a deploy key that can
+# write to that repository only) and leaves a redirect at the old address,
+# https://firlauncher.github.io/FirLauncher/, so earlier links keep working.
+#
+# The page reads its download links from the latest release at runtime, so
+# a release needs no site change; this runs only when the site changes.
 name: Site
 
 on:
@@ -19,16 +25,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.SITE_DEPLOY_KEY }}
+          external_repository: FirLauncher/firlauncher.github.io
+          publish_branch: main
+          publish_dir: ./site
+          user_name: github-actions[bot]
+          user_email: 41898299+github-actions[bot]@users.noreply.github.com
+          full_commit_message: 'Site from FirLauncher/FirLauncher@${{ github.sha }}'
+
+  redirect:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Build the redirect to the root
+        run: |
+          mkdir redirect
+          cat > redirect/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ru">
+          <head>
+            <meta charset="utf-8">
+            <title>FirLauncher переехал</title>
+            <link rel="canonical" href="https://firlauncher.github.io/">
+            <meta http-equiv="refresh" content="0; url=https://firlauncher.github.io/">
+            <script>
+              // Keep the rest of the path: /FirLauncher/en/ goes to /en/.
+              var rest = location.pathname.replace(/^\/FirLauncher/, '') || '/';
+              location.replace('https://firlauncher.github.io' + rest + location.search + location.hash);
+            </script>
+          </head>
+          <body>
+            <p>Сайт переехал на <a href="https://firlauncher.github.io/">firlauncher.github.io</a>.</p>
+          </body>
+          </html>
+          HTML
+          # Any other old address lands on 404.html, which redirects the same way.
+          cp redirect/index.html redirect/404.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: redirect
       - id: deployment
         uses: actions/deploy-pages@v4
